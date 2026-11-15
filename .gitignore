@@ -1,0 +1,6 @@
+data/
+.vscode/
+__pycache__/
+*.pyc
+helper/cache/
+helper/voices/
