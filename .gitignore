@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 helper/cache/
 helper/voices/
+.venv/

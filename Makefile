@@ -7,7 +7,11 @@
 #   make test        run the tests under luajit
 #   make lint        run luacheck
 #   make check       both
+#   make venv        build .venv (Python 3.12 via uv) with the TTS engines
+#   make venv-cuda   add the CUDA build of onnxruntime so Kokoro runs on an NVIDIA GPU
+#   make voices      download the Kokoro model and a few Piper voices
 #   make helper      run the host-side TTS helper against ./data
+#                    (make helper BACKEND=piper to pick an engine)
 #
 # The Windower folder is found automatically: the Lumoria flatpak prefix on
 # Linux, else a plain Wine prefix. Set WINDOWER to point somewhere else:
@@ -27,7 +31,25 @@ WINDOWER ?= $(firstword $(CANDIDATES))
 ADDONS := $(WINDOWER)/addons
 LINK := $(ADDONS)/$(NAME)
 
-.PHONY: install uninstall where test lint check helper
+# The TTS engines need onnxruntime, which has no wheel for the system
+# Python yet, so they live in a Python 3.12 venv that uv builds. The helper
+# runs with the venv's python when it exists and the system python3 otherwise
+# (espeak-ng or dry run only).
+UV ?= $(firstword $(wildcard $(HOME)/.local/bin/uv) $(shell command -v uv 2>/dev/null))
+VENV := $(REPO)/.venv
+PY := $(if $(wildcard $(VENV)/bin/python),$(VENV)/bin/python,python3)
+VOICES := $(REPO)/helper/voices
+PIPER_VOICES ?= en_US-lessac-medium en_US-amy-medium en_GB-alan-medium
+KOKORO_URL := https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0
+BACKEND ?= auto
+
+# onnxruntime-gpu 1.32 is built against CUDA 13; these pip packages supply the
+# libraries and onnxruntime.preload_dlls() finds them, so no system CUDA is
+# needed. The driver must support CUDA 13 (nvidia-smi shows the version).
+CUDA_PKGS := onnxruntime-gpu "nvidia-cuda-runtime>=13,<14" nvidia-cudnn-cu13 "nvidia-cublas>=13,<14" \
+	"nvidia-cufft>=12" "nvidia-curand>=10" "nvidia-cuda-nvrtc>=13,<14" "nvidia-nvjitlink>=13,<14"
+
+.PHONY: install uninstall where test lint check helper venv venv-cuda voices
 
 # Each recipe below is one shell command, so an exit inside it ends the target.
 
@@ -73,7 +95,28 @@ test:
 
 # Run the host-side helper against this checkout's data folder.
 helper:
-	python3 -I helper/spoken_helper.py --data $(REPO)/data
+	$(PY) -I helper/spoken_helper.py --data $(REPO)/data --backend $(BACKEND)
+
+venv:
+	@if [ -z "$(UV)" ]; then \
+		echo "uv not found; install it with: python3 -m pip install --user uv" >&2; exit 1; \
+	fi; \
+	[ -x "$(VENV)/bin/python" ] || "$(UV)" venv "$(VENV)" --python 3.12; \
+	"$(UV)" pip install --python "$(VENV)/bin/python" piper-tts kokoro-onnx
+
+venv-cuda: venv
+	"$(UV)" pip uninstall --python "$(VENV)/bin/python" onnxruntime onnxruntime-gpu
+	"$(UV)" pip install --python "$(VENV)/bin/python" $(CUDA_PKGS)
+	"$(VENV)/bin/python" -c "import onnxruntime as o; o.preload_dlls(); print(o.get_available_providers())"
+
+voices: venv
+	mkdir -p "$(VOICES)/piper" "$(VOICES)/kokoro"
+	"$(VENV)/bin/python" -m piper.download_voices --download-dir "$(VOICES)/piper" $(PIPER_VOICES)
+	@for f in kokoro-v1.0.onnx voices-v1.0.bin; do \
+		if [ ! -s "$(VOICES)/kokoro/$$f" ]; then \
+			echo "downloading $$f"; curl -sSL -o "$(VOICES)/kokoro/$$f" "$(KOKORO_URL)/$$f" || exit 1; \
+		fi; \
+	done
 
 lint:
 	luacheck .

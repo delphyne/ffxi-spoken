@@ -4,12 +4,16 @@
 Tails data/queue.jsonl, synthesises each dialogue line, plays it, and
 reports progress in data/status.json. See docs/Protocol.md.
 
-Standard library only. Backends:
-  piper   local neural TTS; needs the `piper` binary and a voice .onnx
+The helper itself is standard library only; the neural backends need the
+.venv that `make venv` builds (Python 3.12 with kokoro-onnx and piper-tts)
+and the models that `make voices` downloads into helper/voices/. Backends,
+in the order `auto` tries them:
+  kokoro  Kokoro 82M, ~50 voices in one model; most natural; GPU via make venv-cuda
+  piper   Piper, one .onnx per voice; fast, clear, flat
   espeak  espeak-ng, robotic but installed almost everywhere; for testing
   none    print what would be spoken and pretend it took a moment
 
-    python3 -I helper/spoken_helper.py --data ./data [--backend piper]
+    .venv/bin/python -I helper/spoken_helper.py --data ./data [--backend piper]
 """
 
 import argparse
@@ -21,6 +25,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import wave
 from pathlib import Path
 
 
@@ -28,11 +33,16 @@ from pathlib import Path
 # queue
 
 class QueueTail:
-    """Yields new JSON entries appended to a file, surviving truncation."""
+    """Yields new JSON entries appended to a file, surviving truncation.
 
-    def __init__(self, path):
+    Starts at the end of whatever is already there: lines written before the
+    helper came up are old dialogue and must not be replayed."""
+
+    def __init__(self, path, replay=False):
         self.path = Path(path)
         self.offset = 0
+        if not replay and self.path.exists():
+            self.offset = self.path.stat().st_size
 
     def poll(self):
         if not self.path.exists():
@@ -75,12 +85,50 @@ def cache_key(speaker, text, voice):
     return h.hexdigest()
 
 
+def write_wav(path, samples, rate):
+    """Write mono 16-bit PCM from float samples in [-1, 1]."""
+    try:
+        import numpy as np  # present wherever kokoro is; not needed otherwise
+        pcm = (np.clip(np.asarray(samples, dtype="float32"), -1.0, 1.0) * 32767).astype("<i2").tobytes()
+    except ImportError:
+        import array
+        pcm = array.array("h", (int(max(-1.0, min(1.0, s)) * 32767) for s in samples))
+        if sys.byteorder != "little":
+            pcm.byteswap()
+        pcm = pcm.tobytes()
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(pcm)
+
+
+def find_tool(name):
+    """A console script installed next to this interpreter wins over PATH,
+    so running the helper from .venv finds .venv's piper."""
+    beside = Path(sys.executable).parent / name
+    if beside.is_file() and os.access(beside, os.X_OK):
+        return str(beside)
+    return shutil.which(name)
+
+
 class Backend:
+    """Turns text into a WAV. `voices_dir` is helper/voices; each backend
+    keeps its models in a subfolder named after itself."""
+
     name = "none"
 
     def __init__(self, voices_dir, voice_map):
         self.voices_dir = Path(voices_dir)
         self.voice_map = voice_map
+
+    @property
+    def model_dir(self):
+        return self.voices_dir / self.name
+
+    @classmethod
+    def available(cls, voices_dir):
+        return True
 
     def voice_for(self, speaker):
         return self.voice_map.get(speaker) or self.voice_map.get("default") or "default"
@@ -100,6 +148,10 @@ class NoneBackend(Backend):
 class EspeakBackend(Backend):
     name = "espeak"
 
+    @classmethod
+    def available(cls, voices_dir):
+        return shutil.which("espeak-ng") is not None
+
     def synthesise(self, text, voice, out_path):
         args = ["espeak-ng", "-w", str(out_path)]
         if voice != "default":
@@ -110,28 +162,118 @@ class EspeakBackend(Backend):
 
 
 class PiperBackend(Backend):
+    """Piper (https://github.com/OHF-Voice/piper1-gpl). Voices are
+    `<name>.onnx` plus `<name>.onnx.json` in voices/piper/, fetched with
+    `python -m piper.download_voices <name>`. Fast; clear but flat."""
+
     name = "piper"
 
+    @classmethod
+    def available(cls, voices_dir):
+        return find_tool("piper") is not None and any((Path(voices_dir) / cls.name).glob("*.onnx"))
+
     def synthesise(self, text, voice, out_path):
-        model = self.voices_dir / f"{voice}.onnx"
+        if voice == "default":
+            raise ValueError("voices.json needs a piper default voice")
+        model = self.model_dir / f"{voice}.onnx"
         if not model.exists():
             raise FileNotFoundError(f"no piper voice at {model}")
-        subprocess.run(["piper", "--model", str(model), "--output_file", str(out_path)],
+        piper = find_tool("piper")
+        if piper is None:
+            raise FileNotFoundError("piper is not installed; run make venv")
+        subprocess.run([piper, "-m", str(model), "-f", str(out_path)],
                        input=text.encode("utf-8"), check=True,
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return out_path
 
 
-BACKENDS = {"none": NoneBackend, "espeak": EspeakBackend, "piper": PiperBackend}
+# Kokoro voice names start with a language letter: af_heart is American
+# English female, bm_george British male, jf_alpha Japanese female...
+KOKORO_LANGS = {
+    "a": "en-us", "b": "en-gb", "e": "es", "f": "fr-fr", "h": "hi",
+    "i": "it", "j": "ja", "p": "pt-br", "z": "cmn",
+}
 
 
-def pick_backend(name):
+def kokoro_lang(voice):
+    return KOKORO_LANGS.get(voice[:1], "en-us")
+
+
+def kokoro_provider(available):
+    """The onnxruntime provider to run Kokoro on. CUDA when the GPU build
+    and its libraries are present, else CPU. TensorRT is skipped: it needs
+    an engine build per session and fails over noisily without one."""
+    if "CUDAExecutionProvider" in available:
+        return "CUDAExecutionProvider"
+    return "CPUExecutionProvider"
+
+
+class KokoroBackend(Backend):
+    """Kokoro 82M via kokoro-onnx. One model file and one voice pack in
+    voices/kokoro/ give ~50 voices; the voice name selects one. More
+    natural than Piper. About a third of realtime on CPU, six times faster
+    on an NVIDIA GPU with `make venv-cuda`."""
+
+    name = "kokoro"
+    model_file = "kokoro-v1.0.onnx"
+    voices_file = "voices-v1.0.bin"
+
+    def __init__(self, voices_dir, voice_map):
+        super().__init__(voices_dir, voice_map)
+        self._engine = None
+        self.device = None
+
+    @classmethod
+    def available(cls, voices_dir):
+        d = Path(voices_dir) / cls.name
+        if not ((d / cls.model_file).exists() and (d / cls.voices_file).exists()):
+            return False
+        try:
+            import kokoro_onnx  # noqa: F401
+        except ImportError:
+            return False
+        return True
+
+    def engine(self):
+        if self._engine is None:
+            try:
+                import onnxruntime as ort
+                from kokoro_onnx import Kokoro
+            except ImportError as e:
+                raise RuntimeError("kokoro-onnx is not installed; run make venv") from e
+            if hasattr(ort, "preload_dlls"):
+                ort.preload_dlls()  # finds the CUDA libraries installed by pip
+            ort.set_default_logger_severity(3)  # errors only; CUDA placement warnings are noise
+            provider = kokoro_provider(ort.get_available_providers())
+            os.environ.setdefault("ONNX_PROVIDER", provider)  # kokoro-onnx reads this
+            self._engine = Kokoro(str(self.model_dir / self.model_file),
+                                  str(self.model_dir / self.voices_file))
+            self.device = "cuda" if "CUDA" in self._engine.sess.get_providers()[0] else "cpu"
+            print(f"kokoro: running on {self.device}")
+        return self._engine
+
+    def warm_up(self):
+        """Load the model (and the GPU) before the first line arrives."""
+        self.engine()
+
+    def synthesise(self, text, voice, out_path):
+        if voice == "default":
+            raise ValueError("voices.json needs a kokoro default voice")
+        samples, rate = self.engine().create(text, voice=voice, lang=kokoro_lang(voice))
+        write_wav(out_path, samples, rate)
+        return out_path
+
+
+BACKENDS = {"none": NoneBackend, "espeak": EspeakBackend, "piper": PiperBackend, "kokoro": KokoroBackend}
+AUTO_ORDER = (KokoroBackend, PiperBackend, EspeakBackend, NoneBackend)
+
+
+def pick_backend(name, voices_dir):
     if name != "auto":
         return BACKENDS[name]
-    if shutil.which("piper"):
-        return PiperBackend
-    if shutil.which("espeak-ng"):
-        return EspeakBackend
+    for cls in AUTO_ORDER:
+        if cls.available(voices_dir):
+            return cls
     return NoneBackend
 
 
@@ -225,6 +367,12 @@ class Helper:
 
     def run(self):
         print(f"spoken helper: backend={self.backend.name} data={self.data_dir}")
+        warm = getattr(self.backend, "warm_up", None)
+        if warm:
+            try:
+                warm()
+            except Exception as e:  # noqa: BLE001 - keep going; speak() will report it
+                print(f"warm-up failed: {e}", file=sys.stderr)
         self.write_status(0, "idle")
         try:
             while True:
@@ -234,12 +382,18 @@ class Helper:
             self.stop()
 
 
-def load_voice_map(path):
+def load_voice_map(path, backend_name):
+    """voices.json maps speaker -> voice, either flat or grouped by backend:
+    {"kokoro": {"default": "am_adam", "Iroha": "jf_alpha"}, "piper": {...}}.
+    Voice names differ per engine, so the grouped form is the useful one."""
     p = Path(path)
     if not p.exists():
         return {}
     with p.open() as f:
-        return json.load(f)
+        data = json.load(f)
+    if any(isinstance(v, dict) for v in data.values()):
+        return data.get(backend_name, {})
+    return data
 
 
 def main(argv=None):
@@ -247,13 +401,14 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--data", default=str(here.parent / "data"), help="the addon's data folder")
     ap.add_argument("--backend", default="auto", choices=["auto", *BACKENDS])
-    ap.add_argument("--voices", default=str(here / "voices"), help="folder of piper .onnx voices")
-    ap.add_argument("--voice-map", default=str(here / "voices.json"), help="speaker -> voice name")
+    ap.add_argument("--voices", default=str(here / "voices"), help="folder with a subfolder of models per backend")
+    ap.add_argument("--voice-map", default=str(here / "voices.json"), help="speaker -> voice name, per backend")
     ap.add_argument("--cache", default=str(here / "cache"))
     args = ap.parse_args(argv)
 
-    backend_cls = pick_backend(args.backend)
-    backend = backend_cls(args.voices, load_voice_map(args.voice_map))
+    sys.stdout.reconfigure(line_buffering=True)  # progress shows up when logged to a file
+    backend_cls = pick_backend(args.backend, args.voices)
+    backend = backend_cls(args.voices, load_voice_map(args.voice_map, backend_cls.name))
     Path(args.data).mkdir(parents=True, exist_ok=True)
     Helper(args.data, backend, args.cache, pick_player()).run()
 

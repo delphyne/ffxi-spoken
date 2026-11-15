@@ -10,7 +10,8 @@ repo. No sockets.
 ## `data/queue.jsonl` (addon writes, helper reads)
 
 One JSON object per line, appended. The helper tails the file and keeps its
-own offset; if the file shrinks it starts over from the top.
+own offset; if the file shrinks it starts over from the top. On start-up it
+skips whatever is already in the file, so old dialogue is never replayed.
 
 Speak entry:
 
