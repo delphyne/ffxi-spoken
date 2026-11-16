@@ -2,14 +2,17 @@
 """Review the dialogue's proper nouns one by one and build the lexicon.
 
 Reads data/proper_nouns.tsv (from tools/proper_nouns.py), speaks each word
-with the engine's own pronunciation, and asks:
+with the engine's own pronunciation, and waits for one keypress:
 
   a  accept: write the pronunciation being played to helper/lexicon.yaml
   r  repeat it
-  j  reject: type the IPA to use instead; it plays, and the question repeats
+  j  reject: type the IPA to use instead (a line); it plays, and the question repeats
   s  skip: the engine already says it right, no entry needed
   e  hear the word in an example line from the game
   q  quit
+
+Only the IPA is a line ending in Enter; the commands take effect on the
+key. When stdin is not a terminal (a pipe, the tests) every read is a line.
 
 Progress is kept in data/review_progress.json, so quitting and starting
 again resumes at the first word not yet covered. Words already in the
@@ -74,6 +77,31 @@ def covered_words(entries):
     return words
 
 
+def read_key(prompt):
+    """One keypress, without Enter, when stdin is a terminal; otherwise a
+    line, so a piped script or a test drives the loop the same way. Ctrl-C
+    and Ctrl-D end the run like `q` would, with progress saved."""
+    if not sys.stdin.isatty():
+        return input(prompt)
+    import termios
+    import tty
+    sys.stdout.write(prompt)
+    sys.stdout.flush()
+    fd = sys.stdin.fileno()
+    saved = termios.tcgetattr(fd)
+    try:
+        tty.setcbreak(fd)
+        ch = sys.stdin.read(1)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, saved)
+    if ch in ("", "\x04"):
+        raise EOFError
+    if ch == "\x03":
+        raise KeyboardInterrupt
+    print(ch if ch.isprintable() else "")
+    return ch
+
+
 def validate_ipa(word, typed):
     """Normalise hand-typed IPA the way the lexicon does; raises ValueError."""
     return sh.Lexicon({word: {"ipa": typed}}).entries[word]["ipa"]
@@ -102,9 +130,12 @@ class Speaker:
         self.say(sh.Lexicon({word: {"ipa": ipa}}).apply(sentence, phonemes=True))
 
 
-def review(candidates, progress, lexicon_path, speaker, read=input, out=print, progress_path=None, ipa_for=None):
-    """The loop. `read` and `speaker` are injectable for tests. Returns the
-    number of words covered this run."""
+def review(candidates, progress, lexicon_path, speaker, read=input, out=print, progress_path=None, ipa_for=None,
+           key=None):
+    """The loop. `key` reads a command (one keypress at a terminal), `read`
+    a line of IPA; both default to line input and, with `speaker`, are
+    injectable for tests. Returns the number of words covered this run."""
+    key = key or read
     entries = sh.Lexicon.load(lexicon_path).entries
     existing = covered_words(entries)
     todo = [c for c in candidates if c["word"] not in progress and c["word"] not in existing]
@@ -128,9 +159,11 @@ def review(candidates, progress, lexicon_path, speaker, read=input, out=print, p
         while True:
             label = "yours" if mine else "engine"
             try:
-                cmd = read(f"  {label}: {current}   [a]ccept [r]epeat [j]reject+IPA [s]kip [e]xample [q]uit > ").strip().lower()
-            except EOFError:
+                cmd = key(f"  {label}: {current}   [a]ccept [r]epeat [j]reject+IPA [s]kip [e]xample [q]uit > ").strip().lower()
+            except (EOFError, KeyboardInterrupt):
                 cmd = "q"
+            if not cmd:
+                continue
             if cmd == "r":
                 speaker.word(current)
             elif cmd == "e":
@@ -203,7 +236,7 @@ def main(argv=None):
     progress = load_progress(args.progress)
     try:
         review(candidates, progress, args.lexicon, Speaker(backend, sh.pick_player()),
-               progress_path=args.progress, ipa_for=ipa_for)
+               progress_path=args.progress, ipa_for=ipa_for, key=read_key)
     finally:
         save_progress(args.progress, progress)
     return 0

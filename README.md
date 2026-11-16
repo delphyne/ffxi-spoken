@@ -133,7 +133,7 @@ surprised in play:
    client's event files, so the review covers that pack's vocabulary and
    nothing else.
 2. `make review` walks that list. For each word it shows the name, the
-   count, an example line, and the engine's IPA, and speaks it. `a` accepts
+   count, an example line, and the engine's IPA, and speaks it. One keypress answers: `a` accepts
    the pronunciation into the lexicon, `r` repeats it, `j` rejects it and
    asks for IPA to try instead (looping until accepted), `s` skips a word
    the engine already says right, `e` plays the example line, `q` quits.

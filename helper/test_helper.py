@@ -6,6 +6,7 @@ import sys
 import tempfile
 import time
 import unittest
+import unittest.mock
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -277,6 +278,27 @@ class ReviewTest(unittest.TestCase):
                                                                  lexicon_text='Jeuno: Juno\n"Cait Sith":\n  ipa: "kˈeɪt sˈɪθ"\n')
         self.assertEqual([s[1] for s in speaker.said], ["ɔːltˈɑːnə", "nˈɔːɹɡ"], "Sith is covered by Cait Sith")
         self.assertIn("2 already in the lexicon", out)
+
+    def test_commands_and_ipa_come_from_separate_readers(self):
+        import review
+        keys, lines = iter(["j", "a", "", "q"]), iter(["ɔl'tɑːnə"])
+        d = tempfile.TemporaryDirectory()
+        self.addCleanup(d.cleanup)
+        lex = Path(d.name) / "lexicon.yaml"
+        lex.write_text("")
+        progress = {}
+        review.review(self.cands()[:2], progress, lex, self.FakeSpeaker(), read=lambda p: next(lines),
+                      out=lambda s: None, key=lambda p: next(keys))
+        self.assertEqual(progress["Altana"]["ipa"], "ɔltˈɑːnə")
+        self.assertNotIn("Jeuno", progress, "an empty key is ignored, then q quits")
+
+    def test_read_key_falls_back_to_lines_off_a_terminal(self):
+        import io
+        import review
+        with unittest.mock.patch("sys.stdin", io.StringIO("a\n")), unittest.mock.patch("sys.stdout", io.StringIO()):
+            self.assertEqual(review.read_key("> "), "a")
+        with unittest.mock.patch("sys.stdin", io.StringIO("")), unittest.mock.patch("sys.stdout", io.StringIO()):
+            self.assertRaises(EOFError, review.read_key, "> ")
 
     def test_append_entry_quotes_awkward_keys(self):
         import review
