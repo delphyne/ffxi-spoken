@@ -136,5 +136,52 @@ class Reachable(unittest.TestCase):
         self.assertEqual(len(walk_reachable(code, 0).instrs), 1)
 
 
+def actor(v):
+    return v.to_bytes(4, "little")
+
+
+class Speakers(unittest.TestCase):
+    NAMES = {0x1000001: "Iroha", 0x1000002: "Tenzen"}
+    STRS = ["zero", "one", "two", "three"]
+
+    def block(self, code, imm=(0, 1, 2, 3), actor=0x1000001):
+        return {"actor": actor, "events": {7: 0}, "imm": tuple(imm), "code": code}
+
+    def said(self, code, **kw):
+        return [(r["speaker"], r["text"]) for r in xievent.lines(self.block(code, **kw), 7, self.NAMES, self.STRS)]
+
+    def test_block_entity_and_named_actor(self):
+        code = SAY + u16(0x8000) + b"\x2b" + actor(0x1000002) + u16(0x8001) + END
+        self.assertEqual(self.said(code), [("Iroha", "zero"), ("Tenzen", "one")])
+
+    def test_player_and_event_entity_constants(self):
+        code = b"\x2b" + actor(0x7FFFFFF0) + u16(0x8000) + b"\x2b" + actor(0x7FFFFFF8) + u16(0x8001) + END
+        self.assertEqual(self.said(code), [("<player>", "zero"), ("Iroha", "one")])
+
+    def test_7a_retargets_then_resets(self):
+        code = (b"\x7a\x02" + actor(0x1000002) + SAY + u16(0x8000)
+                + b"\x7a\x03" + SAY + u16(0x8001) + END)
+        self.assertEqual(self.said(code), [("Tenzen", "zero"), ("Iroha", "one")])
+
+    def test_entity_is_path_state(self):
+        # IF: fall through retargets to Tenzen, else arm keeps Iroha; both reach the SAY.
+        code = IF(0, 0x0E) + b"\x7a\x02" + actor(0x1000002) + SAY + u16(0x8000) + END
+        self.assertEqual(len(code), 0x12)
+        rows = xievent.lines(self.block(code), 7, self.NAMES, self.STRS)
+        self.assertEqual(sorted(r["speaker"] for r in rows), ["Iroha", "Tenzen"])
+
+    def test_unknown_actor_and_variable_message(self):
+        code = b"\x2b" + actor(0x1000099) + u16(0x8002) + SAY + u16(0x0005) + END
+        rows = xievent.lines(self.block(code), 7, self.NAMES, self.STRS)
+        self.assertEqual(rows[0]["speaker"], "<0x1000099>")
+        self.assertEqual((rows[1]["text_id"], rows[1]["var"], rows[1]["text"]), (None, 5, None))
+
+    def test_narration_and_menu(self):
+        code = b"\x48" + u16(0x8000) + b"\x49" + actor(0x1000002) + u16(0x8001) + b"\x24" + u16(0x8002) + bytes(4) + END
+        rows = xievent.lines(self.block(code), 7, self.NAMES, self.STRS)
+        self.assertEqual([(r["kind"], r["speaker"], r["text"]) for r in rows],
+                         [("narration", "", "zero"), ("narration", "", "one"), ("menu", "", "two")])
+
+
 if __name__ == "__main__":
     unittest.main()

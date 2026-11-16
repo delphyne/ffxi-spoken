@@ -63,7 +63,7 @@ simplest bridge.
 | Auto-advance via Windower `setkey` | unverified under Wine; parked until the rest is stable |
 | Voice casting per NPC | `helper/cast.py` casts Balloon's 230 portrait NPCs by hand; everyone else is cast by race from `helper/census.json` (13,845 names from LandSandBoat and the client) |
 | Pronunciation lexicon | `helper/lexicon.yaml` with IPA; `make nouns` and `make review` build it from the game's text |
-| Dialogue extraction from the client | dialogue tables and NPC lists decode; `tools/xievent.py` disassembles event bytecode for every zone (4 events of 84,914 still fail, all in an unused zone); speaker attribution is next in `docs/Event-Decoding-Handoff.md` |
+| Dialogue extraction from the client | dialogue tables and NPC lists decode; `tools/xievent.py` disassembles event bytecode for every zone (4 events of 84,914 still fail, all in an unused zone) and attributes each line to its speaker; Rhapsodies resolves to 1,392 lines from 31 speakers with nothing unresolved (`docs/Event-Decoding-Handoff.md`) |
 | Pre-generated voice packs | designed (`docs/Audio-Packs.md`); not started |
 | Native playback module | planned, after the first pack exists |
 

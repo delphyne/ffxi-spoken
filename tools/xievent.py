@@ -2,6 +2,8 @@
 """Disassemble FFXI event bytecode (docs/Event-Decoding-Handoff.md, step 1).
 
     python3 tools/xievent.py disasm 252 286          # listing of one event
+    python3 tools/xievent.py lines 252 286 [--json]  # who says what (step 2)
+    python3 tools/xievent.py lines --rov             # speakers across Rhapsodies
     python3 tools/xievent.py check --rov             # walk every Rhapsodies event
     python3 tools/xievent.py check --zone 252        # walk every event in a zone
     python3 tools/xievent.py check --all             # walk every event in every zone
@@ -115,8 +117,13 @@ MESSAGE_OPS = {
     0xB0: (10, "actor"),   # B0 ? a a a a b b b b m m
     0x24: (1, "menu"),     # choice menu text
 }
-# Opcodes that write EntityTargetIndex[1] and so change who 0x1D speaks for.
-ENTITY_OPS = {0x1F, 0x31, 0x36, 0x37, 0x7A}
+# Only 0x7A changes who 0x1D speaks for: case 2 points the VM at another
+# entity, case 3 points it back at the block's own. (The handoff's earlier
+# list also named 0x1F/0x31/0x36/0x37; those only move the entity.)
+ENTITY_SET, ENTITY_RESET = (0x7A, 2), (0x7A, 3)
+PLAYER = {0x7FFFFFC0, 0x7FFFFFF0, 0x7FFFFFF9}
+PARTY = set(range(0x7FFFFFC1, 0x7FFFFFD2)) | set(range(0x7FFFFFF1, 0x7FFFFFF6))
+EVENT_ENTITY = 0x7FFFFFF8
 
 
 def load_sizes(path=OPCODES_JSON):
@@ -311,6 +318,77 @@ def walk_reachable(code, start):
     return r
 
 
+def resolve_actor(value, entity):
+    """GetActorIndex: an actor operand to (server id or tag, kind)."""
+    if value in PLAYER:
+        return "player", "player"
+    if value in PARTY:
+        return "party", "party"
+    if value == EVENT_ENTITY or not value & 0xFF000000:
+        return entity, "entity"       # the VM's current entity, by default the block's
+    return value, "actor"
+
+
+def actor_label(ref, names):
+    if ref == "player":
+        return "<player>"
+    if ref == "party":
+        return "<party member>"
+    return names.get(ref, f"<{ref:#x}>")
+
+
+def lines(block, cs, names, strs, zone=None):
+    """Every message instruction reachable from the event, with its speaker.
+
+    The walk carries the VM's current entity as state so a 0x7A that
+    retargets it changes who later 0x1D lines belong to; an instruction
+    reached with two different entities yields two rows. Rows come out in
+    offset order (step 3 will add path order). text_id is None when the
+    message id is an event variable rather than an immediate (step 4)."""
+    code, imm = block["code"], block["imm"]
+    start = block["events"][cs]
+    rows = {}
+    seen = set()
+    work = [(start, block["actor"])]
+    while work:
+        pos, entity = work.pop()
+        if (pos, entity) in seen or pos >= len(code):
+            continue
+        seen.add((pos, entity))
+        ins = decode(code, pos)
+        if ins.op in MESSAGE_OPS:
+            at, rule = MESSAGE_OPS[ins.op]
+            lo, hi = ins.data[at], ins.data[at + 1]
+            text_id = xidat.resolve_ref(imm, lo, hi)
+            if rule == "entity":
+                who, kind = entity, "entity"
+            elif rule == "actor":
+                who, kind = resolve_actor(ins.u32(1 if ins.op == 0x2B else 2), entity)
+            else:
+                who, kind = None, rule
+            key = (pos, who)
+            if key not in rows:
+                rows[key] = {
+                    "zone": zone, "event": cs, "block_actor": block["actor"], "offset": pos,
+                    "op": ins.op, "kind": {"none": "narration", "menu": "menu"}.get(rule, "say"),
+                    "speaker_id": who if isinstance(who, int) else None,
+                    "speaker": actor_label(who, names) if who is not None else "",
+                    "text_id": text_id,
+                    "text": strs[text_id] if text_id is not None and text_id < len(strs) else None,
+                    "var": None if text_id is not None else lo | (hi << 8),
+                }
+        if (ins.op, ins.sub) == ENTITY_SET:
+            entity = resolve_actor(ins.u32(2), entity)[0]
+        elif (ins.op, ins.sub) == ENTITY_RESET:
+            entity = block["actor"]
+        for kind, arg in ins.flow():
+            if kind == "next":
+                work.append((ins.end, entity))
+            elif kind in ("jump", "call"):
+                work.append((arg, entity))
+    return [rows[k] for k in sorted(rows, key=lambda k: (k[0], str(k[1])))]
+
+
 def event_bounds(block, cs):
     start = block["events"][cs]
     later = sorted(o for o in block["events"].values() if o > start)
@@ -418,6 +496,47 @@ def cmd_disasm(client, args):
     return 0
 
 
+def rov_rows(lsb):
+    import rov_events
+    ids = rov_events.zone_ids(Path(lsb))
+    rows = []
+    for lua in sorted((Path(lsb) / "scripts/missions/rov").glob("*.lua")):
+        rows.extend(rov_events.events_in(lua, ids))
+    return sorted({(r["zone_id"], r["event"]) for r in rows if r["zone_id"] is not None})
+
+
+def cmd_lines(client, args):
+    targets = rov_rows(args.lsb) if args.rov else [(args.zone, args.cs)]
+    out, speakers, unresolved = [], {}, []
+    for zone, cs in targets:
+        names, strs = client.npcs(zone), client.dialog(zone)
+        for block in client.event_blocks(zone):
+            if cs not in block["events"]:
+                continue
+            for row in lines(block, cs, names, strs, zone):
+                out.append(row)
+                if row["kind"] == "say":
+                    speakers.setdefault(row["speaker"], set()).add((zone, cs))
+                if row["text_id"] is None or row["speaker"].startswith("<0x"):
+                    unresolved.append(row)
+    if args.json:
+        print(json.dumps(out, ensure_ascii=False, indent=1))
+    elif args.rov:
+        said = [r for r in out if r["kind"] == "say"]
+        print(f"{len(said)} spoken lines, {sum(r['kind'] == 'narration' for r in out)} narration, "
+              f"{sum(r['kind'] == 'menu' for r in out)} menus; {len(speakers)} speakers; {len(unresolved)} unresolved")
+        for name, where in sorted(speakers.items(), key=lambda kv: (-len(kv[1]), kv[0])):
+            n = sum(r["speaker"] == name for r in said)
+            print(f"  {n:5} lines  {name:28} in {len(where)} scenes")
+        for row in unresolved[:20]:
+            print(f"  ? zone {row['zone']} event {row['event']} at {row['offset']:#x}: speaker {row['speaker']!r} text {row['text_id']}")
+    else:
+        for row in out:
+            tag = {"narration": "*", "menu": "?"}.get(row["kind"], "")
+            print(f"{row['offset']:04x} [{tag}{row['speaker']}] {row['text']!r}")
+    return 0
+
+
 def regen(xievents):
     pages = sorted((Path(xievents) / "OpCodes").glob("0x*.md"))
     if not pages:
@@ -443,6 +562,9 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
     d = sub.add_parser("disasm"); d.add_argument("zone", type=int); d.add_argument("cs", type=int)
     d.add_argument("--linear", action="store_true")
+    ln = sub.add_parser("lines"); ln.add_argument("zone", type=int, nargs="?"); ln.add_argument("cs", type=int, nargs="?")
+    ln.add_argument("--rov", action="store_true"); ln.add_argument("--json", action="store_true")
+    ln.add_argument("--lsb", default=str(Path.home() / "scm/github/LandSandBoat/server"))
     c = sub.add_parser("check")
     g = c.add_mutually_exclusive_group(required=True)
     g.add_argument("--rov", action="store_true"); g.add_argument("--zone", type=int); g.add_argument("--all", action="store_true")
@@ -455,7 +577,9 @@ def main(argv=None):
         regen(args.xievents)
         return 0
     client = xidat.Client(args.client)
-    return {"disasm": cmd_disasm, "check": cmd_check}[args.cmd](client, args)
+    if args.cmd == "lines" and not args.rov and args.cs is None:
+        ap.error("lines needs ZONE CS or --rov")
+    return {"disasm": cmd_disasm, "check": cmd_check, "lines": cmd_lines}[args.cmd](client, args)
 
 
 if __name__ == "__main__":

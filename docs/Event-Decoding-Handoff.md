@@ -45,9 +45,11 @@ prefix, with `tools/xidat.py`:
   (`getworkofs`: `References[val & 0x7FFF]`); otherwise it names an event
   variable, which only a VM can resolve. Actor constants: `0x7FFFFFF0`,
   `0x7FFFFFC0`, `0x7FFFFFF9` are the player; `0x7FFFFFF8` is the block's
-  own entity; values with a non-zero top byte are server ids. Opcodes
-  `0x1F`, `0x31`, `0x36`, `0x37`, `0x7A` write `EntityTargetIndex[1]`, so
-  they change who `0x1D` attributes to.
+  own entity; values with a non-zero top byte are server ids. Only `0x7A`
+  writes `EntityTargetIndex[1]` (case 2 retargets the VM at another entity,
+  case 3 restores the block's own), so only it changes who `0x1D` attributes
+  to. (An earlier draft also listed `0x1F`, `0x31`, `0x36`, `0x37`; those
+  move the entity without changing it.)
 
 - **Proof on Rhapsodies text.** `tools/xidat.py cutscene 249 368` (Mhaura,
   mission 1-2) returns Marilionne's four lines; `252 286` (Norg, mission
@@ -103,9 +105,29 @@ What the walk taught us, beyond the XiEvents pages:
 - `0x9D` sub-case 0x0E is 8 or 10 bytes depending on a zone table at run
   time and is left as an error; it has not appeared in a reachable walk.
 
-Steps 2 (speaker tracking) and 4 (event variables) are next. Step 3's
-walker exists; what remains of it is grouping lines by path and marking
-choice-only lines.
+## Step 2 done: speaker tracking (2026-11-15)
+
+`xievent.py lines ZONE CS` walks an event carrying the VM's current entity
+as state (so a `0x7A` retarget changes later `0x1D` lines, and a line
+reached with two entities yields two rows), resolves `0x2B`/`0xB0` actors
+by the `GetActorIndex` rules, and emits
+`(zone, event, block_actor, offset, kind, speaker_id, speaker, text_id, text)`.
+Acceptance held: Norg 286 is 16 lines, all Gilgamesh, Tenzen, or Iroha.
+
+`lines --rov` over the 50 Rhapsodies scene ids: 1,392 spoken lines, 22
+narration (`0x48`), 38 menus, 31 speakers, nothing unresolved. Every
+message id is an immediate, so step 4 (event variables) has no work in
+Rhapsodies. 1,364 lines come through `0x2B` with a named actor; 28 through
+`0x1D` in the blocks of the NPCs who trigger the scene (Numi Adaligo,
+Naillina, Heillal), so the block actor is the speaker there. 18 lines
+belong to entities literally named `???` (disembodied voices), which is
+also what the client shows. No `0x7A` case 2 or 3 appears. This speaker list is the real Rhapsodies cast for
+`cast.py` and should replace the census report's 18.
+
+Step 4 is therefore deferred until a storyline needs it. Step 3's walker
+exists; what remains of it is grouping lines by path and marking
+choice-only lines, which matters for playback order rather than coverage.
+Step 5 (the `text.clean` port) is next on the critical path.
 
 ## What the heuristic gets wrong, and why a decoder is needed
 
@@ -203,8 +225,9 @@ addon reads:
 ## Pointers
 
 - `tools/xidat.py`: dialogue, entities, events, and the heuristic
-  `cutscene` reader. `tools/xievent.py`: the disassembler (`disasm`,
-  `check`, `regen`), with `tools/opcodes.json` and `tools/test_xievent.py`.
+  `cutscene` reader, superseded by `tools/xievent.py`: the disassembler
+  (`disasm`, `check`, `regen`) and speaker tracker (`lines`), with
+  `tools/opcodes.json` and `tools/test_xievent.py`.
 - `tools/rov_events.py`: the Rhapsodies cutscene list.
 - `~/scm/github/atom0s/XiEvents`: structures, VM functions, one page per
   opcode. `Event VM Functions.md` has `getworkofs` and `GetActorIndex`.
