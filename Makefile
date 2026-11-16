@@ -11,6 +11,8 @@
 #   make venv-cuda   add the CUDA build of onnxruntime so Kokoro runs on an NVIDIA GPU
 #   make voices      download the Kokoro model and a few Piper voices
 #   make census      rebuild helper/census.json from a LandSandBoat checkout (LSB=path)
+#   make nouns       rank the proper nouns in the game's dialogue for the lexicon (data/)
+#   make review      go through them one by one, listening, and build helper/lexicon.yaml
 #   make helper      run the host-side TTS helper against ./data
 #                    (make helper BACKEND=piper to pick an engine)
 #   make say TEXT="..." [SPEAKER=Iroha] [RAW=1] [FRESH=1]   speak one line once; FRESH ignores the cache
@@ -53,7 +55,7 @@ CUDA_PKGS := onnxruntime-gpu "nvidia-cuda-runtime>=13,<14" nvidia-cudnn-cu13 "nv
 
 LSB ?= $(HOME)/scm/github/LandSandBoat/server
 
-.PHONY: install uninstall where test lint check helper say venv venv-cuda voices census
+.PHONY: install uninstall where test lint check helper say venv venv-cuda voices census nouns review
 
 # Each recipe below is one shell command, so an exit inside it ends the target.
 
@@ -115,6 +117,15 @@ venv:
 # System python3 (Fedora ships PyYAML); the venv works too once built.
 census:
 	python3 -I helper/census.py --lsb "$(LSB)" --client --report
+
+# Reads the client's dialogue DATs; Kokoro IPA needs the venv.
+nouns data/proper_nouns.tsv:
+	$(PY) -I tools/proper_nouns.py --lsb "$(LSB)"
+
+# Interactive: a accept, r repeat, j reject and type IPA, s skip, e example, q quit.
+# Resumes where it left off (data/review_progress.json).
+review: data/proper_nouns.tsv
+	$(PY) -I helper/review.py --backend $(BACKEND)
 
 venv-cuda: venv
 	"$(UV)" pip uninstall --python "$(VENV)/bin/python" onnxruntime onnxruntime-gpu

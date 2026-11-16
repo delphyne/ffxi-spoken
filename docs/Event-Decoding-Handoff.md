@@ -107,6 +107,20 @@ set.
    Then the Rhapsodies subset: lines from the 59 cutscenes plus the quest
    lines of their speakers.
 
+## Why this is the critical path (added 2026-11-15)
+
+Players only ever hear pre-rendered packs (`docs/Audio-Packs.md`), and a
+line with no pack audio is silent. Coverage of a storyline is therefore the
+whole feature: the Rhapsodies pack must contain every line its missions can
+show, and only this decoder can enumerate that. The order of work is now:
+steps 1 to 3 above for Rhapsodies; step 5 (the `text.clean` port) because
+pack lookup keys must match what the addon captures; casting for the
+Rhapsodies speakers; lexicon review of the Rhapsodies proper nouns
+(`make nouns`, `make review`); then a pack build tool that writes the
+version directory and manifest. Runtime niceties of the helper (census
+fallback casting, speed per voice, threaded synthesis) matter only insofar
+as they shape generated audio.
+
 ## Marrying the two paths
 
 The census (`helper/census.py`, from LandSandBoat) answers "who exists and

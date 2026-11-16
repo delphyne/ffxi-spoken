@@ -54,6 +54,10 @@ Rewritten whole, atomically (write to a temp file, rename).
 - `done`: `seq` finished playing without being stopped.
 - `error`: `seq` could not be spoken; `message` says why.
 
+`lexicon_error` is present, in any state, while the helper's last attempt to
+reload `helper/lexicon.yaml` failed; it holds the message and the previous
+lexicon stays in use.
+
 The addon polls this a few times a second. When auto-advance is on and it
 sees `done` for the `seq` of the line currently on screen and that line was
 prompted, it advances once.

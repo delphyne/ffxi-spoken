@@ -5,6 +5,15 @@ its own repo. It records what we learned and the design we converged on.
 The addon skeleton and helper in this repo implement the design below;
 `docs/Protocol.md` is the file contract between them.
 
+## Direction (added 2026-11-15)
+
+Players use pre-rendered audio packs; live text-to-speech is a developer
+tool for producing them. Playback on the player's side will be a native
+Lua C module (Opus, interruptible), deferred until near a first release;
+the Python helper below is the interim player and the generation pipeline.
+`docs/Audio-Packs.md` has the pack layout and the reasoning;
+`docs/Event-Decoding-Handoff.md` is how line lists are produced.
+
 ## Goal
 
 A Spoken-style reader for FFXI: NPC dialogue read aloud by AI-generated

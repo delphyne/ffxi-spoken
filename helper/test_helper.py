@@ -169,6 +169,94 @@ class CensusCastingTest(unittest.TestCase):
             self.assertIn(fb("Hyria"), sh.BACKENDS and __import__("casting").POOLS["hume_f"][0])
 
 
+class ReviewTest(unittest.TestCase):
+    """The review loop with scripted keys and a fake speaker."""
+
+    class FakeSpeaker:
+        def __init__(self):
+            self.said = []
+
+        def word(self, ipa):
+            self.said.append(("word", ipa))
+
+        def in_context(self, word, ipa, sentence):
+            self.said.append(("context", ipa, sentence))
+
+    def run_review(self, keys, candidates, progress=None, lexicon_text="Jeuno: Juno\n"):
+        import review
+        d = tempfile.TemporaryDirectory()
+        self.addCleanup(d.cleanup)
+        lex = Path(d.name) / "lexicon.yaml"
+        lex.write_text(lexicon_text)
+        prog_path = Path(d.name) / "progress.json"
+        keys = iter(keys)
+        speaker = self.FakeSpeaker()
+        out = []
+        progress = progress if progress is not None else {}
+        covered = review.review(candidates, progress, lex, speaker, read=lambda prompt: next(keys),
+                                out=out.append, progress_path=prog_path)
+        return covered, progress, lex.read_text(), speaker, "\n".join(out), prog_path
+
+    def cands(self):
+        return [{"word": "Altana", "uses": "1048", "rov_uses": "11", "zones": "40", "npc": "", "kokoro_ipa": "ɔːltˈɑːnə",
+                 "example": "Praise be to Altana."},
+                {"word": "Jeuno", "uses": "1739", "rov_uses": "22", "zones": "60", "npc": "", "kokoro_ipa": "dʒjˈuːnoʊ",
+                 "example": ""},
+                {"word": "Norg", "uses": "300", "rov_uses": "23", "zones": "9", "npc": "y", "kokoro_ipa": "nˈɔːɹɡ",
+                 "example": "Norg is a pirate den."}]
+
+    def test_accept_skip_and_lexicon_words_are_not_asked(self):
+        covered, progress, lexicon, speaker, out, prog_path = self.run_review(["a", "s"], self.cands())
+        self.assertEqual(covered, 2)
+        self.assertEqual(progress["Altana"]["status"], "accepted")
+        self.assertEqual(progress["Norg"]["status"], "skipped")
+        self.assertNotIn("Jeuno", progress, "already in the lexicon")
+        self.assertIn('Altana:\n    ipa: "ɔːltˈɑːnə"', lexicon)
+        self.assertNotIn("Norg:", lexicon)
+        self.assertEqual(speaker.said, [("word", "ɔːltˈɑːnə"), ("word", "nˈɔːɹɡ")])
+        self.assertTrue(prog_path.exists())
+
+    def test_reject_loops_until_accepted_and_validates(self):
+        keys = ["j", "lIlI", "j", "ɔl.'tɑː.nə", "r", "e", "a", "q"]
+        covered, progress, lexicon, speaker, out, _ = self.run_review(keys, self.cands())
+        self.assertEqual(covered, 1, "quit on the second word")
+        self.assertEqual(progress["Altana"]["ipa"], "ɔltˈɑːnə", "dots dropped, stress moved before the vowel")
+        self.assertIn('Altana:\n    ipa: "ɔltˈɑːnə"', lexicon)
+        self.assertIn("unknown IPA characters", out)
+        self.assertEqual(speaker.said[1], ("word", "ɔltˈɑːnə"))
+        self.assertEqual(speaker.said[2], ("word", "ɔltˈɑːnə"))
+        self.assertEqual(speaker.said[3], ("context", "ɔltˈɑːnə", "Praise be to Altana."))
+        self.assertIn("resumes here", out)
+
+    def test_resumes_after_quit(self):
+        _, progress, _, _, _, _ = self.run_review(["a", "q"], self.cands())
+        covered, progress, _, speaker, out, _ = self.run_review(["s"], self.cands(), progress=progress)
+        self.assertEqual(covered, 1)
+        self.assertEqual(speaker.said, [("word", "nˈɔːɹɡ")], "only the uncovered word is asked")
+        self.assertIn("all 1 reviewed", out)
+
+    def test_words_of_multiword_entries_are_covered(self):
+        import review
+        self.assertEqual(review.covered_words({"Cait Sith": {}, "Jeuno": {}}), {"Cait Sith", "Cait", "Sith", "Jeuno"})
+        cands = self.cands() + [{"word": "Sith", "uses": "596", "rov_uses": "6", "zones": "30", "npc": "y",
+                                 "kokoro_ipa": "sˈɪθ", "example": ""}]
+        covered, progress, _, speaker, out, _ = self.run_review(["s", "s"], cands,
+                                                                 lexicon_text='Jeuno: Juno\n"Cait Sith":\n  ipa: "kˈeɪt sˈɪθ"\n')
+        self.assertEqual([s[1] for s in speaker.said], ["ɔːltˈɑːnə", "nˈɔːɹɡ"], "Sith is covered by Cait Sith")
+        self.assertIn("2 already in the lexicon", out)
+
+    def test_append_entry_quotes_awkward_keys(self):
+        import review
+        with tempfile.TemporaryDirectory() as d:
+            lex = Path(d) / "lexicon.yaml"
+            review.append_entry(lex, "Cait Sith", "kˈeɪt sˈɪθ", note="456 uses")
+            review.append_entry(lex, "Zi'Tah", "zˈiːtɑː")
+            review.append_entry(lex, "Ru: Lude", "x")
+            entries = sh.Lexicon.load(lex).entries
+            self.assertEqual(set(entries), {"Cait Sith", "Zi'Tah", "Ru: Lude"})
+            self.assertEqual(entries["Cait Sith"]["ipa"], "kˈeɪt sˈɪθ")
+
+
 class RespellTest(unittest.TestCase):
     def test_table(self):
         import respell
@@ -276,6 +364,37 @@ class LexiconTest(unittest.TestCase):
             (Path(d) / "bad.yaml").write_text("- a list\n")
             with self.assertRaises(ValueError):
                 sh.Lexicon.load(Path(d) / "bad.yaml")
+
+    def test_helper_reloads_lexicon_when_file_changes(self):
+        with tempfile.TemporaryDirectory() as d:
+            data = Path(d) / "data"; data.mkdir()
+            lex = Path(d) / "lexicon.yaml"
+            lex.write_text("Jeuno: Juno\n")
+            backend = sh.NoneBackend(Path(d) / "voices", {"default": "n"})
+            spoken = []
+            backend.synthesise = lambda text, voice, out: spoken.append(text)
+            helper = sh.Helper(data, backend, Path(d) / "cache", player=None,
+                               lexicon=sh.Lexicon.load(lex), lexicon_path=lex)
+            lex.write_text("Jeuno: Zhoono\n")
+            os.utime(lex, (time.time() + 5, time.time() + 5))  # make the change visible to a coarse mtime
+            with (data / "queue.jsonl").open("a") as f:
+                f.write(json.dumps({"seq": 1, "speaker": "", "text": "Off to Jeuno."}) + "\n")
+            helper.lexicon_checked = 0.0
+            helper.tick()
+            self.assertEqual(spoken, ["Off to Zhoono."])
+            # a broken edit is reported and the previous lexicon kept
+            lex.write_text("Jeuno:\n  ipa: \"lIlI\"\n")
+            os.utime(lex, (time.time() + 10, time.time() + 10))
+            helper.lexicon_checked = 0.0
+            self.assertFalse(helper.reload_lexicon())
+            self.assertEqual(helper.lexicon.apply("Jeuno"), "Zhoono")
+            self.assertIn("unknown IPA", json.loads((data / "status.json").read_text())["lexicon_error"])
+            lex.write_text("Jeuno: Zhoono\n")
+            os.utime(lex, (time.time() + 15, time.time() + 15))
+            helper.lexicon_checked = 0.0
+            self.assertTrue(helper.reload_lexicon())
+            helper.write_status(0, "idle")
+            self.assertNotIn("lexicon_error", json.loads((data / "status.json").read_text()))
 
     def test_helper_applies_lexicon_before_caching(self):
         d = tempfile.TemporaryDirectory()

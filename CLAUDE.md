@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Spoken is a Windower4 addon for Final Fantasy XI that reads NPC dialogue aloud with generated voices, inspired by the WoW addon of the same name (https://github.com/rusty-key/spoken-wow). It is a work in progress and not usable yet; `README.md` says so and must keep saying so until there is a release. `docs/Voice-Handoff.md` is the design and research record; `docs/Protocol.md` is the addon-to-helper file contract.
+Spoken is a Windower4 addon for Final Fantasy XI that reads NPC dialogue aloud with generated voices, inspired by the WoW addon of the same name (https://github.com/rusty-key/spoken-wow). It is a work in progress and not usable yet; `README.md` says so and must keep saying so until there is a release.
+
+Direction (2026-11-15): players use pre-rendered audio packs only; a line without downloaded audio is silent. Everything in `helper/` and `tools/` is the developer-side generation pipeline plus the interim player. Playback for players will be a native Lua C module later. `docs/Audio-Packs.md` is the pack design (directories own files; no content-addressed store; lookup by speaker plus cleaned text), `docs/Event-Decoding-Handoff.md` the extraction plan and critical path, `docs/Voice-Handoff.md` the original design record, `docs/Protocol.md` the interim addon-to-helper file contract. Do not propose `windower.play_sound` for playback.
 
 It is a sibling of `../Balloon` (the on-screen dialogue balloon) and shares its scaffolding. Keep the Makefile, `.luacheckrc`, and test harness in step with `../Balloon`, `../ahbuddy`, and `../randommount`.
 

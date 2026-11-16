@@ -37,6 +37,7 @@ CLIENT_DEFAULT = (Path.home() / ".var/app/net.windower.Lumoria/data/prefixes/pre
 HERE = Path(__file__).resolve().parent
 ZONE_MAP = HERE / "zone_dats.json"
 
+XOR80 = bytes(b ^ 0x80 for b in range(256))
 PLAYER = {0x7FFFFFC0, 0x7FFFFFF0, 0x7FFFFFF9}
 EVENT_ENTITY = 0x7FFFFFF8
 
@@ -57,7 +58,7 @@ class Client:
         return p
 
     def dialog(self, zone):
-        data = bytes(b ^ 0x80 for b in self.zone_file(zone, "strings_na").read_bytes())
+        data = self.zone_file(zone, "strings_na").read_bytes().translate(XOR80)
         first = struct.unpack_from("<I", data, 4)[0]
         count = first // 4  # the table runs up to the first string
         offs = struct.unpack_from(f"<{count}I", data, 4)

@@ -439,8 +439,12 @@ def pick_player():
 # helper
 
 class Helper:
-    def __init__(self, data_dir, backend, cache_dir, player, poll_interval=0.1, lexicon=None):
+    def __init__(self, data_dir, backend, cache_dir, player, poll_interval=0.1, lexicon=None, lexicon_path=None):
         self.lexicon = lexicon or Lexicon()
+        self.lexicon_path = Path(lexicon_path) if lexicon_path else None
+        self.lexicon_mtime = self._lexicon_mtime()
+        self.lexicon_checked = 0.0
+        self.lexicon_error = None  # last reload failure, also reported in status.json
         self.data_dir = Path(data_dir)
         self.queue = QueueTail(self.data_dir / "queue.jsonl")
         self.status_path = self.data_dir / "status.json"
@@ -452,8 +456,41 @@ class Helper:
         self.playing = None      # (seq, Popen)
         self.fake_until = None   # (seq, deadline) for the none backend
 
+    def _lexicon_mtime(self):
+        try:
+            return self.lexicon_path.stat().st_mtime if self.lexicon_path else None
+        except OSError:
+            return None
+
+    def reload_lexicon(self, force=False):
+        """Pick up edits to the lexicon file without a restart. Checked about
+        once a second; a file that fails to parse is reported and the old
+        lexicon kept."""
+        if self.lexicon_path is None:
+            return False
+        now = time.time()
+        if not force and now - self.lexicon_checked < 1.0:
+            return False
+        self.lexicon_checked = now
+        mtime = self._lexicon_mtime()
+        if mtime == self.lexicon_mtime:
+            return False
+        self.lexicon_mtime = mtime
+        try:
+            self.lexicon = Lexicon.load(self.lexicon_path)
+        except (ValueError, RuntimeError) as e:
+            self.lexicon_error = str(e)
+            print(f"lexicon not reloaded: {e}", file=sys.stderr)
+            self.write_status(0, "idle" if not self.playing else "speaking", lexicon_error=self.lexicon_error)
+            return False
+        self.lexicon_error = None
+        print(f"lexicon reloaded: {len(self.lexicon.entries)} entries")
+        return True
+
     def write_status(self, seq, state, **extra):
         payload = {"seq": seq, "state": state, "backend": self.backend.name, "t": time.time()}
+        if self.lexicon_error:
+            payload["lexicon_error"] = self.lexicon_error
         payload.update(extra)
         fd, tmp = tempfile.mkstemp(dir=self.data_dir, prefix=".status-")
         with os.fdopen(fd, "w") as f:
@@ -497,6 +534,7 @@ class Helper:
         self.write_status(seq, "speaking", cached=cached)
 
     def tick(self):
+        self.reload_lexicon()
         for entry in self.queue.poll():
             if entry.get("stop"):
                 self.stop()
@@ -609,7 +647,8 @@ def main(argv=None):
     if args.say is not None:
         return say(backend, lexicon, pick_player(), args.say, args.speaker, args.cache, fresh=args.fresh)
     Path(args.data).mkdir(parents=True, exist_ok=True)
-    Helper(args.data, backend, args.cache, pick_player(), lexicon=lexicon).run()
+    Helper(args.data, backend, args.cache, pick_player(), lexicon=lexicon,
+           lexicon_path=None if args.no_lexicon else args.lexicon).run()
     return 0
 
 

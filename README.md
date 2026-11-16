@@ -16,11 +16,21 @@ talks, you hear them.
 
 FFXI dialogue is static text from the game's data files, and the chat log
 receives every line with the speaker's name. The addon captures those lines
-and hands them to a helper process on the host, which generates or fetches
-the audio and plays it. Controller input is observed natively so the reader
-knows when you have moved on. The design is in
-[docs/Voice-Handoff.md](docs/Voice-Handoff.md) and the addon-to-helper
-contract in [docs/Protocol.md](docs/Protocol.md).
+and plays the matching pre-rendered audio from downloadable packs, one per
+storyline; a line with no downloaded audio is silent. Controller input is
+observed natively so the reader knows when you have moved on. Nothing is
+generated on the player's machine: the voices are produced ahead of time
+from the game's own text, extracted from the client's data files, and
+shipped as packs. The pack design is in
+[docs/Audio-Packs.md](docs/Audio-Packs.md), the extraction plan in
+[docs/Event-Decoding-Handoff.md](docs/Event-Decoding-Handoff.md), the
+original design record in [docs/Voice-Handoff.md](docs/Voice-Handoff.md),
+and the interim addon-to-helper contract in [docs/Protocol.md](docs/Protocol.md).
+
+Everything below the addon itself is the generation pipeline, run by a
+developer to produce packs, and the interim player used while developing.
+A native playback module will replace the helper on the player's side
+before a first release.
 
 Two parts:
 
@@ -52,9 +62,10 @@ simplest bridge.
 | Local TTS engines (Kokoro, Piper) | installed by `make venv` and `make voices`; Kokoro on CUDA with `make venv-cuda` |
 | Auto-advance via Windower `setkey` | unverified under Wine; parked until the rest is stable |
 | Voice casting per NPC | `helper/cast.py` casts Balloon's 230 portrait NPCs by hand; everyone else is cast by race from `helper/census.json` (13,845 names from LandSandBoat and the client) |
-| Pronunciation lexicon | `helper/lexicon.yaml`, one seed entry |
+| Pronunciation lexicon | `helper/lexicon.yaml` with IPA; `make nouns` and `make review` build it from the game's text |
 | Dialogue extraction from the client | dialogue tables and NPC lists decode; cutscene speaker attribution planned in `docs/Event-Decoding-Handoff.md` |
-| Pre-generated voice packs | not started |
+| Pre-generated voice packs | designed (`docs/Audio-Packs.md`); not started |
+| Native playback module | planned, after the first pack exists |
 
 ## Related
 
@@ -99,6 +110,8 @@ checkout (`LSB=path`): the server's NPC data carries each humanoid NPC's race
 and sex, and `helper/casting.py` maps race to the same voice pools cast.py
 uses. Non-humanoid models (moogles, beasts, Iroha's unique model) have no
 race and fall through to the default until they are cast by name.
+### Pronunciation
+
 `helper/lexicon.yaml` fixes words the engines mispronounce. An entry is
 either a respelling, or `ipa:` in espeak-style IPA with an optional hand
 `spell:`. Piper and Kokoro are sent the IPA as phonemes (Piper reads
@@ -106,7 +119,23 @@ either a respelling, or `ipa:` in espeak-style IPA with an optional hand
 and splices the IPA in); engines that cannot take phonemes get the
 respelling, derived from the IPA by `helper/respell.py` when no `spell:` is
 given. It is applied before synthesis and before the cache key, so editing
-an entry regenerates only the lines it touches. To hear an entry, `make say TEXT="..."` speaks one line
+an entry regenerates only the lines it touches, and the running helper
+reloads the file within a second of a save. The lexicon is built from the game's own text rather than by waiting to be
+surprised in play:
+
+1. `make nouns` decodes every zone's dialogue table from the client, ranks
+   the proper nouns by how often they are spoken with Rhapsodies of
+   Vana'diel text first, and writes `data/proper_nouns.tsv` with Kokoro's
+   unaided IPA and an example line for each.
+2. `make review` walks that list. For each word it shows the name, the
+   count, an example line, and the engine's IPA, and speaks it. `a` accepts
+   the pronunciation into the lexicon, `r` repeats it, `j` rejects it and
+   asks for IPA to try instead (looping until accepted), `s` skips a word
+   the engine already says right, `e` plays the example line, `q` quits.
+   Progress is kept in `data/review_progress.json`, so the next run resumes
+   where you stopped; words already in the lexicon are not asked again.
+3. The running helper reloads the lexicon within a second of each accept,
+   and `make say TEXT="..."` checks any line on demand. To hear an entry, `make say TEXT="..."` speaks one line
 through the same lexicon, casting, and engine as live playback and prints
 what the engine was given; add `RAW=1` to hear the unrespelled text for
 comparison, `SPEAKER=<NPC name>` to hear it in that character's voice, and
