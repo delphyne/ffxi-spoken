@@ -8,11 +8,17 @@ Sources, in order of trust:
     quest scripts say which NPCs ever start an event or print a message.
   The client's own per-zone NPC list DATs (optional, --client): names the
     server data lacks, flagged so they can be chased.
+  The event decoder (tools/xievent.py, needs --client): who actually speaks
+    in the Rhapsodies of Vana'diel cutscenes and how many lines each has.
+    That is the `rov` flag; without the client it falls back to the NPCs
+    whose scripts LandSandBoat's Rhapsodies missions trigger, which misses
+    the cutscene-only cast.
 
 The census is the fallback casting source: a speaker absent from voices.json
 is cast from the pool for its race (see casting.py). It is also the audit
-list: --report prints speaking NPCs with no voice, Rhapsodies of Vana'diel
-first.
+list: --report prints the Rhapsodies speakers with no voice, split into
+those the race pools cover and those that need a hand entry in cast.py,
+then the game-wide count.
 
     python3 helper/census.py --lsb ~/scm/github/LandSandBoat/server [--client <FFXI dir>] [--report]
 
@@ -25,6 +31,9 @@ import re
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import casting  # noqa: E402
 
 try:
     import yaml
@@ -100,7 +109,24 @@ def read_client(client):
     return out
 
 
-def build(npcs, talkers, rov, client_names=None):
+def decoder_speakers(client, lsb):
+    """Rhapsodies speakers from the event decoder: name -> spoken lines.
+    None when the decoder cannot run (no client install, no mission scripts)."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
+    import xidat
+    import xievent
+    try:
+        return xievent.speakers_of(xievent.rov_lines(xidat.Client(client), lsb))
+    except FileNotFoundError as e:
+        print(f"decoder unavailable, rov from LandSandBoat triggers: {e}", file=sys.stderr)
+        return None
+
+
+def build(npcs, talkers, rov, client_names=None, rov_speakers=None):
+    """rov_speakers (from decoder_speakers) decides the `rov` flag and adds
+    `rov_lines`; a speaker the census has never heard of is added with
+    source "decoder" so the report can list it. Without it, `rov` means
+    LandSandBoat's Rhapsodies scripts trigger the NPC."""
     by_name = defaultdict(lambda: {"race": Counter(), "zones": set(), "scripts": set(), "talks": False, "rov": False,
                                    "look": Counter(), "model": Counter()})
     for (zone_norm, script, _), npc in npcs.items():
@@ -133,18 +159,46 @@ def build(npcs, talkers, rov, client_names=None):
                             "talks": None, "rov": False, "source": "client"}
         else:
             census[name]["in_client"] = True
+    if rov_speakers is not None:
+        for e in census.values():
+            e["rov"] = False
+        for name, n in rov_speakers.items():
+            e = census.setdefault(name, {"race": None, "look": None, "model": None, "zones": [],
+                                         "talks": True, "source": "decoder"})
+            e["rov"], e["rov_lines"] = True, n
     return dict(sorted(census.items()))
+
+
+def rov_audit(census, cast):
+    """The Rhapsodies speakers not in voices.json: (pooled, by_hand), each a
+    list of (name, lines, race). Pooled ones get a voice from their race's
+    pool; the others have no race and need a line in cast.py."""
+    pooled, by_hand = [], []
+    for name, e in census.items():
+        if not e.get("rov") or name in cast:
+            continue
+        row = (name, e.get("rov_lines", 0), e.get("race"))
+        (pooled if e.get("race") in casting.RACE_GROUPS else by_hand).append(row)
+    key = lambda r: (-r[1], r[0])  # noqa: E731
+    return sorted(pooled, key=key), sorted(by_hand, key=key)
 
 
 def report(census, voices):
     cast = set(voices.get("kokoro", {}))
+    rov = {n: e for n, e in census.items() if e["rov"]}
+    decoded = any("rov_lines" in e for e in rov.values())
+    pooled, by_hand = rov_audit(census, cast)
+    print(f"Rhapsodies: {len(rov)} speakers ({'from the event decoder' if decoded else 'LandSandBoat triggers only'}), "
+          f"{len(rov) - len(pooled) - len(by_hand)} cast by hand, {len(pooled)} from race pools, {len(by_hand)} uncast")
+    for name, n, race in pooled:
+        print(f"  pool {casting.RACE_GROUPS[race]:9} {n:4} lines  {name}")
+    for name, n, race in by_hand:
+        print(f"  NEEDS cast.py   {n:4} lines  {name}")
     talkers = {n: e for n, e in census.items() if e["talks"]}
     missing = {n: e for n, e in talkers.items() if n not in cast}
     print(f"{len(census)} names, {len(talkers)} speak, {len(missing)} speakers not in voices.json")
     races = Counter(e["race"] for e in missing.values())
     print("  by race:", dict(sorted(races.items(), key=lambda kv: (kv[0] is None, kv[0]))))
-    rov_missing = sorted(n for n, e in missing.items() if e["rov"])
-    print(f"  Rhapsodies speakers not cast ({len(rov_missing)}):", ", ".join(rov_missing))
     client_only = [n for n, e in census.items() if e["source"] == "client"]
     if client_only:
         print(f"  {len(client_only)} names only the client knows (no race); e.g.", ", ".join(client_only[:12]))
@@ -163,7 +217,8 @@ def main(argv=None):
         sys.exit("census.py needs PyYAML: run it with the system python3 (python3-pyyaml)")
     npcs, talkers, rov = read_lsb(args.lsb)
     client_names = read_client(args.client) if args.client else None
-    census = build(npcs, talkers, rov, client_names)
+    rov_speakers = decoder_speakers(args.client, args.lsb) if args.client else None
+    census = build(npcs, talkers, rov, client_names, rov_speakers)
     lines = ",\n".join(f" {json.dumps(k, ensure_ascii=False)}: {json.dumps(v, ensure_ascii=False)}" for k, v in census.items())
     Path(args.out).write_text("{\n" + lines + "\n}\n", encoding="utf-8")  # one name per line: diffable
     print(f"wrote {args.out}: {len(census)} names from {len(npcs)} NPC spawns")

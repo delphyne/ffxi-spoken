@@ -169,6 +169,39 @@ class CensusCastingTest(unittest.TestCase):
             self.assertIn(fb("Hyria"), sh.BACKENDS and __import__("casting").POOLS["hume_f"][0])
 
 
+class CensusBuildTest(unittest.TestCase):
+    """census.py's join with the event decoder: rov_speakers decides the
+    Rhapsodies flag, and the report splits uncast speakers by whether a
+    race pool can cover them."""
+    npcs = {("mhaura", "Numi_Adaligo", 1): {"name": "Numi Adaligo", "zone": "mhaura", "zone_id": 249, "race": 7,
+                                           "look": "equipped", "model": None},
+            ("norg", "Kamui", 2): {"name": "Kamui", "zone": "norg", "zone_id": 252, "race": None,
+                                   "look": "standard", "model": 93},
+            ("norg", "Door", 3): {"name": "Oaken Door", "zone": "norg", "zone_id": 252, "race": None,
+                                  "look": "door", "model": None}}
+
+    def test_decoder_speakers_set_the_rov_flag(self):
+        import census
+        c = census.build(self.npcs, {(None, "Door")}, {"Door"}, None, {"Numi Adaligo": 19, "Kamui": 3, "???": 18})
+        self.assertEqual({n for n, e in c.items() if e["rov"]}, {"Numi Adaligo", "Kamui", "???"})
+        self.assertEqual(c["Kamui"]["rov_lines"], 3)
+        self.assertEqual((c["???"]["source"], c["???"]["race"], c["???"]["talks"]), ("decoder", None, True))
+        self.assertFalse(c["Oaken Door"]["rov"], "a triggered door is not a speaker once the decoder has spoken")
+
+    def test_without_the_decoder_triggers_decide(self):
+        import census
+        c = census.build(self.npcs, {(None, "Door")}, {"Door"}, None, None)
+        self.assertTrue(c["Oaken Door"]["rov"])
+        self.assertNotIn("rov_lines", c["Oaken Door"])
+
+    def test_audit_splits_pooled_from_hand_cast(self):
+        import census
+        c = census.build(self.npcs, set(), set(), None, {"Numi Adaligo": 19, "Kamui": 3, "???": 18, "Iroha": 382})
+        pooled, by_hand = census.rov_audit(c, cast={"Iroha"})
+        self.assertEqual(pooled, [("Numi Adaligo", 19, 7)])
+        self.assertEqual(by_hand, [("???", 18, None), ("Kamui", 3, None)])
+
+
 class ReviewTest(unittest.TestCase):
     """The review loop with scripted keys and a fake speaker."""
 

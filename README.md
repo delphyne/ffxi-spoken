@@ -109,7 +109,9 @@ Speakers not named in voices.json are cast from `helper/census.json`, which
 checkout (`LSB=path`): the server's NPC data carries each humanoid NPC's race
 and sex, and `helper/casting.py` maps race to the same voice pools cast.py
 uses. Non-humanoid models (moogles, beasts, Iroha's unique model) have no
-race and fall through to the default until they are cast by name.
+race and fall through to the default until they are cast by name. The
+report `make census` prints takes the Rhapsodies of Vana'diel speakers from
+the event decoder and says which are still uncast.
 ### Pronunciation
 
 `helper/lexicon.yaml` fixes words the engines mispronounce. An entry is
@@ -126,7 +128,10 @@ surprised in play:
 1. `make nouns` decodes every zone's dialogue table from the client, ranks
    the proper nouns by how often they are spoken with Rhapsodies of
    Vana'diel text first, and writes `data/proper_nouns.tsv` with Kokoro's
-   unaided IPA and an example line for each.
+   unaided IPA and an example line for each. `make nouns ROV=1` keeps only
+   the words the Rhapsodies cutscenes actually speak, as decoded from the
+   client's event files, so the review covers that pack's vocabulary and
+   nothing else.
 2. `make review` walks that list. For each word it shows the name, the
    count, an example line, and the engine's IPA, and speaks it. `a` accepts
    the pronunciation into the lexicon, `r` repeats it, `j` rejects it and

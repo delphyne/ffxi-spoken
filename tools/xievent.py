@@ -39,6 +39,7 @@ import xidat  # noqa: E402
 
 OPCODES_JSON = HERE / "opcodes.json"
 XIEVENTS_DEFAULT = Path.home() / "scm/github/atom0s/XiEvents"
+LSB_DEFAULT = Path.home() / "scm/github/LandSandBoat/server"
 
 
 class DecodeError(Exception):
@@ -440,11 +441,7 @@ def iter_events(client, zones):
 
 def cmd_check(client, args):
     if args.rov:
-        import rov_events
-        rows = []
-        for lua in sorted((Path(args.lsb) / "scripts/missions/rov").glob("*.lua")):
-            rows.extend(rov_events.events_in(lua, rov_events.zone_ids(Path(args.lsb))))
-        wanted = {(r["zone_id"], r["event"]) for r in rows if r["zone_id"] is not None}
+        wanted = set(rov_rows(args.lsb))
         zones = sorted({z for z, _ in wanted})
     else:
         zones = [args.zone] if args.zone is not None else sorted(int(z) for z in client.zones)
@@ -517,20 +514,44 @@ def rov_rows(lsb):
     return sorted({(r["zone_id"], r["event"]) for r in rows if r["zone_id"] is not None})
 
 
+def event_lines(client, targets):
+    """`lines` rows for each (zone, event) in targets, every block included."""
+    cache = {}
+    for zone, cs in targets:
+        if zone not in cache:
+            cache[zone] = (client.npcs(zone), client.dialog_bytes(zone), list(client.event_blocks(zone)))
+        names, strs, blocks = cache[zone]
+        for block in blocks:
+            if cs in block["events"]:
+                yield from lines(block, cs, names, strs, zone)
+
+
+def rov_lines(client, lsb):
+    """Every line Rhapsodies of Vana'diel can show: the decoder's rows for
+    each scene LandSandBoat's mission scripts run. This is the Rhapsodies
+    corpus; census.py and proper_nouns.py read it from here."""
+    return event_lines(client, rov_rows(lsb))
+
+
+def speakers_of(rows):
+    """Spoken lines per speaker name, most first; narration, menus, and
+    placeholders (the player, unnamed ids) are left out."""
+    counts = {}
+    for row in rows:
+        if row["kind"] == "say" and row["speaker"] and not row["speaker"].startswith("<"):
+            counts[row["speaker"]] = counts.get(row["speaker"], 0) + 1
+    return dict(sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])))
+
+
 def cmd_lines(client, args):
     targets = rov_rows(args.lsb) if args.rov else [(args.zone, args.cs)]
     out, speakers, unresolved = [], {}, []
-    for zone, cs in targets:
-        names, strs = client.npcs(zone), client.dialog_bytes(zone)
-        for block in client.event_blocks(zone):
-            if cs not in block["events"]:
-                continue
-            for row in lines(block, cs, names, strs, zone):
-                out.append(row)
-                if row["kind"] == "say":
-                    speakers.setdefault(row["speaker"], set()).add((zone, cs))
-                if row["text_id"] is None or row["speaker"].startswith("<0x"):
-                    unresolved.append(row)
+    for row in event_lines(client, targets):
+        out.append(row)
+        if row["kind"] == "say":
+            speakers.setdefault(row["speaker"], set()).add((row["zone"], row["event"]))
+        if row["text_id"] is None or row["speaker"].startswith("<0x"):
+            unresolved.append(row)
     if args.json:
         print(json.dumps(out, ensure_ascii=False, indent=1))
     elif args.rov:
@@ -586,11 +607,11 @@ def main(argv=None):
     d.add_argument("--linear", action="store_true")
     ln = sub.add_parser("lines"); ln.add_argument("zone", type=int, nargs="?"); ln.add_argument("cs", type=int, nargs="?")
     ln.add_argument("--rov", action="store_true"); ln.add_argument("--json", action="store_true")
-    ln.add_argument("--lsb", default=str(Path.home() / "scm/github/LandSandBoat/server"))
+    ln.add_argument("--lsb", default=str(LSB_DEFAULT))
     c = sub.add_parser("check")
     g = c.add_mutually_exclusive_group(required=True)
     g.add_argument("--rov", action="store_true"); g.add_argument("--zone", type=int); g.add_argument("--all", action="store_true")
-    c.add_argument("--lsb", default=str(Path.home() / "scm/github/LandSandBoat/server"))
+    c.add_argument("--lsb", default=str(LSB_DEFAULT))
     c.add_argument("-v", "--verbose", action="store_true")
     c.add_argument("--linear", action="store_true", help="walk the segment linearly instead of following flow")
     r = sub.add_parser("regen"); r.add_argument("--xievents", default=str(XIEVENTS_DEFAULT))

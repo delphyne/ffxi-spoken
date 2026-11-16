@@ -3,16 +3,19 @@
 
 Reads every zone's NA dialogue table from the client, counts capitalised
 words that are not ordinary English, and ranks them by how often they are
-spoken, with words from the Rhapsodies of Vana'diel cutscenes first. Each
-word comes with Kokoro's unaided IPA so an entry for helper/lexicon.yaml
-starts from what the engine would say anyway.
+spoken, with words from the Rhapsodies of Vana'diel cutscenes first. The
+Rhapsodies counts come from the event decoder (tools/xievent.py): the
+cleaned pack texts of every line its scenes can show, so with --rov the
+list is exactly the vocabulary the Rhapsodies pack will render. Each word
+comes with Kokoro's unaided IPA so an entry for helper/lexicon.yaml starts
+from what the engine would say anyway.
 
-    .venv/bin/python -I tools/proper_nouns.py [--top 300] [--no-ipa]
+    .venv/bin/python -I tools/proper_nouns.py [--top 300] [--no-ipa] [--rov]
 
-Writes data/proper_nouns.tsv (everything) and data/lexicon-candidates.yaml
-(the top entries as commented-out lexicon stanzas to uncomment and edit).
-Needs the client install, a LandSandBoat checkout for the Rhapsodies list,
-and /usr/share/dict/words.
+Writes data/proper_nouns.tsv (everything, or the Rhapsodies words with
+--rov) and data/lexicon-candidates.yaml (the top entries as commented-out
+lexicon stanzas to uncomment and edit). Needs the client install, a
+LandSandBoat checkout for the Rhapsodies list, and /usr/share/dict/words.
 """
 
 import argparse
@@ -24,8 +27,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-import rov_events  # noqa: E402
 import xidat  # noqa: E402
+import xievent  # noqa: E402
 
 WORD = re.compile(r"[A-Za-z][A-Za-z'\-]*[A-Za-z]|[A-Za-z]")
 JUNK = re.compile(r"[^\x20-\x7e]+")
@@ -47,20 +50,49 @@ def english_words():
     return {w.strip().lower() for w in DICT.read_text(encoding="utf-8", errors="replace").splitlines()}
 
 
+STUTTER = re.compile(r"^[A-Za-z]{1,2}-[A-Za-z]")  # "Wh-what", "S-sorry": the word is the rest
+
+
 def words_in(text):
-    for m in WORD.finditer(text):
+    for m in WORD.finditer(text.replace("--", " ")):
         yield m.group(0)
 
 
-def is_proper(word, cap_count, low_count, english, npc_names):
+def rov_words(rows):
+    """Capitalised words in the Rhapsodies corpus: a Counter over the
+    cleaned pack texts, each line's variants counted once, plus the set of
+    speaker names (a name is a proper noun whatever the dictionary says).
+    Live-only lines (an item or number slot) count their fixed text."""
+    words, speakers = Counter(), set()
+    for row in rows:
+        if row["kind"] != "say":
+            continue
+        if row["speaker"] and not row["speaker"].startswith("<"):
+            speakers.add(row["speaker"])
+        texts = row.get("variants") or ([display_text(row["text"])] if row.get("text") else [])
+        seen = set()
+        for text in texts:
+            for w in words_in(text):
+                if w[0].isupper() and w not in seen:
+                    seen.add(w)
+                    words[w] += 1
+    return words, speakers
+
+
+def is_proper(word, cap_count, low_count, english, npc_names, speaker_names=frozenset()):
     """Capitalised, not an English word (an NPC called Lion needs no
     lexicon entry), and not a sentence-initial common word, which shows up
     in lower case elsewhere. Being part of an NPC name rescues a word the
-    lower-case test would otherwise reject."""
+    lower-case test would otherwise reject. A word in a decoded speaker's
+    name skips the dictionary test too: the system word list knows Iroha,
+    Gilgamesh, and Aldo, and the engine still has to say them right."""
     base = word.strip("'-")
-    if len(base) < 3 or not base[0].isupper() or base.isupper():
+    if len(base) < 3 or not base[0].isupper() or base.isupper() or STUTTER.match(base):
         return False
-    if base.lower() in english or base.lower().rstrip("s") in english:
+    if base in speaker_names:
+        return True
+    stem = base[:-2] if base.endswith("'s") else base
+    if stem.lower() in english or stem.lower().rstrip("s") in english:
         return False
     if base in npc_names:
         return True
@@ -70,9 +102,10 @@ def is_proper(word, cap_count, low_count, english, npc_names):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--client", default=str(xidat.CLIENT_DEFAULT))
-    ap.add_argument("--lsb", default=str(rov_events.LSB_DEFAULT))
+    ap.add_argument("--lsb", default=str(xievent.LSB_DEFAULT))
     ap.add_argument("--top", type=int, default=300, help="entries in the YAML candidates file")
     ap.add_argument("--no-ipa", action="store_true", help="skip Kokoro IPA (no venv needed)")
+    ap.add_argument("--rov", action="store_true", help="only words the Rhapsodies of Vana'diel scenes speak")
     ap.add_argument("--out", default=str(HERE.parent / "data"))
     args = ap.parse_args(argv)
 
@@ -108,29 +141,21 @@ def main(argv=None):
                 else:
                     low[w.lower()] += 1
 
-    rov = Counter()
     try:
-        ids = rov_events.zone_ids(Path(args.lsb))
-        rows = []
-        for lua in sorted((Path(args.lsb) / "scripts/missions/rov").glob("*.lua")):
-            rows.extend(rov_events.events_in(lua, ids))
-        seen = set()
-        for r in rows:
-            key = (r["zone_id"], r["event"])
-            if r["zone_id"] is None or key in seen:
-                continue
-            seen.add(key)
-            try:
-                for line in xidat.cutscene_lines(client, r["zone_id"], r["event"]):
-                    for w in words_in(line["text"]):
-                        if w[0].isupper():
-                            rov[w] += 1
-            except Exception as e:  # noqa: BLE001
-                print(f"rov {key}: {e}", file=sys.stderr)
+        rov, speakers = rov_words(xievent.rov_lines(client, args.lsb))
     except FileNotFoundError as e:
+        if args.rov:
+            sys.exit(f"--rov needs the Rhapsodies corpus: {e}")
         print(f"no Rhapsodies weighting: {e}", file=sys.stderr)
+        rov, speakers = Counter(), set()
+    speaker_names = {w for name in speakers for w in name.split() if w[:1].isupper()}
+    npc_names |= speaker_names
+    for w in rov:
+        cap[w] += 0  # a word only the decoder saw (a cleaned variant) still ranks
 
-    proper = [w for w in cap if is_proper(w, cap[w], low[w.lower()], english, npc_names)]
+    proper = [w for w in cap if is_proper(w, cap[w], low[w.lower()], english, npc_names, speaker_names)]
+    if args.rov:
+        proper = [w for w in proper if rov[w]]
     proper.sort(key=lambda w: (-rov[w], -cap[w], w))
 
     ipa = {}
@@ -158,7 +183,8 @@ def main(argv=None):
             f.write(f"# {w}: {cap[w]} uses, {rov[w]} in Rhapsodies, {len(zones_of[w])} zones"
                     f"{', NPC name' if w in npc_names else ''}\n")
             f.write(f"# {w}:\n#   ipa: \"{ipa.get(w, '')}\"\n\n")
-    print(f"{sum(cap.values())} capitalised words, {len(proper)} proper nouns -> {out / 'proper_nouns.tsv'}")
+    scope = f"{len(proper)} Rhapsodies proper nouns" if args.rov else f"{len(proper)} proper nouns"
+    print(f"{sum(cap.values())} capitalised words, {sum(rov.values())} in Rhapsodies; {scope} -> {out / 'proper_nouns.tsv'}")
     print(f"top {args.top} with IPA -> {out / 'lexicon-candidates.yaml'}")
     print(f"{'word':18} {'uses':>6} {'rov':>4}  kokoro says")
     for w in proper[:30]:

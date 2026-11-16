@@ -121,8 +121,9 @@ Rhapsodies. 1,364 lines come through `0x2B` with a named actor; 28 through
 `0x1D` in the blocks of the NPCs who trigger the scene (Numi Adaligo,
 Naillina, Heillal), so the block actor is the speaker there. 18 lines
 belong to entities literally named `???` (disembodied voices), which is
-also what the client shows. No `0x7A` case 2 or 3 appears. This speaker list is the real Rhapsodies cast for
-`cast.py` and should replace the census report's 18.
+also what the client shows. No `0x7A` case 2 or 3 appears. This speaker list is the real Rhapsodies cast:
+`census.py` reads it through `xievent.rov_lines` and its report audits it
+(see "Marrying the two paths").
 
 Step 4 is therefore deferred until a storyline needs it. Step 3's walker
 exists; what remains of it is grouping lines by path and marking
@@ -167,8 +168,11 @@ Two things found on the way:
   code in cp932's user area and fixes it after decoding. Check what the
   chat log shows for a line with that glyph in game.
 
-Next on the critical path: casting the 31 Rhapsodies speakers, lexicon
-review of their proper nouns, then the pack build tool.
+The 31 speakers are cast (2026-11-16): 20 by hand in `cast.py`, 11 from
+race pools, which `python3 helper/census.py --client --report` confirms.
+`make nouns ROV=1` ranks the 90 proper nouns the Rhapsodies lines contain
+for `make review`. Next on the critical path: that lexicon review, then the
+pack build tool.
 
 ## What the heuristic gets wrong, and why a decoder is needed
 
@@ -250,12 +254,18 @@ addon reads:
   for race and sex, then in `voices.json` for a hand-picked voice,
   otherwise cast from the race pool by `casting.py`. Speakers the census
   lacks (nameless cutscene actors, unique models such as Iroha and
-  Gilgamesh) get listed by the decoder's summary and go into `cast.py` by
-  hand; Rhapsodies' are few enough to do in one sitting.
-- **Audit.** `census.py --report` currently lists 1,798 speakers with no
-  hand-picked voice and 18 for Rhapsodies, but that 18 is only the NPCs
-  LandSandBoat triggers; the decoder's speaker list for the 59 cutscenes
-  is the real Rhapsodies cast and should replace it in the report.
+  Gilgamesh) go into `cast.py` by hand; Rhapsodies' took one sitting.
+- **Audit.** `census.py --client --report` takes the Rhapsodies speaker
+  list from `xievent.rov_lines` (the census's `rov` flag and `rov_lines`
+  count; a speaker the census never heard of is added with source
+  `decoder`), and prints each uncast one as either covered by a race pool
+  or needing a hand entry. Without `--client` the flag falls back to the
+  NPCs LandSandBoat's Rhapsodies scripts trigger, which is doors and
+  telepoints as much as speakers. As of 2026-11-16 nothing is uncast.
+- **Lexicon.** `tools/proper_nouns.py` weights words by the same corpus
+  (cleaned pack texts, each line's variants counted once) and `--rov`
+  keeps only those words. A decoded speaker's name skips the English
+  dictionary test, which otherwise drops Iroha, Gilgamesh, and Aldo.
 - **Pre-generation.** Each decoded line becomes a `(speaker, cleaned text,
   voice)` triple, hashed exactly as `spoken_helper.cache_key` does, and the
   helper's cache is filled ahead of time. The live path is unchanged: a

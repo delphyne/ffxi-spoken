@@ -176,6 +176,12 @@ class Speakers(unittest.TestCase):
         self.assertEqual(rows[0]["speaker"], "<0x1000099>")
         self.assertEqual((rows[1]["text_id"], rows[1]["var"], rows[1]["text"]), (None, 5, None))
 
+    def test_speakers_of_counts_spoken_lines_only(self):
+        code = (b"\x2b" + actor(0x1000002) + u16(0x8000) + SAY + u16(0x8001) + b"\x2b" + actor(0x1000002) + u16(0x8002)
+                + b"\x2b" + actor(0x7FFFFFF0) + u16(0x8003) + b"\x48" + u16(0x8000) + END)
+        rows = xievent.lines(self.block(code), 7, self.NAMES, self.STRS)
+        self.assertEqual(xievent.speakers_of(rows), {"Tenzen": 2, "Iroha": 1})
+
     def test_narration_and_menu(self):
         code = b"\x48" + u16(0x8000) + b"\x49" + actor(0x1000002) + u16(0x8001) + b"\x24" + u16(0x8002) + bytes(4) + END
         rows = xievent.lines(self.block(code), 7, self.NAMES, self.STRS)
