@@ -15,8 +15,10 @@
 #   make venv-cuda   add the CUDA build of onnxruntime so Kokoro runs on an NVIDIA GPU
 #   make voices      download the Kokoro model and a few Piper voices
 #   make census      rebuild helper/census.json from a LandSandBoat checkout (LSB=path)
-#   make nouns       rank the proper nouns in the game's dialogue for the lexicon (data/)
-#                    (make nouns ROV=1 keeps only the words Rhapsodies of Vana'diel speaks)
+#   make nouns [MISSIONS=rov] [ONLY=1]
+#                    rank the proper nouns in the game's dialogue for the lexicon (data/),
+#                    a storyline's words first; ONLY=1 keeps just the words its cutscenes speak
+#                    (ROV=1 is the old spelling of MISSIONS=rov ONLY=1)
 #   make review      go through them one by one, listening, and build helper/lexicon.yaml
 #                    (a window when there is a display; make review CLI=1 for the terminal)
 #   make pack VERSION=0.1 [PACK=rhapsodies] [MISSIONS=rov] [LIMIT=N] [DRY=1] [FORCE=1]
@@ -27,6 +29,10 @@
 #   make helper      run the host-side TTS helper against ./data
 #                    (make helper BACKEND=piper to pick an engine)
 #   make say TEXT="..." [SPEAKER=Iroha] [RAW=1] [FRESH=1]   speak one line once; FRESH ignores the cache
+#   make venv-qwen   build .venv-qwen (Python 3.12) with qwen-tts (torch, CUDA) and kokoro-onnx
+#   make spike-qwen [LIMIT=N] [RAW=1] [FRESH=1]
+#                    render a fixed set of Rhapsodies lines through Kokoro and Qwen3-TTS into
+#                    data/spike/listen.html, to judge a Qwen3 backend by ear (tools/spike_qwen3.py)
 #
 # The Windower folder is found automatically: the Lumoria flatpak prefix on
 # Linux, else a plain Wine prefix. Set WINDOWER to point somewhere else:
@@ -52,6 +58,7 @@ LINK := $(ADDONS)/$(NAME)
 # (espeak-ng or dry run only).
 UV ?= $(firstword $(wildcard $(HOME)/.local/bin/uv) $(shell command -v uv 2>/dev/null))
 VENV := $(REPO)/.venv
+VENV_QWEN := $(REPO)/.venv-qwen
 PY := $(if $(wildcard $(VENV)/bin/python),$(VENV)/bin/python,python3)
 VOICES := $(REPO)/helper/voices
 PIPER_VOICES ?= en_US-lessac-medium en_US-amy-medium en_GB-alan-medium
@@ -82,7 +89,7 @@ NATIVE_CFLAGS := -O2 -Wall -Wextra -D_WIN32_WINNT=0x0600 -I$(DEPS)/include -I$(D
 # the Wine prefix two levels above drive_c/Windower4, for running the test exe
 WINEPREFIX := $(abspath $(WINDOWER)/../..)
 
-.PHONY: install uninstall where test lint check helper say venv venv-cuda voices census nouns review pack release deps native native-test
+.PHONY: install uninstall where test lint check helper say venv venv-cuda venv-qwen spike-qwen voices census nouns review pack release deps native native-test
 
 # Each recipe below is one shell command, so an exit inside it ends the target.
 
@@ -146,10 +153,11 @@ venv:
 census:
 	python3 -I helper/census.py --lsb "$(LSB)" --client --report
 
-# Reads the client's dialogue DATs and decodes the Rhapsodies scenes; Kokoro
-# IPA needs the venv. ROV=1 limits the list to the Rhapsodies pack's words.
+# Reads the client's dialogue DATs and decodes one storyline's scenes
+# (MISSIONS, the same folder name `make pack` takes); Kokoro IPA needs the
+# venv. ONLY=1 limits the list to that pack's words.
 nouns data/proper_nouns.tsv:
-	$(PY) -I tools/proper_nouns.py --lsb "$(LSB)" $(if $(ROV),--rov)
+	$(PY) -I tools/proper_nouns.py --lsb "$(LSB)" --missions $(if $(ROV),rov,$(MISSIONS)) $(if $(or $(ROV),$(ONLY)),--only)
 
 # One file per unique speaker and line, Opus, with a manifest; the WAV cache
 # in helper/cache makes a rebuild cost only what changed.
@@ -181,6 +189,33 @@ venv-cuda: venv
 	"$(UV)" pip uninstall --python "$(VENV)/bin/python" onnxruntime onnxruntime-gpu
 	"$(UV)" pip install --python "$(VENV)/bin/python" $(CUDA_PKGS)
 	"$(VENV)/bin/python" -c "import onnxruntime as o; o.preload_dlls(); print(o.get_available_providers())"
+
+# Qwen3-TTS needs torch, which is several GB and brings its own CUDA runtime,
+# so it gets a venv of its own; deleting .venv-qwen undoes the experiment.
+# Kokoro goes in too (onnxruntime-gpu and the same CUDA 13 wheels as venv-cuda)
+# so one interpreter renders both sides. The models (two 1.7B checkpoints,
+# about 3.4 GB each) download from Hugging Face into helper/voices/qwen3/hf
+# the first time the spike runs. torch and torchaudio must be the same
+# release (qwen-tts pins neither, and a mismatched torchaudio fails to load
+# its C library); the CUDA 12.8 wheels on PyPI still cover Turing cards.
+# qwen-tts also pulls the CPU onnxruntime, which shares files with the GPU
+# build, so both come out and the GPU one goes back in, as venv-cuda does.
+QWEN_TORCH := torch==2.10.0 torchaudio==2.10.0
+venv-qwen:
+	@if [ -z "$(UV)" ]; then \
+		echo "uv not found; install it with: python3 -m pip install --user uv" >&2; exit 1; \
+	fi; \
+	[ -x "$(VENV_QWEN)/bin/python" ] || "$(UV)" venv "$(VENV_QWEN)" --python 3.12; \
+	"$(UV)" pip install --python "$(VENV_QWEN)/bin/python" $(QWEN_TORCH) qwen-tts soundfile pyyaml kokoro-onnx && \
+	"$(UV)" pip uninstall --python "$(VENV_QWEN)/bin/python" onnxruntime onnxruntime-gpu && \
+	"$(UV)" pip install --python "$(VENV_QWEN)/bin/python" $(CUDA_PKGS) && \
+	"$(VENV_QWEN)/bin/python" -c "import torch, torchaudio; print('torch', torch.__version__, torchaudio.__version__, 'cuda', torch.cuda.is_available())"
+
+spike-qwen:
+	@test -x "$(VENV_QWEN)/bin/python" || { echo ".venv-qwen is missing; run make venv-qwen" >&2; exit 1; }; \
+	HF_HOME="$(VOICES)/qwen3/hf" PYTORCH_ALLOC_CONF=expandable_segments:True \
+		"$(VENV_QWEN)/bin/python" -I tools/spike_qwen3.py \
+		$(if $(LIMIT),--limit $(LIMIT)) $(if $(RAW),--also-raw) $(if $(FRESH),--fresh)
 
 voices: venv
 	mkdir -p "$(VOICES)/piper" "$(VOICES)/kokoro"

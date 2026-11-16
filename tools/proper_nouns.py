@@ -3,19 +3,21 @@
 
 Reads every zone's NA dialogue table from the client, counts capitalised
 words that are not ordinary English, and ranks them by how often they are
-spoken, with words from the Rhapsodies of Vana'diel cutscenes first. The
-Rhapsodies counts come from the event decoder (tools/xievent.py): the
-cleaned pack texts of every line its scenes can show, so with --rov the
-list is exactly the vocabulary the Rhapsodies pack will render. Each word
-comes with Kokoro's unaided IPA so an entry for helper/lexicon.yaml starts
-from what the engine would say anyway.
+spoken, with words from one storyline's cutscenes first (--missions names
+the LandSandBoat scripts/missions folder; rov, Rhapsodies of Vana'diel, by
+default). The storyline counts come from the event decoder
+(tools/xievent.py): the cleaned pack texts of every line its scenes can
+show, so with --only the list is exactly the vocabulary that storyline's
+pack will render. Each word comes with Kokoro's unaided IPA so an entry
+for helper/lexicon.yaml starts from what the engine would say anyway.
 
-    .venv/bin/python -I tools/proper_nouns.py [--top 300] [--no-ipa] [--rov]
+    .venv/bin/python -I tools/proper_nouns.py [--top 300] [--no-ipa] [--missions wotg] [--only]
 
-Writes data/proper_nouns.tsv (everything, or the Rhapsodies words with
---rov) and data/lexicon-candidates.yaml (the top entries as commented-out
-lexicon stanzas to uncomment and edit). Needs the client install, a
-LandSandBoat checkout for the Rhapsodies list, and /usr/share/dict/words.
+Writes data/proper_nouns.tsv (everything, or the storyline's words with
+--only) and data/lexicon-candidates.yaml (the top entries as commented-out
+lexicon stanzas to uncomment and edit). --rov is the old spelling of
+--missions rov --only. Needs the client install, a LandSandBoat checkout
+for the storyline's list, and /usr/share/dict/words.
 """
 
 import argparse
@@ -59,7 +61,7 @@ def words_in(text):
 
 
 def rov_words(rows):
-    """Capitalised words in the Rhapsodies corpus: a Counter over the
+    """Capitalised words in a storyline's corpus: a Counter over the
     cleaned pack texts, each line's variants counted once, plus the set of
     speaker names (a name is a proper noun whatever the dictionary says).
     Live-only lines (an item or number slot) count their fixed text."""
@@ -105,9 +107,14 @@ def main(argv=None):
     ap.add_argument("--lsb", default=str(xievent.LSB_DEFAULT))
     ap.add_argument("--top", type=int, default=300, help="entries in the YAML candidates file")
     ap.add_argument("--no-ipa", action="store_true", help="skip Kokoro IPA (no venv needed)")
-    ap.add_argument("--rov", action="store_true", help="only words the Rhapsodies of Vana'diel scenes speak")
+    ap.add_argument("--missions", default="rov", help="LandSandBoat scripts/missions folder whose words rank first")
+    ap.add_argument("--only", action="store_true", help="only words that storyline's scenes speak")
+    ap.add_argument("--rov", action="store_true", help="the same as --missions rov --only")
     ap.add_argument("--out", default=str(HERE.parent / "data"))
     args = ap.parse_args(argv)
+    if args.rov:
+        args.missions, args.only = "rov", True
+    story = args.missions
 
     client = xidat.Client(args.client)
     english = english_words()
@@ -142,11 +149,11 @@ def main(argv=None):
                     low[w.lower()] += 1
 
     try:
-        rov, speakers = rov_words(xievent.rov_lines(client, args.lsb))
+        rov, speakers = rov_words(xievent.rov_lines(client, args.lsb, story))
     except FileNotFoundError as e:
-        if args.rov:
-            sys.exit(f"--rov needs the Rhapsodies corpus: {e}")
-        print(f"no Rhapsodies weighting: {e}", file=sys.stderr)
+        if args.only:
+            sys.exit(f"--only needs the {story} corpus: {e}")
+        print(f"no {story} weighting: {e}", file=sys.stderr)
         rov, speakers = Counter(), set()
     speaker_names = {w for name in speakers for w in name.split() if w[:1].isupper()}
     npc_names |= speaker_names
@@ -154,7 +161,7 @@ def main(argv=None):
         cap[w] += 0  # a word only the decoder saw (a cleaned variant) still ranks
 
     proper = [w for w in cap if is_proper(w, cap[w], low[w.lower()], english, npc_names, speaker_names)]
-    if args.rov:
+    if args.only:
         proper = [w for w in proper if rov[w]]
     proper.sort(key=lambda w: (-rov[w], -cap[w], w))
 
@@ -171,22 +178,22 @@ def main(argv=None):
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     with (out / "proper_nouns.tsv").open("w", encoding="utf-8") as f:
-        f.write("word\tuses\trov_uses\tzones\tnpc\tkokoro_ipa\texample\n")
+        f.write("word\tuses\tpack_uses\tzones\tnpc\tkokoro_ipa\texample\n")
         for w in proper:
             f.write(f"{w}\t{cap[w]}\t{rov[w]}\t{len(zones_of[w])}\t{'y' if w in npc_names else ''}\t{ipa.get(w, '')}"
                     f"\t{example.get(w, '')}\n")
     with (out / "lexicon-candidates.yaml").open("w", encoding="utf-8") as f:
         f.write("# Lexicon candidates from tools/proper_nouns.py: the most-spoken proper nouns,\n"
-                "# Rhapsodies of Vana'diel first, each with Kokoro's unaided IPA. Uncomment a\n"
+                f"# the {story} storyline first, each with Kokoro's unaided IPA. Uncomment a\n"
                 "# stanza, fix the IPA, and move it to helper/lexicon.yaml.\n\n")
         for w in proper[:args.top]:
-            f.write(f"# {w}: {cap[w]} uses, {rov[w]} in Rhapsodies, {len(zones_of[w])} zones"
+            f.write(f"# {w}: {cap[w]} uses, {rov[w]} in {story}, {len(zones_of[w])} zones"
                     f"{', NPC name' if w in npc_names else ''}\n")
             f.write(f"# {w}:\n#   ipa: \"{ipa.get(w, '')}\"\n\n")
-    scope = f"{len(proper)} Rhapsodies proper nouns" if args.rov else f"{len(proper)} proper nouns"
-    print(f"{sum(cap.values())} capitalised words, {sum(rov.values())} in Rhapsodies; {scope} -> {out / 'proper_nouns.tsv'}")
+    scope = f"{len(proper)} {story} proper nouns" if args.only else f"{len(proper)} proper nouns"
+    print(f"{sum(cap.values())} capitalised words, {sum(rov.values())} in {story}; {scope} -> {out / 'proper_nouns.tsv'}")
     print(f"top {args.top} with IPA -> {out / 'lexicon-candidates.yaml'}")
-    print(f"{'word':18} {'uses':>6} {'rov':>4}  kokoro says")
+    print(f"{'word':18} {'uses':>6} {story[:4]:>4}  kokoro says")
     for w in proper[:30]:
         print(f"{w:18} {cap[w]:6} {rov[w]:4}  {ipa.get(w, '')}")
     return 0

@@ -168,7 +168,7 @@ class Session:
 
     def detail(self):
         c = self.cand
-        return (f"{c.get('uses', '?')} uses, {c.get('rov_uses', '0')} in Rhapsodies, {c.get('zones', '?')} zones"
+        return (f"{c.get('uses', '?')} uses, {c.get('pack_uses', c.get('rov_uses', '0'))} in the storyline, {c.get('zones', '?')} zones"
                 + (", NPC name" if c.get("npc") else ""))
 
     def advance(self):

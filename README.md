@@ -72,7 +72,7 @@ cannot stop a sound.
 | Auto-advance via Windower `setkey` | unverified under Wine; parked until the rest is stable |
 | Voice casting per NPC | `helper/cast.py` casts Balloon's 230 portrait NPCs by hand; everyone else is cast by race from `helper/census.json` (13,845 names from LandSandBoat and the client) |
 | Pronunciation lexicon | `helper/lexicon.yaml` with IPA; `make nouns` and `make review` build it from the game's text; every proper noun Rhapsodies of Vana'diel speaks is reviewed (64 entries) |
-| Dialogue extraction from the client | dialogue tables and NPC lists decode; `tools/xievent.py` disassembles event bytecode for every zone (4 events of 84,914 still fail, all in an unused zone) and attributes each line to its speaker; `tools/ffxitext.py` cleans the text the way the addon does and expands the client's parameter codes; Rhapsodies resolves to 1,416 pack texts from 31 speakers, 25 lines live-only (`docs/Event-Decoding-Handoff.md`) |
+| Dialogue extraction from the client | dialogue tables and NPC lists decode; `tools/xievent.py` disassembles event bytecode for every zone (4 events of 84,914 still fail, all in an unused zone) and attributes each line to its speaker; `tools/ffxitext.py` cleans the text the way the addon does and expands the client's parameter codes; Rhapsodies resolves to 1,416 pack texts from 31 speakers, 25 lines live-only; Wings of the Goddess (`MISSIONS=wotg`) to 3,588 from 118 speakers, 63 live-only (`docs/Event-Decoding-Handoff.md`) |
 | Pre-generated voice packs | `make pack VERSION=x` builds one from the decoder's corpus (Opus files, manifest, zip) and `make release` publishes it; the manifests and index under `packs/` are committed, the audio is not (`docs/Audio-Packs.md`); Rhapsodies 0.1 is built and installs by unzipping into `audio/` |
 | Native playback module | `libs/spokenplay.dll`: winmm playback of Ogg Opus from a worker thread, with stop, state, and volume (`native/`, `make deps && make native`); plays, stops, and reports errors under the game's Wine prefix from a console (`make native-test`); first in-game run still to do |
 
@@ -138,12 +138,13 @@ reloads the file within a second of a save. The lexicon is built from the game's
 surprised in play:
 
 1. `make nouns` decodes every zone's dialogue table from the client, ranks
-   the proper nouns by how often they are spoken with Rhapsodies of
-   Vana'diel text first, and writes `data/proper_nouns.tsv` with Kokoro's
-   unaided IPA and an example line for each. `make nouns ROV=1` keeps only
-   the words the Rhapsodies cutscenes actually speak, as decoded from the
-   client's event files, so the review covers that pack's vocabulary and
-   nothing else.
+   the proper nouns by how often they are spoken with one storyline's text
+   first (`MISSIONS=rov`, Rhapsodies of Vana'diel, by default; `wotg` for
+   Wings of the Goddess), and writes `data/proper_nouns.tsv` with Kokoro's
+   unaided IPA and an example line for each. `make nouns MISSIONS=wotg
+   ONLY=1` keeps only the words that storyline's cutscenes actually speak,
+   as decoded from the client's event files, so the review covers that
+   pack's vocabulary and nothing else.
 2. `make review` walks that list in a window, one word at a time: the
    name, the count, an example line, and the engine's IPA, which it speaks.
    `a` accepts the pronunciation into the lexicon, `r` repeats it, `s`
