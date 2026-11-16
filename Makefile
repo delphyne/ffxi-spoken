@@ -15,8 +15,11 @@
 #                    (make nouns ROV=1 keeps only the words Rhapsodies of Vana'diel speaks)
 #   make review      go through them one by one, listening, and build helper/lexicon.yaml
 #                    (a window when there is a display; make review CLI=1 for the terminal)
-#   make pack VERSION=0.1 [PACK=rhapsodies] [MISSIONS=rov] [LIMIT=N] [DRY=1]
-#                    build an audio pack under audio/<pack>/<version>/ (docs/Audio-Packs.md)
+#   make pack VERSION=0.1 [PACK=rhapsodies] [MISSIONS=rov] [LIMIT=N] [DRY=1] [FORCE=1]
+#                    build an audio pack: audio/<pack>/<version>/, the zip beside it,
+#                    and packs/<pack>/<version>/manifest.json plus packs/index.json to commit
+#   make release VERSION=0.1 [PACK=rhapsodies] [GH_REPO=owner/name]
+#                    upload that zip as a GitHub Release (tag <pack>-<version>) with gh
 #   make helper      run the host-side TTS helper against ./data
 #                    (make helper BACKEND=piper to pick an engine)
 #   make say TEXT="..." [SPEAKER=Iroha] [RAW=1] [FRESH=1]   speak one line once; FRESH ignores the cache
@@ -59,7 +62,7 @@ CUDA_PKGS := onnxruntime-gpu "nvidia-cuda-runtime>=13,<14" nvidia-cudnn-cu13 "nv
 
 LSB ?= $(HOME)/scm/github/LandSandBoat/server
 
-.PHONY: install uninstall where test lint check helper say venv venv-cuda voices census nouns review pack
+.PHONY: install uninstall where test lint check helper say venv venv-cuda voices census nouns review pack release
 
 # Each recipe below is one shell command, so an exit inside it ends the target.
 
@@ -130,12 +133,23 @@ nouns data/proper_nouns.tsv:
 
 # One file per unique speaker and line, Opus, with a manifest; the WAV cache
 # in helper/cache makes a rebuild cost only what changed.
+# The audio itself is never committed (audio/ is ignored): the manifest and
+# index are, and `make release` puts the zip on a GitHub Release whose URL the
+# index already names. GH_REPO is the owner/name that URL points at.
 PACK ?= rhapsodies
 MISSIONS ?= rov
+GH_REPO ?= delphyne/ffxi-spoken
 pack:
-	@if [ -z "$(VERSION)" ]; then echo 'usage: make pack VERSION=0.1 [PACK=rhapsodies] [MISSIONS=rov] [LIMIT=N] [DRY=1]' >&2; exit 1; fi; \
+	@if [ -z "$(VERSION)" ]; then echo 'usage: make pack VERSION=0.1 [PACK=rhapsodies] [MISSIONS=rov] [LIMIT=N] [DRY=1] [FORCE=1]' >&2; exit 1; fi; \
 	$(PY) -I tools/build_pack.py $(PACK) $(VERSION) --missions $(MISSIONS) --backend $(BACKEND) --lsb "$(LSB)" \
-		$(if $(LIMIT),--limit $(LIMIT)) $(if $(DRY),--dry-run) $(if $(FORCE),--force)
+		--repo $(GH_REPO) $(if $(LIMIT),--limit $(LIMIT)) $(if $(DRY),--dry-run) $(if $(FORCE),--force)
+
+release:
+	@if [ -z "$(VERSION)" ]; then echo 'usage: make release VERSION=0.1 [PACK=rhapsodies] [GH_REPO=owner/name]' >&2; exit 1; fi; \
+	test -f audio/$(PACK)-$(VERSION).zip || { echo "audio/$(PACK)-$(VERSION).zip is missing; run make pack first" >&2; exit 1; }; \
+	$(PY) -I tools/build_pack.py $(PACK) $(VERSION) --notes > audio/$(PACK)-$(VERSION).notes && \
+	gh release create $(PACK)-$(VERSION) audio/$(PACK)-$(VERSION).zip --repo $(GH_REPO) \
+		--title "$(PACK) $(VERSION)" --notes-file audio/$(PACK)-$(VERSION).notes
 
 # Interactive: a accept, r repeat, j reject and type IPA, s skip, e example, q quit;
 # a Tk window with buttons and an IPA palette when a display is there, else the

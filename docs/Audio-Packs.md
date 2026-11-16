@@ -130,11 +130,31 @@ prerequisite (handoff step 5).
 - Narration lines (no speaker) are in: the first Rhapsodies pack has six.
   The addon only looks them up when narration is enabled.
 
-## Distribution
+## Distribution and what is version-controlled
 
-GitHub Releases, one archive per pack version, plus a small index file
-naming the current version of each pack so the addon or helper can offer
-updates. Opus at 48 kbps mono.
+Audio is a build product of inputs that are already in git (the decoder,
+the lexicon, the casting, the engine's weights), so it is never committed
+and not put in Git LFS either: a recast rewrites every file of that
+speaker, LFS keeps every rebuild forever against a 1 GB quota, and player
+downloads would count against the repository's bandwidth. What is
+committed is the record of each build:
+
+- `packs/<pack>/<version>/manifest.json`, a copy of the shipped manifest.
+  Two versions diff into exactly which lines changed and why, because
+  each row carries the voice, the lexicon-applied text the engine was
+  given, and a hash of the game's bytes per source, and the manifest
+  carries the engine's model-file hashes, the repo commit it was built
+  from (and whether the tree was dirty), and the lexicon's hash.
+- `packs/index.json`, the current version of each pack with its archive's
+  download URL, sha256, and size. This is the update channel: the addon or
+  helper reads it to offer updates.
+
+The archive itself, `<pack>-<version>.zip` unpacking to
+`<pack>/<version>/...`, goes on a GitHub Release tagged
+`<pack>-<version>` (`make release`); assets have no bandwidth quota. Opus
+at 48 kbps mono. A rebuild is not bit-for-bit (GPU inference can differ
+in the last bits), so the archive is the record of what shipped and the
+manifest the record of how.
 
 ## Building
 
@@ -144,12 +164,18 @@ text), each line rendered with its cast voice through the helper's
 backend into the helper's WAV cache (so a rebuild only renders what the
 lexicon, casting, or game text changed), encoded with opusenc or ffmpeg,
 and written to `audio/<pack>/<version>.part/` then renamed into place.
-`DRY=1` lists the lines and voices without rendering; `LIMIT=N` renders a
-test slice. The manifest row is as described above; `spoken` records the
-exact text the engine was given, and each source carries a short hash of
-the DAT bytes. The first Rhapsodies build: 1,193 files from 32 speakers,
-81 naming the player; skipped 26 live-only lines (item or number slots),
-15 whose text is empty after cleaning, and 38 menus.
+It then writes the zip beside the version directory, copies the manifest
+to `packs/<pack>/<version>/`, and updates `packs/index.json`; those two
+are committed. `DRY=1` lists the lines and voices without rendering;
+`LIMIT=N` renders a test slice and writes no archive, copy, or index
+entry; `FORCE=1` replaces an existing version. The manifest row is as
+described above; `spoken` records the exact text the engine was given,
+and each source carries a short hash of the DAT bytes. The first
+Rhapsodies build: 1,193 files from 32 speakers, 81 naming the player;
+skipped 26 live-only lines (item or number slots), 15 whose text is empty
+after cleaning, and 38 menus; 75 minutes of speech, 29 MB, six minutes on
+a GPU. No agent is involved: `make pack` and `make release` are the whole
+procedure.
 
 ## Open
 

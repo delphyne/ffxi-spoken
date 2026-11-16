@@ -85,7 +85,9 @@ class Build(unittest.TestCase):
         lexicon = sh.Lexicon({"Norg": {"ipa": "nɔːɡ"}})
         return bp.Builder(self.dir, "rhapsodies", version, self.synth, self.encode, lexicon,
                           lambda speaker: {"Iroha": "af_sarah"}.get(speaker, "am_adam"), self.dir / "cache",
-                          game_text=lambda s: f"h{s['text_id']}", log=lambda *_: None, engine="fake")
+                          game_text=lambda s: f"h{s['text_id']}", log=lambda *_: None,
+                          engine={"name": "fake", "device": "cpu", "models": {}},
+                          source={"commit": "abc123", "dirty": False, "builder": "test"})
 
     def lines(self):
         rows = [row("Iroha", ["Go to Norg, <player>."], text_id=1), row("Tenzen", ["Yes."], text_id=2)]
@@ -109,7 +111,46 @@ class Build(unittest.TestCase):
         self.assertEqual(first["sha256"], hashlib.sha256(opus.read_bytes()).hexdigest())
         self.assertEqual(first["bytes"], opus.stat().st_size)
         self.assertEqual(m["duration"], 0.2)
-        self.assertEqual(json.loads((final / "manifest.json").read_text(encoding="utf-8"))["engine"], "fake")
+        written = json.loads((final / "manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(written["engine"]["name"], "fake")
+        self.assertEqual(written["source"]["commit"], "abc123")
+
+    def test_archive_index_and_notes(self):
+        lines, skipped = self.lines()
+        m = self.builder().build(lines, skipped)
+        final = self.dir / "rhapsodies" / "0.1"
+        sha, size = bp.write_archive(final, self.dir / "rhapsodies-0.1.zip")
+        import zipfile
+        with zipfile.ZipFile(self.dir / "rhapsodies-0.1.zip") as z:
+            names = sorted(z.namelist())
+            self.assertEqual(names[-1], "rhapsodies/0.1/manifest.json")
+            self.assertTrue(all(n.startswith("rhapsodies/0.1/") for n in names))
+            self.assertEqual(len(names), 3)
+            self.assertEqual(z.getinfo(names[0]).compress_type, zipfile.ZIP_STORED)
+        self.assertEqual(sha, hashlib.sha256((self.dir / "rhapsodies-0.1.zip").read_bytes()).hexdigest())
+        url = bp.download_url("delphyne/ffxi-spoken", "rhapsodies", "0.1")
+        self.assertEqual(url, "https://github.com/delphyne/ffxi-spoken/releases/download/rhapsodies-0.1/rhapsodies-0.1.zip")
+        self.assertIsNone(bp.download_url(None, "rhapsodies", "0.1"))
+        index_path = self.dir / "packs" / "index.json"
+        bp.update_index(index_path, dict(m, pack="core"), "x", 1, None)
+        index = bp.update_index(index_path, m, sha, size, url)
+        self.assertEqual(list(index["packs"]), ["core", "rhapsodies"], "sorted, earlier packs kept")
+        entry = index["packs"]["rhapsodies"]
+        self.assertEqual((entry["version"], entry["url"], entry["sha256"], entry["bytes"], entry["files"]),
+                         ("0.1", url, sha, size, 2))
+        self.assertEqual(entry["manifest"], "packs/rhapsodies/0.1/manifest.json")
+        self.assertEqual(json.loads(index_path.read_text())["packs"]["rhapsodies"]["version"], "0.1")
+        notes = bp.release_notes(m, sha)
+        self.assertIn("rhapsodies 0.1: 2 lines from 2 speakers", notes)
+        self.assertIn("from commit abc123.", notes)
+        self.assertIn(f"sha256: {sha}", notes)
+        self.assertIn("audio/rhapsodies/0.1/manifest.json", notes)
+
+    def test_provenance_reads_git(self):
+        prov = bp.provenance()
+        self.assertEqual(prov["builder"], "tools/build_pack.py")
+        self.assertTrue(prov["commit"] is None or len(prov["commit"]) == 40)
+        self.assertEqual(bp.provenance(self.dir)["commit"], None, "not a repo")
 
     def test_rebuild_uses_the_wav_cache_and_needs_force(self):
         lines, skipped = self.lines()

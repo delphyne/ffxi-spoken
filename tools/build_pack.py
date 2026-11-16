@@ -13,15 +13,22 @@ cache, then encoded to Opus. Writes
     <out>/<pack>/<version>.part/      while building
     <out>/<pack>/<version>/           when done: manifest.json and
         Iroha/i-bid-you-finish-your-tasks.7f3a.opus ...
+    <out>/<pack>-<version>.zip        the same, for a GitHub Release
+    packs/<pack>/<version>/manifest.json   a copy to commit
+    packs/index.json                  current version, URL, and sha256 of each pack
 
 The manifest row for a line carries the lookup key (speaker, cleaned
 text), the file, its sha256 and duration, and provenance: the voice, the
 text the engine was given, and every zone, event, and text id the line
-came from with a hash of the game's bytes there. Lines with an item name
-or a number cannot be enumerated and are skipped; a line naming the
-player is rendered with --player-word in that slot and keyed on the
-`<player>` token the addon substitutes. The WAV cache makes a rebuild
-cost only what changed. Needs opusenc (opus-tools) or ffmpeg.
+came from with a hash of the game's bytes there. The manifest itself
+records the engine and the hashes of its model files, the repo commit,
+the lexicon hash, and what was skipped. Audio is a build product, so it
+is never committed: the manifest and index are, and the archive goes to
+a Release (`make release`). Lines with an item name or a number cannot
+be enumerated and are skipped; a line naming the player is rendered with
+--player-word in that slot and keyed on the `<player>` token the addon
+substitutes. The WAV cache makes a rebuild cost only what changed. Needs
+opusenc (opus-tools) or ffmpeg.
 """
 
 import argparse
@@ -33,6 +40,7 @@ import subprocess
 import sys
 import time
 import wave
+import zipfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -148,13 +156,14 @@ class Builder:
     backend's casting; `game_text(source)` hashes the DAT bytes."""
 
     def __init__(self, out_root, pack, version, synth, encode, lexicon, voice_for, cache_dir,
-                 player_word=PLAYER_WORD, phonemes=True, game_text=None, log=print, bitrate=BITRATE, engine="?"):
+                 player_word=PLAYER_WORD, phonemes=True, game_text=None, log=print, bitrate=BITRATE, engine=None,
+                 source=None):
         self.root = Path(out_root) / pack
         self.pack, self.version = pack, version
         self.synth, self.encode, self.lexicon, self.voice_for = synth, encode, lexicon, voice_for
         self.cache = Path(cache_dir)
         self.player_word, self.phonemes, self.game_text, self.log = player_word, phonemes, game_text, log
-        self.bitrate, self.engine = bitrate, engine
+        self.bitrate, self.engine, self.source = bitrate, engine or {"name": "?"}, source or provenance()
         self.part = self.root / f"{version}.part"
         self.final = self.root / version
 
@@ -201,7 +210,7 @@ class Builder:
             "pack": self.pack, "version": self.version,
             "built": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "format": {"codec": "opus", "bitrate_kbps": self.bitrate, "channels": 1},
-            "engine": self.engine, "player_word": self.player_word,
+            "engine": self.engine, "source": self.source, "player_word": self.player_word,
             "lexicon_sha256": self.lexicon_sha256(),
             "lines": rows, "skipped": skipped,
             "duration": round(sum(r["duration"] for r in rows), 1),
@@ -217,6 +226,83 @@ class Builder:
     def lexicon_sha256(self):
         path = getattr(self.lexicon, "path", None)
         return sha256_file(path) if path and Path(path).exists() else None
+
+
+def provenance(repo=None):
+    """The commit the pack was built from, and whether the tree was clean."""
+    repo = Path(repo or HERE.parent)
+    try:
+        commit = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True, text=True,
+                                check=True).stdout.strip()
+        dirty = subprocess.run(["git", "-C", str(repo), "status", "--porcelain"], capture_output=True, text=True,
+                               check=True).stdout.strip() != ""
+    except (OSError, subprocess.CalledProcessError):
+        return {"commit": None, "dirty": None, "builder": "tools/build_pack.py"}
+    return {"commit": commit, "dirty": dirty, "builder": "tools/build_pack.py"}
+
+
+def engine_info(backend):
+    """Which engine, on what, with the hashes of its model files, so the
+    same pack can be rebuilt from the same weights."""
+    info = {"name": backend.name, "device": getattr(backend, "device", None), "models": {}}
+    for attr in ("model_file", "voices_file"):
+        name = getattr(backend, attr, None)
+        if name and (backend.model_dir / name).exists():
+            info["models"][name] = sha256_file(backend.model_dir / name)
+    return info
+
+
+def write_archive(final, zip_path):
+    """The version directory as <pack>/<version>/... in a zip. Opus does
+    not compress, so entries are stored; returns (sha256, bytes)."""
+    final, zip_path = Path(final), Path(zip_path)
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_STORED) as z:
+        for f in sorted(final.rglob("*")):
+            if f.is_file():
+                z.write(f, f"{final.parent.name}/{final.name}/{f.relative_to(final).as_posix()}")
+    return sha256_file(zip_path), zip_path.stat().st_size
+
+
+def download_url(repo, pack, version):
+    return f"https://github.com/{repo}/releases/download/{pack}-{version}/{pack}-{version}.zip" if repo else None
+
+
+def update_index(index_path, manifest, archive_sha256, archive_bytes, url):
+    """packs/index.json: the current version of each pack and where its
+    archive is. Written in full each time; one pack per entry."""
+    index_path = Path(index_path)
+    index = json.loads(index_path.read_text(encoding="utf-8")) if index_path.exists() else {"packs": {}}
+    index["packs"][manifest["pack"]] = {
+        "version": manifest["version"], "built": manifest["built"], "url": url,
+        "sha256": archive_sha256, "bytes": archive_bytes,
+        "files": len(manifest["lines"]), "duration": manifest["duration"],
+        "manifest": f"packs/{manifest['pack']}/{manifest['version']}/manifest.json",
+    }
+    index["packs"] = dict(sorted(index["packs"].items()))
+    index_path.parent.mkdir(parents=True, exist_ok=True)
+    index_path.write_text(json.dumps(index, indent=1) + "\n", encoding="utf-8")
+    return index
+
+
+def release_notes(manifest, archive_sha256=None):
+    speakers = {}
+    for r in manifest["lines"]:
+        speakers[r["speaker"]] = speakers.get(r["speaker"], 0) + 1
+    eng = manifest["engine"]
+    lines = [f"{manifest['pack']} {manifest['version']}: {len(manifest['lines'])} lines from {len(speakers)} speakers, "
+             f"{manifest['duration'] / 60:.0f} minutes of speech, {manifest['bytes'] / 1e6:.1f} MB of Opus "
+             f"at {manifest['format']['bitrate_kbps']} kbps.",
+             "",
+             f"Rendered with {eng['name']} on {eng.get('device') or 'cpu'} from commit "
+             f"{(manifest.get('source') or {}).get('commit') or 'unknown'}"
+             + (" (dirty tree)" if (manifest.get('source') or {}).get('dirty') else "") + ".",
+             f"Skipped: " + ", ".join(f"{v} {k}" for k, v in sorted(manifest["skipped"].items())) + ".",
+             "",
+             "Unzip into Spoken's audio folder so the pack sits at "
+             f"audio/{manifest['pack']}/{manifest['version']}/manifest.json."]
+    if archive_sha256:
+        lines += ["", f"sha256: {archive_sha256}"]
+    return "\n".join(lines) + "\n"
 
 
 def game_text_hasher(client):
@@ -268,7 +354,17 @@ def main(argv=None):
     ap.add_argument("--limit", type=int, default=0, help="render only the first N lines (a test build)")
     ap.add_argument("--dry-run", action="store_true", help="list the lines and voices; render nothing")
     ap.add_argument("--force", action="store_true", help="replace an existing <pack>/<version>/")
+    ap.add_argument("--repo", default=None, help="GitHub owner/name the archive will be released under")
+    ap.add_argument("--packs", default=str(here / "packs"), help="where the committed manifests and index live")
+    ap.add_argument("--notes", action="store_true", help="print release notes for an already built version and exit")
     args = ap.parse_args(argv)
+
+    if args.notes:
+        manifest = json.loads((Path(args.packs) / args.pack / args.version / "manifest.json").read_text(encoding="utf-8"))
+        entry = json.loads((Path(args.packs) / "index.json").read_text(encoding="utf-8"))["packs"].get(args.pack, {})
+        sha = entry.get("sha256") if entry.get("version") == args.version else None
+        print(release_notes(manifest, sha), end="")
+        return 0
 
     client = xidat.Client(args.client)
     rows = list(xievent.rov_lines(client, args.lsb, args.missions))
@@ -281,7 +377,7 @@ def main(argv=None):
     lexicon.path = args.lexicon
     builder = Builder(args.out, args.pack, args.version, backend.synthesise, Encoder(args.bitrate), lexicon,
                       backend.voice_for, args.cache, player_word=args.player_word, phonemes=backend.phonemes,
-                      game_text=game_text_hasher(client), bitrate=args.bitrate, engine=backend_cls.name)
+                      game_text=game_text_hasher(client), bitrate=args.bitrate, engine=engine_info(backend))
     if args.dry_run:
         plan = builder.plan(lines[:args.limit] if args.limit else lines)
         summarise(plan, skipped)
@@ -293,10 +389,24 @@ def main(argv=None):
     warm = getattr(backend, "warm_up", None)
     if warm:
         warm()
+    builder.engine = engine_info(backend)  # the device is known once the model is loaded
     manifest = builder.build(lines, skipped, limit=args.limit, force=args.force)
     summarise(manifest["lines"], skipped)
     print(f"wrote {builder.final}: {len(manifest['lines'])} files, {manifest['duration'] / 60:.1f} min, "
           f"{manifest['bytes'] / 1e6:.1f} MB")
+    if args.limit:
+        print("a --limit build is a test: no archive, manifest copy, or index entry")
+        return 0
+    archive = Path(args.out) / f"{args.pack}-{args.version}.zip"
+    sha, size = write_archive(builder.final, archive)
+    print(f"wrote {archive}: {size / 1e6:.1f} MB, sha256 {sha[:12]}")
+    keep = Path(args.packs) / args.pack / args.version / "manifest.json"
+    keep.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(builder.final / "manifest.json", keep)
+    update_index(Path(args.packs) / "index.json", manifest, sha, size, download_url(args.repo, args.pack, args.version))
+    print(f"wrote {keep} and {Path(args.packs) / 'index.json'}: commit them; `make release` uploads the archive")
+    if manifest["source"].get("dirty"):
+        print("note: the tree had uncommitted changes; the manifest's commit does not describe them", file=sys.stderr)
     return 0
 
 
