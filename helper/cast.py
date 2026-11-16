@@ -7,7 +7,8 @@ reshuffle when names are added. Variants of one character (Trion and Prince
 Trion, the twelve Cait Siths) are pinned to the first name's voice. Elvaan
 and Zilart get British voices for San d'Oria's courtly register; Tarutaru,
 Moogles, and Qiqirn the lightest; Galka and the great avatars the deepest.
-Narration (empty speaker) gets a storyteller.
+Narration (empty speaker) gets a storyteller, as do the ??? voices in
+cutscenes. Volto Oscuro is Iroha's shadow and shares her voice.
 
 The NPC list is Balloon's portrait set. Fix a miscast by moving the name to
 another group here and re-running; hand edits to voices.json are lost.
@@ -35,10 +36,11 @@ CAST = {
     ],
     "hume_f": [
         "Annika", "Arciela", "Ayame", "Brygid", "Cornelia", "Cynthia", "Elivira", "Emeline", "Flit", "Fremilla",
-        "Hilda", "Ingrid", ["Iroha", "Iroha Red"], "Kagero", "Klara", "Laila", "Lilisette", "Lion", "Margret",
+        "Hilda", "Ingrid", ["Iroha", "Iroha Red", "Volto Oscuro"], "Kagero", "Klara", "Laila", "Lilisette", "Lion", "Margret",
         "Marin", "Mathilde", "Nashmeira", "Nyline", "Portia", "Sajj'aka", "Svenja", "Tiana", "Verena", "Zweeha",
     ],
-    "old_m": ["Cid", "Ghatsad", "Maat"],
+    "old_m": ["Abelard", "Cid", "Ghatsad", "Maat"],
+    "old_elvaan_m": ["Kamui"],
     "boy": ["Young Aldo", "Mathilde's Son"],
     "elvaan_m": [
         "Alaixion", "Alphonimile", "Areuhat", "Cyranuce", "Despachiaire", "Estienneux", "Excenmille", "Haudrale",
@@ -78,6 +80,8 @@ CAST = {
     "dark": ["The Shadow Lord", "Dark Messenger", "The Keeper", "Atomos"],
     "dark_f": [["Lady Lilith", "Lilith Ascended"], "Cloud of Darkness", "Portentous Woman"],
     "cait": [["Cait Sith"] + ["Cait Sith " + s for s in "Prime Aon Dha Tri Ceithir Coig Sia Seachd Ochd Naoi Deich".split()]],
+    # disembodied voices in cutscenes: the client shows them as ???
+    "narrator": ["???"],
 }
 
 DEFAULTS = {"kokoro": {"default": "am_adam", "": "bm_fable"},

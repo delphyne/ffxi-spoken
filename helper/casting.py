@@ -14,6 +14,7 @@ POOLS = {
     "hume_m":   (["am_adam", "am_michael", "am_eric", "am_liam"], "en_US-lessac-medium"),
     "hume_f":   (["af_sarah", "af_bella", "af_jessica", "af_heart"], "en_US-amy-medium"),
     "old_m":    (["am_santa"], "en_US-lessac-medium"),
+    "old_elvaan_m": (["bm_george"], "en_GB-alan-medium"),
     "boy":      (["am_puck"], "en_US-lessac-medium"),
     "elvaan_m": (["bm_george", "bm_daniel", "bm_lewis"], "en_GB-alan-medium"),
     "elvaan_f": (["bf_emma", "bf_isabella", "bf_alice"], "en_US-amy-medium"),
