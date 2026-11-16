@@ -1,0 +1,14 @@
+{
+ "packs": {
+  "rhapsodies": {
+   "version": "0.1",
+   "built": "2026-11-16T19:36:12Z",
+   "url": "https://github.com/delphyne/ffxi-spoken/releases/download/rhapsodies-0.1/rhapsodies-0.1.zip",
+   "sha256": "f256160a1c22ab9e9e37042c224694eaf55ac1ebb6b641a918551ee388c426a8",
+   "bytes": 30014840,
+   "files": 1193,
+   "duration": 4499.5,
+   "manifest": "packs/rhapsodies/0.1/manifest.json"
+  }
+ }
+}
