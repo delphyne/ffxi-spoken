@@ -9,7 +9,7 @@ docs/Protocol.md. The helper does the speaking.
 
 _addon.name = 'Spoken'
 _addon.author = 'delphyne'
-_addon.version = '0.0.1'
+_addon.version = '0.0.2'
 _addon.command = 'spoken'
 
 require('luau')
@@ -95,6 +95,12 @@ local function read_status()
     }
 end
 
+-- The player's name as the game prints it in dialogue; nil when not logged in.
+local function player_name()
+    local player = windower.ffxi and windower.ffxi.get_player and windower.ffxi.get_player()
+    return player and player.name or nil
+end
+
 -------------------------------------------------------------------------------
 -- events
 
@@ -111,6 +117,7 @@ windower.register_event('incoming text', function(original, modified, mode)
 
     local speaker, line, prompted = text.clean(original)
     if line == '' then return end
+    speaker, line = text.player_token(speaker, line, player_name())
 
     write_speak(speaker, line, prompted, mode)
 end)

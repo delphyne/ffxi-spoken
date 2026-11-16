@@ -56,7 +56,7 @@ simplest bridge.
 
 | Piece | State |
 | --- | --- |
-| Dialogue capture and cleanup | drafted, tested outside the game |
+| Dialogue capture and cleanup | drafted, tested outside the game; the player's own name becomes `<player>` in queue entries, the key form pack lines use |
 | Queue file protocol | drafted |
 | Host helper: watch, synthesise, play, stop | works in game with espeak, Piper, and Kokoro |
 | Local TTS engines (Kokoro, Piper) | installed by `make venv` and `make voices`; Kokoro on CUDA with `make venv-cuda` |

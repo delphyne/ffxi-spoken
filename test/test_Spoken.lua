@@ -45,6 +45,7 @@ windower = {
     add_to_chat = function(_, line) chat[#chat + 1] = line end,
     from_shift_jis = function(s) return s end,
     send_command = function(cmd) commands[#commands + 1] = cmd end,
+    ffxi = {get_player = function() return {name = 'Tester'} end},
 }
 
 -- in-memory files: io.open returns handles over the `files` table for the
@@ -122,6 +123,17 @@ _, line = text.clean('Iroha : ' .. string.char(0x81, 0x40) .. 'indented' .. stri
 check('ideographic space and star handled', line, 'indented')
 
 check('auto prompt detected', text.is_auto_prompt(AUTO_PROMPT), true)
+
+-- text.player_token (mirrored in tools/test_ffxitext.py)
+local function tokened(spk, ln) local a, b = text.player_token(spk, ln, 'Tester'); return a .. '|' .. b end
+check('player name becomes the token', tokened('Iroha', 'Welcome, Tester.'), 'Iroha|Welcome, <player>.')
+check('possessive keeps its s', tokened('Iroha', "Tester's legend."), "Iroha|<player>'s legend.")
+check('every occurrence', tokened('Iroha', 'Tester, Tester!'), 'Iroha|<player>, <player>!')
+check('whole words only', tokened('Iroha', 'Testers and Tester.'), 'Iroha|Testers and <player>.')
+check('inside a word untouched', tokened('Iroha', 'Attesters.'), 'Iroha|Attesters.')
+check('the player as speaker', tokened('Tester', 'Yes.'), '<player>|Yes.')
+check('no name, no change', select(2, text.player_token('Iroha', 'Tester.', nil)), 'Tester.')
+check('token constant', text.PLAYER, '<player>')
 check('plain prompt is not auto', text.is_auto_prompt('x' .. PROMPT), false)
 
 -------------------------------------------------------------------------------
@@ -133,11 +145,14 @@ check('log line untouched', incoming_text(raw, raw, 150), nil)
 check('speak entry written', (last_queue_line()):gsub('"t": %d+', '"t": T'),
     '{"seq": 1, "speaker": "Iroha", "text": "Welcome, traveler.", "prompted": true, "mode": 150, "t": T}')
 
+incoming_text('Iroha : Well met, Tester.', 'Iroha : Well met, Tester.', 150)
+check('queue entry carries the token', (last_queue_line()):match('"text": "([^"]*)"'), 'Well met, <player>.')
+
 incoming_text('Hello', 'Hello', 1)
-check('other chat modes ignored', select(2, (files[QUEUE]):gsub('\n', '')), 1)
+check('other chat modes ignored', select(2, (files[QUEUE]):gsub('\n', '')), 2)
 
 incoming_text('Narration.', 'Narration.', 151)
-check('system narration off by default', select(2, (files[QUEUE]):gsub('\n', '')), 1)
+check('system narration off by default', select(2, (files[QUEUE]):gsub('\n', '')), 2)
 
 command('system')
 incoming_text('Narration.', 'Narration.', 151)

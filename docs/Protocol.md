@@ -20,8 +20,11 @@ Speak entry:
 ```
 
 - `seq` increases by one per entry for the life of the addon.
-- `speaker` is the NPC name as shown in the log, or `""` for narration.
-- `text` is cleaned UTF-8 with no control bytes.
+- `speaker` is the NPC name as shown in the log, or `""` for narration,
+  or `<player>` when the player's own character is the one talking.
+- `text` is cleaned UTF-8 with no control bytes. The player's own name is
+  replaced by `<player>` wherever it appears as a whole word, which is
+  how pack lines are keyed (`docs/Audio-Packs.md`).
 - `prompted` is true when the game is waiting for the player to continue.
 - `mode` is the chat mode the line arrived in.
 - `t` is `os.time()` when the line arrived.

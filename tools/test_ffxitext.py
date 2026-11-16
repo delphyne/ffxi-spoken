@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ffxitext  # noqa: E402
-from ffxitext import clean, expand, variants  # noqa: E402
+from ffxitext import clean, expand, player_token, variants  # noqa: E402
 
 PROMPT = b"\x7f\x31"
 AUTO_PROMPT = b"\x7f\x34\x01"
@@ -37,6 +37,31 @@ class CleanMirrorsLua(unittest.TestCase):
 
     def test_auto_prompt_stripped_not_prompted(self):
         self.assertEqual(clean(b"Iroha : So..." + AUTO_PROMPT + b"\x07So what?")[1:], ("So... So what?", False))
+
+
+class PlayerTokenMirrorsLua(unittest.TestCase):
+    def tok(self, speaker, line):
+        return "|".join(player_token(speaker, line, "Tester"))
+
+    def test_name_becomes_the_token(self):
+        self.assertEqual(self.tok("Iroha", "Welcome, Tester."), "Iroha|Welcome, <player>.")
+
+    def test_possessive_keeps_its_s(self):
+        self.assertEqual(self.tok("Iroha", "Tester's legend."), "Iroha|<player>'s legend.")
+
+    def test_every_occurrence(self):
+        self.assertEqual(self.tok("Iroha", "Tester, Tester!"), "Iroha|<player>, <player>!")
+
+    def test_whole_words_only(self):
+        self.assertEqual(self.tok("Iroha", "Testers and Tester."), "Iroha|Testers and <player>.")
+        self.assertEqual(self.tok("Iroha", "Attesters."), "Iroha|Attesters.")
+
+    def test_player_as_speaker(self):
+        self.assertEqual(self.tok("Tester", "Yes."), "<player>|Yes.")
+
+    def test_no_name_no_change(self):
+        self.assertEqual(player_token("Iroha", "Tester.", None)[1], "Tester.")
+        self.assertEqual(ffxitext.PLAYER, "<player>")
 
 
 class CleanDetails(unittest.TestCase):

@@ -69,6 +69,18 @@ def _decode(b):
     return b.decode("cp932", "replace")
 
 
+def player_token(speaker, line, name):
+    """text.player_token: the player's name, whole words only, becomes
+    PLAYER in a cleaned line, and as the speaker. The addon does this
+    before writing its queue; a pack key already holds the token."""
+    if not name:
+        return speaker, line
+    line = re.sub(rf"(?<![A-Za-z]){re.escape(name)}(?![A-Za-z])", PLAYER, line)
+    if speaker == name:
+        speaker = PLAYER
+    return speaker, line
+
+
 def clean(raw, with_speaker=True):
     """text.clean: returns (speaker, line, prompted) for a Shift-JIS line.
 

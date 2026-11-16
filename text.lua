@@ -89,4 +89,20 @@ function text.clean(raw)
     return speaker, line, prompted
 end
 
+-- The token a pack line carries where the game printed the player's name,
+-- so the same line is one key for every player (docs/Audio-Packs.md).
+text.PLAYER = '<player>'
+
+-- Replaces every whole-word occurrence of the player's name in a cleaned
+-- line with the token, and the speaker when the player is the one talking.
+-- Whole words only: a player called Lion must not swallow the NPC Lion in
+-- "Lionel". Names are letters only, so the frontier is a letter boundary.
+function text.player_token(speaker, line, name)
+    if not name or name == '' then return speaker, line end
+    local pattern = '%f[%a]' .. plain(name) .. '%f[%A]'
+    line = line:gsub(pattern, text.PLAYER)
+    if speaker == name then speaker = text.PLAYER end
+    return speaker, line
+end
+
 return text
