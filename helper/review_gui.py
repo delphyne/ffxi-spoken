@@ -43,8 +43,10 @@ PALETTE = [
     ]),
 ]
 
-# How a mark looks on its button: alone, a stress tick is a sliver.
-SHOWN = {respell.PRIMARY: "ˈ◌", respell.SECONDARY: "ˌ◌", respell.LENGTH: "◌ː", respell.SYLLABLE: "◌.◌", " ": "_"}
+# How a mark looks on its button: alone, a stress tick is a sliver, and the
+# X core Liberation Sans drops the dotted circle at button sizes.
+SHOWN = {respell.PRIMARY: "ˈa", respell.SECONDARY: "ˌa", respell.LENGTH: "aː", respell.SYLLABLE: "a.a", " ": "_"}
+COLUMNS = 14
 
 KEYS = {"a": "accept", "r": "repeat", "e": "example", "s": "skip", "q": "quit", "j": "field"}
 
@@ -69,30 +71,34 @@ class Window:
         self.audio = threading.Lock()  # one playback at a time
         root = self.root = tk.Tk()
         root.title("Spoken lexicon review")
-        root.minsize(720, 560)
         try:
             ttk.Style().theme_use("clam")
         except tk.TclError:
             pass
         # The venv's Tk has no Xft, so it sees only the X server's core fonts
-        # and defaults to the bitmap "fixed"; Liberation Sans is scalable
-        # there and covers IPA. Xwayland also reports a DPI that makes Tk
-        # scale points by 3 or more, so sizes are pinned to 96 dpi.
-        if float(root.tk.call("tk", "scaling")) > 2:
-            root.tk.call("tk", "scaling", 96 / 72)
+        # and defaults to the bitmap "fixed", which ignores the desktop's
+        # scale; Liberation Sans is scalable there and covers IPA. Tk's
+        # scaling comes from Xft.dpi (KDE at 2.5x sets 240), so point sizes
+        # follow the desktop and pixel paddings are scaled by hand with px().
+        scale = float(root.tk.call("tk", "scaling")) / (96 / 72)
+        px = self.px = lambda n: round(n * scale)
+        root.minsize(px(720), px(560))
         base = font.nametofont("TkDefaultFont")
-        size = 11
+        size = 10
         families = {f.lower(): f for f in font.families()}
         family = next((families[f] for f in ("dejavu sans", "noto sans", "liberation sans") if f in families),
                       base.cget("family"))
         for name in ("TkDefaultFont", "TkTextFont", "TkHeadingFont", "TkMenuFont"):
             font.nametofont(name).configure(family=family, size=size)
-        self.f_word = font.Font(family=family, size=size + 10, weight="bold")
+        self.f_word = font.Font(family=family, size=size + 8, weight="bold")
         self.f_ipa = font.Font(family=family, size=size + 4)
-        self.f_glyph = font.Font(family=family, size=size + 3)
+        # Each glyph button gets its own font object: Tk caches fallback
+        # fonts per font object, and once one glyph the font lacks has made it
+        # search (ᵻ above 13pt, the dotted circle), a later θ draws blank.
+        self.glyph_font = lambda: font.Font(family=family, size=size + 2)
         self.f_small = font.Font(family=family, size=max(size - 2, 7))
 
-        main = ttk.Frame(root, padding=12)
+        main = ttk.Frame(root, padding=px(12))
         main.pack(fill="both", expand=True)
         self.v_count = tk.StringVar()
         self.v_word = tk.StringVar()
@@ -108,37 +114,43 @@ class Window:
         ttk.Label(head, textvariable=self.v_word, font=self.f_word).pack(side="left")
         ttk.Label(head, textvariable=self.v_count).pack(side="right")
         ttk.Label(main, textvariable=self.v_detail).pack(anchor="w")
-        ttk.Label(main, textvariable=self.v_example, wraplength=680, foreground="#555").pack(anchor="w", pady=(4, 8))
+        ttk.Label(main, textvariable=self.v_example, wraplength=px(680), foreground="#555").pack(anchor="w", pady=(px(4), px(8)))
         ttk.Label(main, textvariable=self.v_engine, font=self.f_ipa).pack(anchor="w")
 
         row = ttk.Frame(main)
-        row.pack(fill="x", pady=(8, 2))
+        row.pack(fill="x", pady=(px(8), px(2)))
         ttk.Label(row, text="yours:").pack(side="left")
         self.entry = ttk.Entry(row, textvariable=self.v_ipa, font=self.f_ipa, width=28)
-        self.entry.pack(side="left", padx=6, fill="x", expand=True)
+        self.entry.pack(side="left", padx=px(6), fill="x", expand=True)
         ttk.Button(row, text="Try  ⏎", command=self.try_ipa).pack(side="left")
-        ttk.Button(row, text="Reset", command=self.reset_ipa, takefocus=0).pack(side="left", padx=(6, 0))
+        ttk.Button(row, text="Reset", command=self.reset_ipa, takefocus=0).pack(side="left", padx=(px(6), 0))
         ttk.Label(main, textvariable=self.v_respell, foreground="#555").pack(anchor="w")
         self.v_ipa.trace_add("write", lambda *_: self.show_respell())
 
         buttons = ttk.Frame(main)
-        buttons.pack(fill="x", pady=10)
+        buttons.pack(fill="x", pady=px(10))
         for text, cmd in [("Accept  a", self.accept), ("Repeat  r", self.repeat), ("Example  e", self.example),
                           ("Skip  s", self.skip), ("Quit  q", self.quit)]:
-            ttk.Button(buttons, text=text, command=cmd, takefocus=0).pack(side="left", padx=(0, 6))
+            ttk.Button(buttons, text=text, command=cmd, takefocus=0).pack(side="left", padx=(0, px(6)))
 
         pal = ttk.Frame(main)
         pal.pack(fill="both", expand=True)
-        for group, glyphs in PALETTE:
-            box = ttk.LabelFrame(pal, text=group, padding=4)
-            box.pack(fill="x", pady=(4, 0))
-            for n, (glyph, example) in enumerate(glyphs):
-                cell = ttk.Frame(box)
-                cell.grid(row=n // 10 * 2, column=n % 10, padx=1, pady=(2, 0))
-                tk.Button(cell, text=SHOWN.get(glyph, glyph), font=self.f_glyph, width=3, takefocus=0,
-                          command=lambda g=glyph: self.insert(g)).pack()
-                ttk.Label(cell, text=example, font=self.f_small).pack()
-        ttk.Label(main, textvariable=self.v_status, foreground="#555").pack(anchor="w", pady=(8, 0))
+        groups = dict(PALETTE)
+        rows = [[("Vowels", groups["Vowels"])], [("Diphthongs", groups["Diphthongs"]), ("Marks", groups["Marks"])],
+                [("Consonants", groups["Consonants"])]]
+        for row_groups in rows:
+            line = ttk.Frame(pal)
+            line.pack(fill="x", pady=(px(3), 0))
+            for group, glyphs in row_groups:
+                box = ttk.LabelFrame(line, text=group, padding=(px(3), 0))
+                box.pack(side="left", fill="y", padx=(0, px(6)))
+                for n, (glyph, example) in enumerate(glyphs):
+                    cell = ttk.Frame(box)
+                    cell.grid(row=n // COLUMNS * 2, column=n % COLUMNS, padx=px(1), pady=(px(1), 0))
+                    tk.Button(cell, text=SHOWN.get(glyph, glyph), font=self.glyph_font(), width=3, padx=px(2), pady=0,
+                              takefocus=0, command=lambda g=glyph: self.insert(g)).pack()
+                    ttk.Label(cell, text=example, font=self.f_small).pack()
+        ttk.Label(main, textvariable=self.v_status, foreground="#555").pack(anchor="w", pady=(px(8), 0))
 
         root.bind("<Key>", self.on_key)
         self.entry.bind("<Return>", lambda e: self.try_ipa())
