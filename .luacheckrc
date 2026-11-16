@@ -12,5 +12,7 @@ globals = {
 allow_defined_top = true
 unused_args = false
 max_line_length = false
+-- Spoken.lua adds libs/ to package.cpath for the native player
+files['Spoken.lua'] = {globals = {'package'}}
 -- the harness swaps io.open for an in-memory version
 files['test'] = {globals = {'package', io = {fields = {'open'}}}}

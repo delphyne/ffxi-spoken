@@ -2,6 +2,11 @@
 
 Draft. Everything here may change.
 
+This contract is for helper mode only (`//spoken mode helper`), the
+developer's live-synthesis path. In audio mode, the default, the addon plays
+installed packs through the native module and writes nothing to `data/`
+except `misses.jsonl` when logging is on (`docs/Audio-Packs.md`).
+
 The addon runs inside the game under Wine; the helper runs on the Linux
 host. The Wine prefix is an ordinary host directory and the addon folder is
 a symlink to this checkout, so both sides read and write `data/` in this

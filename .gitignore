@@ -7,3 +7,6 @@ helper/voices/
 .venv/
 .*.kate-swp
 audio/
+native/deps/
+native/*.exe
+libs/*.tmp

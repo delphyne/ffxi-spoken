@@ -7,6 +7,10 @@
 #   make test        run the tests under luajit
 #   make lint        run luacheck
 #   make check       both
+#   make deps        cross-build libogg, libopus, and opusfile (32-bit Windows, static) into native/deps/
+#   make native      build libs/spokenplay.dll, the audio player (needs i686-w64-mingw32-gcc and make deps)
+#   make native-test FILE="audio/<pack>/<ver>/<Speaker>/<file>.opus" [STOP_MS=1500] [VOLUME=50]
+#                    play one file through the same code under the game's Wine prefix
 #   make venv        build .venv (Python 3.12 via uv) with the TTS engines and PyYAML
 #   make venv-cuda   add the CUDA build of onnxruntime so Kokoro runs on an NVIDIA GPU
 #   make voices      download the Kokoro model and a few Piper voices
@@ -62,7 +66,23 @@ CUDA_PKGS := onnxruntime-gpu "nvidia-cuda-runtime>=13,<14" nvidia-cudnn-cu13 "nv
 
 LSB ?= $(HOME)/scm/github/LandSandBoat/server
 
-.PHONY: install uninstall where test lint check helper say venv venv-cuda voices census nouns review pack release
+# The player is a 32-bit Windows DLL linked against Windower's LuaCore.dll,
+# like Balloon's gamepad module. Any Lua 5.1 compatible headers will do;
+# LuaJIT's are 5.1. Opus decoding is static: make deps builds the libraries.
+CC32 ?= i686-w64-mingw32-gcc
+LUA_INC ?= $(firstword $(wildcard \
+	/home/linuxbrew/.linuxbrew/include/luajit-2.1 \
+	/usr/include/luajit-2.1 \
+	/usr/include/lua5.1 \
+	/usr/include/lua-5.1))
+LUACORE := $(WINDOWER)/plugins/LuaCore.dll
+DEPS := $(REPO)/native/deps/prefix
+DEP_LIBS := $(DEPS)/lib/libopusfile.a $(DEPS)/lib/libopus.a $(DEPS)/lib/libogg.a
+NATIVE_CFLAGS := -O2 -Wall -Wextra -D_WIN32_WINNT=0x0600 -I$(DEPS)/include -I$(DEPS)/include/opus
+# the Wine prefix two levels above drive_c/Windower4, for running the test exe
+WINEPREFIX := $(abspath $(WINDOWER)/../..)
+
+.PHONY: install uninstall where test lint check helper say venv venv-cuda voices census nouns review pack release deps native native-test
 
 # Each recipe below is one shell command, so an exit inside it ends the target.
 
@@ -175,3 +195,27 @@ lint:
 	luacheck .
 
 check: lint test
+
+deps $(DEP_LIBS):
+	native/build-deps.sh
+
+native: libs/spokenplay.dll
+
+libs/spokenplay.dll: native/spokenplay_lua.c native/spokenplay_core.c native/spokenplay.h $(DEP_LIBS)
+	@if [ -z "$(LUA_INC)" ]; then echo "No Lua 5.1 headers found; set LUA_INC." >&2; exit 1; fi; \
+	if [ ! -f "$(LUACORE)" ]; then echo "$(LUACORE) not found; set WINDOWER." >&2; exit 1; fi; \
+	mkdir -p libs && \
+	$(CC32) $(NATIVE_CFLAGS) -shared -static-libgcc -o $@.tmp native/spokenplay_lua.c native/spokenplay_core.c \
+		-I"$(LUA_INC)" $(DEP_LIBS) "$(LUACORE)" -lwinmm && \
+	echo "imports:" && $(CC32:gcc=objdump) -p $@.tmp | grep 'DLL Name' && \
+	mv -f $@.tmp $@ && \
+	echo "Built $@ (//lua unload spoken before replacing it, then //lua load spoken)"
+
+native/spokenplay_test.exe: native/spokenplay_test.c native/spokenplay_core.c native/spokenplay.h $(DEP_LIBS)
+	$(CC32) $(NATIVE_CFLAGS) -static-libgcc -o $@ native/spokenplay_test.c native/spokenplay_core.c $(DEP_LIBS) -lwinmm
+
+# Windows APIs take forward slashes, so Z:/unix/path works as a path here.
+native-test: native/spokenplay_test.exe
+	@if [ -z "$(FILE)" ]; then echo 'usage: make native-test FILE="audio/rhapsodies/0.1/Iroha/<file>.opus" [STOP_MS=1500] [VOLUME=50]' >&2; exit 1; fi; \
+	flatpak run --env=WINEPREFIX="$(WINEPREFIX)" --env=WINEDEBUG=-all --command=wine net.windower.Lumoria \
+		"Z:$(REPO)/native/spokenplay_test.exe" "Z:$$(realpath "$(FILE)")" $(STOP_MS) $(VOLUME)

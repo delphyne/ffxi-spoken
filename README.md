@@ -28,44 +28,53 @@ original design record in [docs/Voice-Handoff.md](docs/Voice-Handoff.md),
 and the interim addon-to-helper contract in [docs/Protocol.md](docs/Protocol.md).
 
 Everything below the addon itself is the generation pipeline, run by a
-developer to produce packs, and the interim player used while developing.
-A native playback module will replace the helper on the player's side
-before a first release.
+developer to produce packs.
 
 Two parts:
 
-- **The addon** (`Spoken.lua`) runs in Windower. It cleans each dialogue line
-  (Shift-JIS, colour codes, prompt markers, element symbols) and appends it
-  to a queue file. It can auto-advance a prompted line when the helper says
-  the audio has finished.
-- **The helper** (`helper/spoken_helper.py`) runs on the Linux host, watches
-  the queue, synthesises speech with a local engine, caches it, plays it,
-  and reports back. Engines: [Kokoro](https://github.com/thewh1teagle/kokoro-onnx)
-  (most natural, about fifty voices in one model; roughly a third of
-  realtime on CPU so a long line waits a few seconds, six times faster on
-  an NVIDIA GPU), [Piper](https://github.com/OHF-Voice/piper1-gpl)
-  (near-instant, clear but flat), and espeak-ng as a last resort so the
-  pipeline can be tested without downloading anything.
+- **The addon** (`Spoken.lua`, `packs.lua`, `libs/spokenplay.dll`) runs in
+  Windower. It cleans each dialogue line (Shift-JIS, colour codes, prompt
+  markers, element symbols), swaps the player's own name for `<player>`,
+  looks the speaker and text up in the manifests of the packs installed
+  under `audio/`, and plays the file through the native player: a small C
+  module that decodes Opus and plays through winmm from its own thread, so
+  the next line, a release, or zoning cuts the sound at once. A line no pack
+  has is silent; `//spoken log` records each one in `data/misses.jsonl`
+  with the raw bytes, zone, position, target, and the nearest lines the
+  packs do have, so the gap can be traced. It can auto-advance a prompted
+  line when the audio has finished.
+- **The helper** (`helper/spoken_helper.py`) runs on the Linux host and is
+  the developer's live path (`//spoken mode helper`): the addon writes each
+  line to a queue file instead, and the helper synthesises it with a local
+  engine, caches it, plays it, and reports back. Engines:
+  [Kokoro](https://github.com/thewh1teagle/kokoro-onnx) (most natural,
+  about fifty voices in one model; roughly a third of realtime on CPU so a
+  long line waits a few seconds, six times faster on an NVIDIA GPU),
+  [Piper](https://github.com/OHF-Voice/piper1-gpl) (near-instant, clear but
+  flat), and espeak-ng as a last resort so the pipeline can be tested
+  without downloading anything.
 
-Why a helper rather than doing it all in Lua: Windower's Lua can make HTTPS
-calls but they block the game thread, it can play a WAV but cannot stop one,
-and the Wine prefix is a plain host directory, so a file queue is the
-simplest bridge.
+Why a helper for live speech rather than doing it all in Lua: Windower's
+Lua can make HTTPS calls but they block the game thread, and the engines
+need a Python environment nobody should have to install to play. Why a
+native module for playback: Windower's own `play_sound` takes only WAV and
+cannot stop a sound.
 
 ## Status
 
 | Piece | State |
 | --- | --- |
-| Dialogue capture and cleanup | drafted, tested outside the game; the player's own name becomes `<player>` in queue entries, the key form pack lines use |
-| Queue file protocol | drafted |
+| Dialogue capture and cleanup | drafted, tested outside the game; the player's own name becomes `<player>`, the key form pack lines use |
+| Pack playback in the addon | `packs.lua` indexes every installed `audio/<pack>/<version>/manifest.json` at load and `//spoken reload`; a captured line is looked up by speaker and text and played through the native module; misses are silent and, with `//spoken log`, written to `data/misses.jsonl` with everything needed to see why; tested outside the game, not yet in it |
+| Queue file protocol | drafted; helper mode only (`//spoken mode helper`) |
 | Host helper: watch, synthesise, play, stop | works in game with espeak, Piper, and Kokoro |
 | Local TTS engines (Kokoro, Piper) | installed by `make venv` and `make voices`; Kokoro on CUDA with `make venv-cuda` |
 | Auto-advance via Windower `setkey` | unverified under Wine; parked until the rest is stable |
 | Voice casting per NPC | `helper/cast.py` casts Balloon's 230 portrait NPCs by hand; everyone else is cast by race from `helper/census.json` (13,845 names from LandSandBoat and the client) |
 | Pronunciation lexicon | `helper/lexicon.yaml` with IPA; `make nouns` and `make review` build it from the game's text; every proper noun Rhapsodies of Vana'diel speaks is reviewed (64 entries) |
 | Dialogue extraction from the client | dialogue tables and NPC lists decode; `tools/xievent.py` disassembles event bytecode for every zone (4 events of 84,914 still fail, all in an unused zone) and attributes each line to its speaker; `tools/ffxitext.py` cleans the text the way the addon does and expands the client's parameter codes; Rhapsodies resolves to 1,416 pack texts from 31 speakers, 25 lines live-only (`docs/Event-Decoding-Handoff.md`) |
-| Pre-generated voice packs | `make pack VERSION=x` builds one from the decoder's corpus (Opus files, manifest, zip) and `make release` publishes it; the manifests and index under `packs/` are committed, the audio is not (`docs/Audio-Packs.md`); Rhapsodies 0.1 is built; nothing plays packs yet |
-| Native playback module | planned, after the first pack exists |
+| Pre-generated voice packs | `make pack VERSION=x` builds one from the decoder's corpus (Opus files, manifest, zip) and `make release` publishes it; the manifests and index under `packs/` are committed, the audio is not (`docs/Audio-Packs.md`); Rhapsodies 0.1 is built and installs by unzipping into `audio/` |
+| Native playback module | `libs/spokenplay.dll`: winmm playback of Ogg Opus from a worker thread, with stop, state, and volume (`native/`, `make deps && make native`); plays, stops, and reports errors under the game's Wine prefix from a console (`make native-test`); first in-game run still to do |
 
 ## Related
 
@@ -82,6 +91,9 @@ simplest bridge.
 ```
 make install        # symlink this checkout into Windower's addons folder
 make check          # luacheck plus the Lua and Python tests
+make deps           # cross-build libogg, libopus, opusfile (32-bit, static) into native/deps/
+make native         # build libs/spokenplay.dll with i686-w64-mingw32-gcc against Windower's LuaCore.dll
+make native-test FILE="audio/rhapsodies/0.1/Iroha/<file>.opus" [STOP_MS=1500]   # play it under the game's Wine
 make venv           # Python 3.12 venv with kokoro-onnx and piper-tts (needs uv)
 make venv-cuda      # swap in the CUDA build so Kokoro runs on an NVIDIA GPU
 make voices         # download the Kokoro model and three Piper voices (~500 MB)

@@ -15,13 +15,15 @@ developer's setup, not a player's. So:
   loop are the generation pipeline. They run on the developer's machine to
   produce packs. Their protocol (`docs/Protocol.md`) is interim and does not
   need to be polished for strangers.
-- Playback on the player's side will be a native Lua C module, the route
-  Balloon's gamepad module already uses: loaded by the addon, decodes Opus,
-  plays through a Windows audio API under Wine, stops on advance or release,
-  and holds the manifest index in-process. No file polling, no "is the helper
-  running" failure mode. Deferred until close to a first viable release; the
-  Python helper is the interim player. `windower.play_sound` is not an
-  option: it cannot stop a sound and takes only WAV.
+- Playback on the player's side is a native Lua C module, the route
+  Balloon's gamepad module already uses: `libs/spokenplay.dll` (built from
+  `native/`) is loaded by the addon, decodes Opus with opusfile, plays
+  through winmm from its own thread, and stops on the next line, a
+  release, or zoning. The addon holds the manifest index in memory
+  (`packs.lua`). No file polling, no "is the helper running" failure mode.
+  The Python helper is the developer's live-synthesis path (`//spoken mode
+  helper`). `windower.play_sound` is not an option: it cannot stop a sound
+  and takes only WAV.
 
 ## What the client's layout offers, and what it does not
 
@@ -177,12 +179,42 @@ after cleaning, and 38 menus; 75 minutes of speech, 29 MB, six minutes on
 a GPU. No agent is involved: `make pack` and `make release` are the whole
 procedure.
 
+## Playing (built 2026-11-16)
+
+- `packs.lua` scans `audio/` at load and on `//spoken reload`: every
+  `<pack>/<version>/manifest.json`, skipping `.part`, keeping the highest
+  version of a pack and warning about the rest. The index is three tables:
+  speaker plus text to file, text to the speakers that say it, and a folded
+  form (letters and digits only) of speaker and text to the lines that fold
+  the same. The first pack by name wins a line two packs share. Decoding
+  the 670 KB Rhapsodies manifest takes about 25 ms. Windower's `json.lua`
+  is not used: it mis-parses escaped quotes, which dialogue is full of.
+- The native module is `native/spokenplay_core.c` (no Lua: one worker
+  thread, a mailbox, a generation counter; reads the file, `op_open_memory`,
+  `op_read_stereo` into four 100 ms waveOut buffers at 48 kHz stereo, with
+  software gain; a terminal state is only written when the generation still
+  matches), `native/spokenplay_lua.c` (the `play`, `stop`, `state`,
+  `set_volume`, `version`, `shutdown` bindings and a sentinel userdata
+  whose finaliser shuts the thread down before Lua frees the DLL), and
+  `native/spokenplay_test.c`, a console driver `make native-test` runs
+  under the game's Wine prefix. winmm over DirectSound or XAudio2: plain C,
+  no COM or window handle, and under Wine it shares the mixer the game's
+  own sound uses. Deps are static, cross-built by `native/build-deps.sh`.
+- The addon's `prerender` polls `state()` every `PollFrames` frames;
+  `done` on a prompted line drives auto-advance exactly as the helper's
+  status file does in helper mode.
+- Misses: with `//spoken log` (or debug) on, every line no pack has is one
+  JSON row in `data/misses.jsonl`: reason (`unknown`, `file_missing`,
+  `no_player`, `play_failed`), speaker and text as looked up, the raw chat
+  bytes with everything outside printable ASCII escaped, the player's
+  name, zone, position, current target, the other speakers of the same
+  text, the nearest folded matches, and the installed packs. That is what
+  it takes to tell a cleaning mismatch from a missing line from a bad
+  speaker attribution.
+
 ## Open
 
-- The native player module: audio API choice under Wine, Opus decoding
-  (libopus and opusfile are small and static-linkable), and how the addon
-  hands it speaker and text.
-- Playback of pack files by the interim helper and, later, the native
-  module: the helper plays its own WAV cache today and does not read
-  `audio/` yet.
-- The update channel's index format.
+- The update channel's index format, and installing or upgrading a pack
+  from inside the game or the addon rather than by unzipping into `audio/`.
+- First in-game run of the native module; latency and device behaviour
+  inside the FFXI process.
