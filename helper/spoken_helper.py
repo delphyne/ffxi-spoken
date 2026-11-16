@@ -14,12 +14,18 @@ in the order `auto` tries them:
   none    print what would be spoken and pretend it took a moment
 
     .venv/bin/python -I helper/spoken_helper.py --data ./data [--backend piper]
+
+Try a pronunciation or a voice without the game (plays once and exits):
+
+    make say TEXT="Welcome to Vana'diel." [SPEAKER=Iroha] [BACKEND=piper]
+    .venv/bin/python -I helper/spoken_helper.py --say "Vana'diel" --speaker Iroha --no-lexicon
 """
 
 import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -27,6 +33,9 @@ import tempfile
 import time
 import wave
 from pathlib import Path
+
+# `python -I` leaves the script's folder off sys.path; casting.py lives beside us.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 
 # ---------------------------------------------------------------------------
@@ -70,6 +79,129 @@ class QueueTail:
             except (ValueError, UnicodeDecodeError) as e:
                 print(f"skipping bad queue line: {e}", file=sys.stderr)
         return entries
+
+
+# ---------------------------------------------------------------------------
+# pronunciation
+
+PHONEME_OPEN, PHONEME_CLOSE = "[[", "]]"   # Piper's inline-IPA markup; used as our neutral form too
+PHONEME_BLOCK = re.compile(r"\[\[(.+?)\]\]")
+
+
+class Lexicon:
+    """Pronunciations for names the engines mangle, from helper/lexicon.yaml.
+
+    An entry is either a respelling string, or a mapping with `ipa` (espeak
+    style IPA, as Piper and Kokoro consume it) and optionally `spell`, a hand
+    respelling for engines that cannot take phonemes; without `spell` one is
+    derived from the IPA by respell.py. `apply(text, phonemes=True)` emits
+    `[[ipa]]` for engines that take phonemes, `phonemes=False` the respelling.
+
+    Longest key first so a phrase beats a word inside it; keys starting with
+    `_` are notes. Matches are case-sensitive and bounded by non-word
+    characters, apostrophes and hyphens counting as word characters."""
+
+    def __init__(self, entries=None):
+        self.entries = {}
+        for key, value in (entries or {}).items():
+            if key.startswith("_"):
+                continue
+            if isinstance(value, dict):
+                ipa = value.get("ipa")
+                spell = value.get("spell")
+                if not ipa and not spell:
+                    raise ValueError(f"lexicon entry {key!r} needs ipa or spell")
+                marked = normalise_ipa(key, str(ipa)) if ipa else None
+                # engines get the IPA without syllable dots (Kokoro pauses at them);
+                # the respeller keeps them as explicit syllable breaks
+                self.entries[key] = {"ipa": marked.replace(".", "") if marked else None,
+                                     "ipa_marked": marked, "spell": spell}
+            else:
+                self.entries[key] = {"ipa": None, "ipa_marked": None, "spell": str(value)}
+        if self.entries:
+            words = sorted(self.entries, key=len, reverse=True)
+            alts = "|".join(re.escape(w) for w in words)
+            self.pattern = re.compile(r"(?<![\w'\-])(?:" + alts + r")(?![\w'\-])")
+        else:
+            self.pattern = None
+
+    @classmethod
+    def load(cls, path):
+        p = Path(path)
+        if not p.exists():
+            return cls()
+        with p.open(encoding="utf-8") as f:
+            if p.suffix in (".yaml", ".yml"):
+                try:
+                    import yaml
+                except ImportError as e:
+                    raise RuntimeError(f"{p.name} needs PyYAML; run make venv") from e
+                try:
+                    data = yaml.safe_load(f) or {}
+                except yaml.YAMLError as e:
+                    mark = getattr(e, "problem_mark", None)
+                    where = f" at line {mark.line + 1}" if mark else ""
+                    raise ValueError(f"{p.name}{where}: {getattr(e, 'problem', e)}. YAML values that start "
+                                     "with punctuation such as , ' \" [ { or a stress mark need quotes: "
+                                     "ipa: \"ˌlɪlɪˈsɛt\"") from e
+            else:
+                data = json.load(f)
+        if not isinstance(data, dict):
+            raise ValueError(f"{p}: expected a mapping of word to pronunciation")
+        return cls({str(k): v for k, v in data.items()})
+
+    def spelling(self, key):
+        """The respelling for an entry: the hand one, else derived from IPA."""
+        e = self.entries[key]
+        if e["spell"]:
+            return e["spell"]
+        import respell  # beside this file
+        return respell.respell(e["ipa_marked"] or e["ipa"])
+
+    def replacement(self, key, phonemes):
+        e = self.entries[key]
+        if phonemes and e["ipa"]:
+            return PHONEME_OPEN + e["ipa"] + PHONEME_CLOSE
+        return self.spelling(key)
+
+    def apply(self, text, phonemes=False):
+        if not self.pattern:
+            return text
+        return self.pattern.sub(lambda m: self.replacement(m.group(0), phonemes), text)
+
+
+def normalise_ipa(key, ipa):
+    """Accept the common slips in hand-typed IPA and reject the rest.
+    ASCII ' and , become the stress marks ˈ and ˌ and : the length mark ː;
+    stress marks move to espeak's position, just before the vowel;
+    syllable dots are kept
+    here (the respeller honours them; the caller strips them for the
+    engines). Anything outside the espeak phoneme set the engines know is an
+    error naming the characters, so a Kirshenbaum-style `lIlI'sEt` is
+    caught rather than mumbled."""
+    import respell  # beside this file
+    ipa = ipa.replace("'", respell.PRIMARY).replace(",", respell.SECONDARY).replace(":", respell.LENGTH)
+    ipa = respell.espeak_stress(ipa)
+    known = set("".join(respell.VOWELS) + "".join(respell.CONSONANTS)) | {respell.PRIMARY, respell.SECONDARY,
+                                                                          respell.LENGTH, respell.SYLLABLE, " "}
+    bad = sorted({c for c in ipa if c not in known})
+    if bad:
+        raise ValueError(f"lexicon entry {key!r}: unknown IPA characters {''.join(bad)!r} in {ipa!r}. "
+                         "Use espeak-style IPA (ɪ not I, ɛ not E, ˈ before the stressed vowel); "
+                         "see the header of lexicon.yaml for how to get a starting point.")
+    return ipa
+
+
+def splice_phonemes(text, phonemize):
+    """Turn text with `[[ipa]]` blocks into one phoneme string: the plain
+    stretches go through `phonemize`, the blocks are used verbatim."""
+    out = []
+    for k, part in enumerate(PHONEME_BLOCK.split(text)):
+        if k % 2:
+            out.append(part.strip())
+        elif part.strip():
+            out.append(phonemize(part.strip()))
+    return " ".join(out)
 
 
 # ---------------------------------------------------------------------------
@@ -117,10 +249,12 @@ class Backend:
     keeps its models in a subfolder named after itself."""
 
     name = "none"
+    phonemes = False  # True when synthesise() understands [[ipa]] blocks
 
-    def __init__(self, voices_dir, voice_map):
+    def __init__(self, voices_dir, voice_map, fallback=None):
         self.voices_dir = Path(voices_dir)
         self.voice_map = voice_map
+        self.fallback = fallback  # speaker -> voice or None, for names not in the map
 
     @property
     def model_dir(self):
@@ -131,7 +265,10 @@ class Backend:
         return True
 
     def voice_for(self, speaker):
-        return self.voice_map.get(speaker) or self.voice_map.get("default") or "default"
+        voice = self.voice_map.get(speaker)
+        if not voice and self.fallback and speaker:
+            voice = self.fallback(speaker)
+        return voice or self.voice_map.get("default") or "default"
 
     def synthesise(self, text, voice, out_path):
         raise NotImplementedError
@@ -164,9 +301,11 @@ class EspeakBackend(Backend):
 class PiperBackend(Backend):
     """Piper (https://github.com/OHF-Voice/piper1-gpl). Voices are
     `<name>.onnx` plus `<name>.onnx.json` in voices/piper/, fetched with
-    `python -m piper.download_voices <name>`. Fast; clear but flat."""
+    `python -m piper.download_voices <name>`. Fast; clear but flat. Reads
+    `[[ipa]]` blocks natively."""
 
     name = "piper"
+    phonemes = True
 
     @classmethod
     def available(cls, voices_dir):
@@ -215,11 +354,12 @@ class KokoroBackend(Backend):
     on an NVIDIA GPU with `make venv-cuda`."""
 
     name = "kokoro"
+    phonemes = True
     model_file = "kokoro-v1.0.onnx"
     voices_file = "voices-v1.0.bin"
 
-    def __init__(self, voices_dir, voice_map):
-        super().__init__(voices_dir, voice_map)
+    def __init__(self, voices_dir, voice_map, fallback=None):
+        super().__init__(voices_dir, voice_map, fallback)
         self._engine = None
         self.device = None
 
@@ -259,7 +399,15 @@ class KokoroBackend(Backend):
     def synthesise(self, text, voice, out_path):
         if voice == "default":
             raise ValueError("voices.json needs a kokoro default voice")
-        samples, rate = self.engine().create(text, voice=voice, lang=kokoro_lang(voice))
+        engine = self.engine()
+        lang = kokoro_lang(voice)
+        if PHONEME_OPEN in text:
+            # kokoro-onnx has no inline phoneme markup; phonemise the plain
+            # parts ourselves and hand it the whole line as phonemes
+            phonemes = splice_phonemes(text, lambda part: engine.tokenizer.phonemize(part, lang))
+            samples, rate = engine.create(phonemes, voice=voice, lang=lang, is_phonemes=True)
+        else:
+            samples, rate = engine.create(text, voice=voice, lang=lang)
         write_wav(out_path, samples, rate)
         return out_path
 
@@ -291,7 +439,8 @@ def pick_player():
 # helper
 
 class Helper:
-    def __init__(self, data_dir, backend, cache_dir, player, poll_interval=0.1):
+    def __init__(self, data_dir, backend, cache_dir, player, poll_interval=0.1, lexicon=None):
+        self.lexicon = lexicon or Lexicon()
         self.data_dir = Path(data_dir)
         self.queue = QueueTail(self.data_dir / "queue.jsonl")
         self.status_path = self.data_dir / "status.json"
@@ -324,7 +473,7 @@ class Helper:
         self.stop()
         seq = entry["seq"]
         speaker = entry.get("speaker", "")
-        text = entry.get("text", "")
+        text = self.lexicon.apply(entry.get("text", ""), phonemes=self.backend.phonemes)
         voice = self.backend.voice_for(speaker)
         wav = self.cache_dir / f"{cache_key(speaker, text, voice)}.wav"
         cached = wav.exists()
@@ -382,6 +531,18 @@ class Helper:
             self.stop()
 
 
+def census_fallback(path, backend_name):
+    """Cast speakers missing from voices.json by the race the census
+    recorded for them (helper/census.py). None when there is no census."""
+    p = Path(path)
+    if not p.exists():
+        return None
+    import casting  # beside this file
+    with p.open(encoding="utf-8") as f:
+        census = json.load(f)
+    return lambda speaker: casting.census_voice(census, speaker, backend_name)
+
+
 def load_voice_map(path, backend_name):
     """voices.json maps speaker -> voice, either flat or grouped by backend:
     {"kokoro": {"default": "am_adam", "Iroha": "jf_alpha"}, "piper": {...}}.
@@ -396,6 +557,34 @@ def load_voice_map(path, backend_name):
     return data
 
 
+def say(backend, lexicon, player, text, speaker, cache_dir, fresh=False):
+    """Speak one line the way the helper would, print what was sent to the
+    engine, and wait for playback to finish."""
+    spoken = lexicon.apply(text, phonemes=backend.phonemes)
+    voice = backend.voice_for(speaker)
+    print(f"speaker: {speaker or '<narrator>'}  voice: {voice}  backend: {backend.name}"
+          f"  ({'takes phonemes' if backend.phonemes else 'respelling only'})")
+    if spoken != text:
+        print(f"lexicon: {text!r} -> {spoken!r}")
+        if backend.phonemes:
+            print(f"         respelling would be {lexicon.apply(text)!r}")
+    else:
+        print(f"text:    {spoken!r}")
+    wav = Path(cache_dir) / f"{cache_key(speaker, spoken, voice)}.wav"
+    if fresh and wav.exists():
+        wav.unlink()
+    if not wav.exists():
+        wav.parent.mkdir(parents=True, exist_ok=True)
+        if backend.synthesise(spoken, voice, wav) is None:
+            return 0
+    else:
+        print("(cached)")
+    if player is None:
+        print(f"no audio player found; wrote {wav}", file=sys.stderr)
+        return 1
+    return subprocess.run(player + [str(wav)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode
+
+
 def main(argv=None):
     here = Path(__file__).resolve().parent
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -404,14 +593,25 @@ def main(argv=None):
     ap.add_argument("--voices", default=str(here / "voices"), help="folder with a subfolder of models per backend")
     ap.add_argument("--voice-map", default=str(here / "voices.json"), help="speaker -> voice name, per backend")
     ap.add_argument("--cache", default=str(here / "cache"))
+    ap.add_argument("--lexicon", default=str(here / "lexicon.yaml"), help="word -> respelling (YAML or JSON), applied before synthesis")
+    ap.add_argument("--census", default=str(here / "census.json"), help="NPC -> race, for casting speakers not in the voice map")
+    ap.add_argument("--say", metavar="TEXT", help="speak TEXT once and exit, instead of watching the queue")
+    ap.add_argument("--speaker", default="", help="with --say: the NPC name to cast the voice from")
+    ap.add_argument("--no-lexicon", action="store_true", help="with --say: skip the lexicon, to hear the raw text")
+    ap.add_argument("--fresh", action="store_true", help="with --say: regenerate even if the line is cached")
     args = ap.parse_args(argv)
 
     sys.stdout.reconfigure(line_buffering=True)  # progress shows up when logged to a file
     backend_cls = pick_backend(args.backend, args.voices)
-    backend = backend_cls(args.voices, load_voice_map(args.voice_map, backend_cls.name))
+    backend = backend_cls(args.voices, load_voice_map(args.voice_map, backend_cls.name),
+                          fallback=census_fallback(args.census, backend_cls.name))
+    lexicon = Lexicon() if args.no_lexicon else Lexicon.load(args.lexicon)
+    if args.say is not None:
+        return say(backend, lexicon, pick_player(), args.say, args.speaker, args.cache, fresh=args.fresh)
     Path(args.data).mkdir(parents=True, exist_ok=True)
-    Helper(args.data, backend, args.cache, pick_player()).run()
+    Helper(args.data, backend, args.cache, pick_player(), lexicon=lexicon).run()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

@@ -16,32 +16,13 @@ another group here and re-running; hand edits to voices.json are lost.
     python3 helper/cast.py --check    # exit 1 if voices.json is stale
 """
 
-import hashlib
 import json
 import sys
 from pathlib import Path
 
-# group -> (kokoro pool, piper voice)
-POOLS = {
-    "hume_m":   (["am_adam", "am_michael", "am_eric", "am_liam"], "en_US-lessac-medium"),
-    "hume_f":   (["af_sarah", "af_bella", "af_jessica", "af_heart"], "en_US-amy-medium"),
-    "old_m":    (["am_santa"], "en_US-lessac-medium"),
-    "boy":      (["am_puck"], "en_US-lessac-medium"),
-    "elvaan_m": (["bm_george", "bm_daniel", "bm_lewis"], "en_GB-alan-medium"),
-    "elvaan_f": (["bf_emma", "bf_isabella", "bf_alice"], "en_US-amy-medium"),
-    "taru_m":   (["am_puck"], "en_US-lessac-medium"),
-    "taru_f":   (["af_sky", "af_nova"], "en_US-amy-medium"),
-    "mithra":   (["af_kore", "af_nicole", "af_river"], "en_US-amy-medium"),
-    "galka":    (["am_onyx", "am_fenrir"], "en_GB-alan-medium"),
-    "zilart_m": (["bm_fable"], "en_GB-alan-medium"),
-    "zilart_f": (["bf_isabella"], "en_US-amy-medium"),
-    "deity_m":  (["am_onyx"], "en_GB-alan-medium"),
-    "deity_f":  (["af_aoede"], "en_US-amy-medium"),
-    "small":    (["am_puck"], "en_US-lessac-medium"),   # moogles, qiqirn, carbuncle
-    "dark":     (["am_fenrir"], "en_GB-alan-medium"),
-    "dark_f":   (["bf_lily"], "en_US-amy-medium"),
-    "cait":     (["bf_lily"], "en_US-amy-medium"),
-}
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from casting import POOLS, pick  # noqa: E402
 
 # Each entry is one character; a list is one character under several names.
 CAST = {
@@ -101,10 +82,6 @@ CAST = {
 
 DEFAULTS = {"kokoro": {"default": "am_adam", "": "bm_fable"},
             "piper": {"default": "en_US-lessac-medium", "": "en_GB-alan-medium"}}
-
-
-def pick(pool, name):
-    return pool[int(hashlib.sha1(name.encode("utf-8")).hexdigest(), 16) % len(pool)]
 
 
 def build():

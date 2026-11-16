@@ -1,0 +1,31 @@
+# Pronunciation lexicon, applied to dialogue before synthesis.
+#
+# Each key is a whole word or phrase exactly as it appears in the text
+# (case-sensitive). The longest matching key wins, so a phrase beats a word
+# inside it. Matches stop at word boundaries; apostrophes and hyphens count
+# as part of a word, so "Vana'diel" matches but "Vana'diel's" does not and
+# needs its own entry.
+#
+# A value is one of:
+#   a respelling string            used on every engine
+#   ipa: <espeak-style IPA>        sent as phonemes to Piper and Kokoro
+#   spell: <respelling>            optional with ipa; for engines that cannot
+#                                  take phonemes, else one is derived from
+#                                  the IPA (helper/respell.py)
+#
+# To get IPA for a word: .venv/bin/python -c "from kokoro_onnx.tokenizer
+# import Tokenizer; print(Tokenizer().phonemize('Altana'))" shows what the
+# engine would say unaided; edit from there. Stress marks (ˈ primary,
+# ˌ secondary) may be written before the syllable or before its vowel; they
+# are moved to the vowel, which is where the engines expect them. ASCII stand-ins are
+# accepted: ' and , for the stress marks, : for the length mark ː, and . to
+# mark syllables for the respelling (the engines never see the dots).
+#
+# The cache key is taken after substitution, so changing an entry only
+# regenerates the lines it touches. `make say TEXT="..."` plays one line and
+# prints which form was used.
+
+Vana'diel:
+    ipa: vɑː.nɑː.djɛl
+Lilisette:
+    ipa: "ˌlɪl.ɪ.ˈsɛt"   # lil-i-SET; a value starting with a stress mark or , ' needs quotes

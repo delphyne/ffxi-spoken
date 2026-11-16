@@ -125,6 +125,199 @@ class HelperTest(unittest.TestCase):
         self.assertEqual(a, sh.cache_key("Iroha", "Hi", "v1"))
 
 
+class CensusCastingTest(unittest.TestCase):
+    census = {"Numi Adaligo": {"race": 7, "talks": True}, "Hyria": {"race": 2}, "Iroha": {"race": None, "model": 2449}}
+
+    def test_race_picks_pool_deterministically(self):
+        import casting
+        v = casting.census_voice(self.census, "Numi Adaligo", "kokoro")
+        self.assertIn(v, casting.POOLS["mithra"][0])
+        self.assertEqual(v, casting.census_voice(self.census, "Numi Adaligo", "kokoro"))
+        self.assertEqual(casting.census_voice(self.census, "Hyria", "piper"), casting.POOLS["hume_f"][1])
+        self.assertIsNone(casting.census_voice(self.census, "Iroha", "kokoro"), "no race, no guess")
+        self.assertIsNone(casting.census_voice(self.census, "Nobody", "kokoro"))
+        self.assertIsNone(casting.census_voice(self.census, "Hyria", "espeak"))
+
+    def test_backend_uses_fallback_then_default(self):
+        import casting
+        backend = sh.NoneBackend("voices", {"default": "narrator", "Iroha": "iroha"},
+                                 fallback=lambda name: casting.census_voice(self.census, name, "kokoro"))
+        self.assertEqual(backend.voice_for("Iroha"), "iroha")
+        self.assertIn(backend.voice_for("Hyria"), casting.POOLS["hume_f"][0])
+        self.assertEqual(backend.voice_for("Nobody"), "narrator")
+        self.assertEqual(backend.voice_for(""), "narrator")
+
+    def test_census_fallback_works_under_isolated_python(self):
+        """`make helper` runs python -I from the repo root; casting.py must still import."""
+        import subprocess
+        here = Path(__file__).resolve().parent
+        with tempfile.TemporaryDirectory() as d:
+            census = Path(d) / "census.json"
+            census.write_text(json.dumps(self.census))
+            code = (f"import runpy; m = runpy.run_path({str(here / 'spoken_helper.py')!r}); "
+                    f"print(m['census_fallback']({str(census)!r}, 'piper')('Hyria'))")
+            out = subprocess.run([sys.executable, "-I", "-c", code], cwd=d, capture_output=True, text=True)
+            self.assertEqual(out.returncode, 0, out.stderr)
+            self.assertEqual(out.stdout.strip(), "en_US-amy-medium")
+
+    def test_census_fallback_loader(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertIsNone(sh.census_fallback(Path(d) / "missing.json", "kokoro"))
+            path = Path(d) / "census.json"
+            path.write_text(json.dumps(self.census))
+            fb = sh.census_fallback(path, "kokoro")
+            self.assertIn(fb("Hyria"), sh.BACKENDS and __import__("casting").POOLS["hume_f"][0])
+
+
+class RespellTest(unittest.TestCase):
+    def test_table(self):
+        import respell
+        self.assertEqual(respell.respell("vˈænɐdˌiːl"), "VA-nuh-deel")
+        self.assertEqual(respell.respell("vɑnədiˈɛl"), "vah-nuh-dee-EHL")
+        self.assertEqual(respell.respell("mˈɪθɹə"), "MIH-thruh")
+        self.assertEqual(respell.respell("ʃæntˈɑːɾoʊ"), "shan-TAH-toh")
+        self.assertEqual(respell.respell("sˌæn dˈɔːɹiə"), "san DAW-ree-uh")
+        self.assertEqual(respell.respell("hjˈuːm"), "HYOOM")
+        self.assertEqual(respell.respell("ɐdvˈɛntʃɚɹɚ."), "uhd-VEHN-chur-rur.")
+
+    def test_maximal_onset(self):
+        import respell
+        self.assertEqual(respell.respell("wˈɪndɜːst"), "WIHN-durst")        # nd is not an onset
+        self.assertEqual(respell.respell("ɡˈɪlɡeɪməʃ"), "GIHL-gay-muhsh")   # lɡ is not
+        self.assertEqual(respell.respell("vɑːnɑːdjɛl"), "vah-nah-dyehl")   # dj is
+        self.assertEqual(respell.respell("ˈæstɹə"), "A-struh")             # stɹ is
+        self.assertEqual(respell.respell("ˈæktɹəs"), "AK-truhs")           # ktɹ is not, tɹ is
+
+    def test_espeak_stress_placement(self):
+        import respell
+        self.assertEqual(respell.espeak_stress("ˌlɪl.ɪ.ˈsɛt"), "lˌɪl.ɪ.sˈɛt")
+        self.assertEqual(respell.espeak_stress("ˈstɹɛs"), "stɹˈɛs")
+        self.assertEqual(respell.espeak_stress("kɐsˈɛt"), "kɐsˈɛt", "already in place")
+        self.assertEqual(respell.espeak_stress("ˈɛlvɑːn"), "ˈɛlvɑːn", "vowel-initial stays")
+        self.assertEqual(respell.espeak_stress("sˌæn ˈdɔːɹiə"), "sˌæn dˈɔːɹiə")
+
+    def test_explicit_syllable_dots_win(self):
+        import respell
+        self.assertEqual(respell.respell("vɑː.nɑː.djɛl"), "vah-nah-dyehl")
+        self.assertEqual(respell.respell("vɑːn.ɑː.djɛl"), "vahn-ah-dyehl")
+        self.assertEqual(respell.respell("ˈæk.tɹəs"), "AK-truhs")
+
+    def test_unknown_symbols_survive(self):
+        import respell
+        self.assertEqual(respell.respell("ˈɛlʕ"), "EHLʕ")
+        self.assertEqual(respell.respell(""), "")
+
+
+class LexiconTest(unittest.TestCase):
+    def test_ipa_entries_take_either_form(self):
+        lex = sh.Lexicon({"Vana'diel": {"ipa": "vɑnədiˈɛl", "spell": "Vahna-dee-el"},
+                          "Altana": {"ipa": "ɔːltˈɑːnə"},
+                          "Jeuno": "Juno"})
+        self.assertEqual(lex.apply("Altana of Vana'diel, in Jeuno.", phonemes=True),
+                         "[[ɔːltˈɑːnə]] of [[vɑnədiˈɛl]], in Juno.")
+        self.assertEqual(lex.apply("Altana of Vana'diel, in Jeuno."),
+                         "awl-TAH-nuh of Vahna-dee-el, in Juno.")
+        with self.assertRaises(ValueError):
+            sh.Lexicon({"x": {}})
+
+    def test_ipa_is_normalised_and_validated(self):
+        lex = sh.Lexicon({"Lilisette": {"ipa": ",lɪl:ɪ'sɛt"}, "Vana'diel": {"ipa": "vɑː.nɑː.djɛl"}})
+        self.assertEqual(lex.entries["Lilisette"]["ipa"], "lˌɪlːɪsˈɛt", "ASCII , ' : become ˌ ˈ ː; stress moves before the vowel")
+        self.assertEqual(lex.entries["Vana'diel"]["ipa"], "vɑːnɑːdjɛl", "engines get no dots")
+        self.assertEqual(lex.apply("Vana'diel", phonemes=True), "[[vɑːnɑːdjɛl]]")
+        self.assertEqual(lex.spelling("Vana'diel"), "vah-nah-dyehl", "the respeller keeps the dots")
+        with self.assertRaises(ValueError) as cm:
+            sh.Lexicon({"Lilisette": {"ipa": "lIlI'sEt"}})
+        self.assertIn("'EI'", str(cm.exception))
+
+    def test_yaml_syntax_error_is_explained(self):
+        with tempfile.TemporaryDirectory() as d:
+            y = Path(d) / "lex.yaml"
+            y.write_text("Lilisette:\n    ipa: ,lIlI'sɛt\n", encoding="utf-8")
+            with self.assertRaises(ValueError) as cm:
+                sh.Lexicon.load(y)
+            self.assertIn("line 2", str(cm.exception))
+            self.assertIn("need quotes", str(cm.exception))
+
+    def test_splice_phonemes(self):
+        fake = lambda part: "<" + part + ">"  # noqa: E731
+        self.assertEqual(sh.splice_phonemes("Welcome to [[vɑnədiˈɛl]], adventurer.", fake),
+                         "<Welcome to> vɑnədiˈɛl <, adventurer.>")
+        self.assertEqual(sh.splice_phonemes("[[a]] [[b]]", fake), "a b")
+        self.assertEqual(sh.splice_phonemes("plain", fake), "<plain>")
+
+    def test_whole_words_only_longest_first(self):
+        lex = sh.Lexicon({"Vana'diel": "Vahna-dee-el", "San d'Oria": "San Doria", "Oria": "wrong", "_about": "note"})
+        self.assertEqual(lex.apply("Welcome to Vana'diel, and to San d'Oria."), "Welcome to Vahna-dee-el, and to San Doria.")
+        self.assertEqual(lex.apply("Vana'diel's winds"), "Vana'diel's winds")  # possessive is a different token, left alone
+        self.assertEqual(lex.apply("Orias and Oriana"), "Orias and Oriana")
+        self.assertEqual(lex.apply("Oria!"), "wrong!")
+
+    def test_empty_lexicon_is_identity(self):
+        self.assertEqual(sh.Lexicon().apply("Hail, soldier."), "Hail, soldier.")
+        self.assertEqual(sh.Lexicon.load(Path("/nonexistent/lexicon.json")).apply("x"), "x")
+
+    def test_shipped_lexicon_loads_and_has_the_seed(self):
+        # The shipped file is hand-edited, so check its shape, not its contents.
+        lex = sh.Lexicon.load(Path(__file__).resolve().parent / "lexicon.yaml")
+        self.assertTrue(lex.entries, "lexicon.yaml should have at least one entry")
+        for key in lex.entries:
+            self.assertNotEqual(lex.apply(key), key, f"{key!r} should be respelled")
+            self.assertNotIn("\n", lex.spelling(key))
+
+    def test_yaml_and_json_lexicons_load_alike(self):
+        with tempfile.TemporaryDirectory() as d:
+            y = Path(d) / "lex.yaml"
+            y.write_text("# comment\nVana'diel: Vahna-dee-el\nSan d'Oria: \"San Doria\"\n_note: ignored\n", encoding="utf-8")
+            j = Path(d) / "lex.json"
+            j.write_text(json.dumps({"Vana'diel": "Vahna-dee-el", "San d'Oria": "San Doria", "_note": "ignored"}))
+            self.assertEqual(sh.Lexicon.load(y).entries, sh.Lexicon.load(j).entries)
+            self.assertEqual(sh.Lexicon.load(y).apply("San d'Oria, Vana'diel"), "San Doria, Vahna-dee-el")
+            (Path(d) / "bad.yaml").write_text("- a list\n")
+            with self.assertRaises(ValueError):
+                sh.Lexicon.load(Path(d) / "bad.yaml")
+
+    def test_helper_applies_lexicon_before_caching(self):
+        d = tempfile.TemporaryDirectory()
+        try:
+            data = Path(d.name) / "data"; data.mkdir()
+            backend = sh.NoneBackend(Path(d.name) / "voices", {"default": "n"})
+            spoken = []
+            backend.synthesise = lambda text, voice, out: spoken.append(text)
+            helper = sh.Helper(data, backend, Path(d.name) / "cache", player=None,
+                               lexicon=sh.Lexicon({"Vana'diel": "Vahna-dee-el"}))
+            with (data / "queue.jsonl").open("a") as f:
+                f.write(json.dumps({"seq": 1, "speaker": "", "text": "Vana'diel awaits."}) + "\n")
+            helper.tick()
+            self.assertEqual(spoken, ["Vahna-dee-el awaits."])
+        finally:
+            d.cleanup()
+
+
+class SayTest(unittest.TestCase):
+    def test_say_applies_lexicon_and_plays_once(self):
+        with tempfile.TemporaryDirectory() as d:
+            backend = sh.NoneBackend(Path(d) / "voices", {"default": "n", "Iroha": "jf_alpha"})
+            made = []
+            backend.synthesise = lambda text, voice, out: (made.append((text, voice)), out.write_bytes(b"RIFF"))[1]
+            played = []
+            real_run = sh.subprocess.run
+            sh.subprocess.run = lambda cmd, **kw: (played.append(cmd), type("R", (), {"returncode": 0})())[1]
+            try:
+                lex = sh.Lexicon({"Vana'diel": {"ipa": "vɑnədiˈɛl", "spell": "Vahna-dee-el"}})
+                rc = sh.say(backend, lex, ["paplay"], "Vana'diel", "Iroha", Path(d) / "cache")
+                rc2 = sh.say(backend, lex, ["paplay"], "Vana'diel", "Iroha", Path(d) / "cache")
+                backend.phonemes = True
+                rc3 = sh.say(backend, lex, ["paplay"], "Vana'diel", "Iroha", Path(d) / "cache")
+            finally:
+                sh.subprocess.run = real_run
+            self.assertEqual((rc, rc2, rc3), (0, 0, 0))
+            self.assertEqual(made, [("Vahna-dee-el", "jf_alpha"), ("[[vɑnədiˈɛl]]", "jf_alpha")],
+                             "second call is a cache hit; phoneme form is a different line")
+            self.assertEqual(len(played), 3)
+            self.assertTrue(played[0][1].endswith(".wav"))
+
+
 class BackendTest(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.TemporaryDirectory()

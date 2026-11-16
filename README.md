@@ -51,7 +51,9 @@ simplest bridge.
 | Host helper: watch, synthesise, play, stop | works in game with espeak, Piper, and Kokoro |
 | Local TTS engines (Kokoro, Piper) | installed by `make venv` and `make voices`; Kokoro on CUDA with `make venv-cuda` |
 | Auto-advance via Windower `setkey` | unverified under Wine; parked until the rest is stable |
-| Voice casting per NPC | `helper/cast.py` casts Balloon's 230 portrait NPCs by race and sex; unreviewed |
+| Voice casting per NPC | `helper/cast.py` casts Balloon's 230 portrait NPCs by hand; everyone else is cast by race from `helper/census.json` (13,845 names from LandSandBoat and the client) |
+| Pronunciation lexicon | `helper/lexicon.yaml`, one seed entry |
+| Dialogue extraction from the client | dialogue tables and NPC lists decode; cutscene speaker attribution planned in `docs/Event-Decoding-Handoff.md` |
 | Pre-generated voice packs | not started |
 
 ## Related
@@ -74,6 +76,7 @@ make venv-cuda      # swap in the CUDA build so Kokoro runs on an NVIDIA GPU
 make voices         # download the Kokoro model and three Piper voices (~500 MB)
 make helper         # run the host helper against ./data; picks the best engine present
 make helper BACKEND=piper   # or kokoro, espeak, none
+make say TEXT="Welcome to Vana'diel." SPEAKER=Iroha   # hear one line: lexicon, casting, engine
 ```
 
 In game: `//lua load spoken`, then `//spoken help`.
@@ -89,6 +92,25 @@ Balloon's portrait set by race and sex into a voice pool per engine; fix a
 miscast there and re-run it rather than editing the JSON. Kokoro voice
 names start with language and sex (`am_adam`, `bf_emma`, `jf_alpha`); Piper
 voices are fetched by name with `python -m piper.download_voices`.
+
+Speakers not named in voices.json are cast from `helper/census.json`, which
+`make census` builds from a [LandSandBoat](https://github.com/LandSandBoat/server)
+checkout (`LSB=path`): the server's NPC data carries each humanoid NPC's race
+and sex, and `helper/casting.py` maps race to the same voice pools cast.py
+uses. Non-humanoid models (moogles, beasts, Iroha's unique model) have no
+race and fall through to the default until they are cast by name.
+`helper/lexicon.yaml` fixes words the engines mispronounce. An entry is
+either a respelling, or `ipa:` in espeak-style IPA with an optional hand
+`spell:`. Piper and Kokoro are sent the IPA as phonemes (Piper reads
+`[[ipa]]` natively; for Kokoro the helper phonemises the rest of the line
+and splices the IPA in); engines that cannot take phonemes get the
+respelling, derived from the IPA by `helper/respell.py` when no `spell:` is
+given. It is applied before synthesis and before the cache key, so editing
+an entry regenerates only the lines it touches. To hear an entry, `make say TEXT="..."` speaks one line
+through the same lexicon, casting, and engine as live playback and prints
+what the engine was given; add `RAW=1` to hear the unrespelled text for
+comparison, `SPEAKER=<NPC name>` to hear it in that character's voice, and
+`FRESH=1` to regenerate a line the cache already has.
 
 `make venv-cuda` installs onnxruntime's CUDA 13 build and the NVIDIA runtime
 libraries as pip packages, so nothing is needed system-wide beyond a driver

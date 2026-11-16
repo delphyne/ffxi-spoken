@@ -7,11 +7,13 @@
 #   make test        run the tests under luajit
 #   make lint        run luacheck
 #   make check       both
-#   make venv        build .venv (Python 3.12 via uv) with the TTS engines
+#   make venv        build .venv (Python 3.12 via uv) with the TTS engines and PyYAML
 #   make venv-cuda   add the CUDA build of onnxruntime so Kokoro runs on an NVIDIA GPU
 #   make voices      download the Kokoro model and a few Piper voices
+#   make census      rebuild helper/census.json from a LandSandBoat checkout (LSB=path)
 #   make helper      run the host-side TTS helper against ./data
 #                    (make helper BACKEND=piper to pick an engine)
+#   make say TEXT="..." [SPEAKER=Iroha] [RAW=1] [FRESH=1]   speak one line once; FRESH ignores the cache
 #
 # The Windower folder is found automatically: the Lumoria flatpak prefix on
 # Linux, else a plain Wine prefix. Set WINDOWER to point somewhere else:
@@ -49,7 +51,9 @@ BACKEND ?= auto
 CUDA_PKGS := onnxruntime-gpu "nvidia-cuda-runtime>=13,<14" nvidia-cudnn-cu13 "nvidia-cublas>=13,<14" \
 	"nvidia-cufft>=12" "nvidia-curand>=10" "nvidia-cuda-nvrtc>=13,<14" "nvidia-nvjitlink>=13,<14"
 
-.PHONY: install uninstall where test lint check helper venv venv-cuda voices
+LSB ?= $(HOME)/scm/github/LandSandBoat/server
+
+.PHONY: install uninstall where test lint check helper say venv venv-cuda voices census
 
 # Each recipe below is one shell command, so an exit inside it ends the target.
 
@@ -97,12 +101,20 @@ test:
 helper:
 	$(PY) -I helper/spoken_helper.py --data $(REPO)/data --backend $(BACKEND)
 
+say:
+	@if [ -z "$(TEXT)" ]; then echo 'usage: make say TEXT="Welcome to Vana'"'"'diel." [SPEAKER=Iroha] [RAW=1]' >&2; exit 1; fi; \
+	$(PY) -I helper/spoken_helper.py --backend $(BACKEND) --say "$(TEXT)" --speaker "$(SPEAKER)" $(if $(RAW),--no-lexicon) $(if $(FRESH),--fresh)
+
 venv:
 	@if [ -z "$(UV)" ]; then \
 		echo "uv not found; install it with: python3 -m pip install --user uv" >&2; exit 1; \
 	fi; \
 	[ -x "$(VENV)/bin/python" ] || "$(UV)" venv "$(VENV)" --python 3.12; \
-	"$(UV)" pip install --python "$(VENV)/bin/python" piper-tts kokoro-onnx
+	"$(UV)" pip install --python "$(VENV)/bin/python" piper-tts kokoro-onnx pyyaml
+
+# System python3 (Fedora ships PyYAML); the venv works too once built.
+census:
+	python3 -I helper/census.py --lsb "$(LSB)" --client --report
 
 venv-cuda: venv
 	"$(UV)" pip uninstall --python "$(VENV)/bin/python" onnxruntime onnxruntime-gpu
