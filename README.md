@@ -149,7 +149,8 @@ surprised in play:
    name, the count, an example line, and the engine's IPA, which it speaks.
    `a` accepts the pronunciation into the lexicon, `r` repeats it, `s`
    skips a word the engine already says right, `e` plays the example line,
-   `q` quits; each has a button too. To replace a reading, type IPA in the
+   `b` goes back to the previous word and undoes its accept or skip (it
+   reaches into earlier runs too), `q` quits; each has a button too. To replace a reading, type IPA in the
    field (`j` jumps there) or click glyphs from the palette below it, which
    shows every symbol the lexicon accepts with a word that has that sound;
    Enter plays what you built, and `a` then accepts it. Without a display,

@@ -9,6 +9,7 @@ with the engine's own pronunciation, and waits for one keypress:
   j  reject: type the IPA to use instead (a line); it plays, and the question repeats
   s  skip: the engine already says it right, no entry needed
   e  hear the word in an example line from the game
+  b  back to the previous word, undoing its accept or skip
   q  quit
 
 With a display and Tk (the venv has it) this opens a window instead: the
@@ -19,8 +20,9 @@ line ending in Enter and the commands take effect on the key; when stdin
 is not a terminal (a pipe, the tests) every read is a line.
 
 Progress is kept in data/review_progress.json, so quitting and starting
-again resumes at the first word not yet covered. Words already in the
-lexicon are skipped. Runs with the venv: `make review`.
+again resumes at the first word not yet covered; `b` from there steps back
+into the words covered in earlier runs. Words already in the lexicon are
+skipped. Runs with the venv: `make review`.
 """
 
 import argparse
@@ -65,10 +67,33 @@ def append_entry(lexicon_path, word, ipa, note=""):
     text = p.read_text(encoding="utf-8") if p.exists() else ""
     if text and not text.endswith("\n"):
         text += "\n"
-    key = json.dumps(word, ensure_ascii=False) if ":" in word or word[:1] in "'\"[{,&*!|>%@`#" else word
     comment = f"   # {note}" if note else ""
-    text += f"{key}:\n    ipa: {json.dumps(ipa, ensure_ascii=False)}{comment}\n"
+    text += f"{lexicon_key(word)}:\n    ipa: {json.dumps(ipa, ensure_ascii=False)}{comment}\n"
     p.write_text(text, encoding="utf-8")
+
+
+def lexicon_key(word):
+    """The YAML key append_entry writes for `word`."""
+    return json.dumps(word, ensure_ascii=False) if ":" in word or word[:1] in "'\"[{,&*!|>%@`#" else word
+
+
+def remove_entry(lexicon_path, word):
+    """Remove the stanza append_entry wrote for `word`: its key line and the
+    indented lines under it. True when one was there."""
+    p = Path(lexicon_path)
+    if not p.exists():
+        return False
+    lines = p.read_text(encoding="utf-8").splitlines(keepends=True)
+    key = lexicon_key(word) + ":"
+    for i, line in enumerate(lines):
+        if line.rstrip("\n") == key or line.startswith(key + " ") or line.startswith(key + "\t"):
+            j = i + 1
+            while j < len(lines) and (lines[j].startswith((" ", "\t")) or not lines[j].strip()):
+                j += 1
+            del lines[i:j]
+            p.write_text("".join(lines), encoding="utf-8")
+            return True
+    return False
 
 
 def covered_words(entries):
@@ -137,22 +162,30 @@ class Speaker:
 class Session:
     """The review's state, shared by the terminal loop and the window: the
     words still to do, the current one with the engine's IPA and the IPA
-    being tried, and the bookkeeping on accept and skip. Playback goes
-    through `speaker` (a Speaker, or a fake in tests)."""
+    being tried, and the bookkeeping on accept, skip, and back. Playback
+    goes through `speaker` (a Speaker, or a fake in tests).
+
+    `todo` keeps the words covered in earlier runs (those in `progress`)
+    so `back` can reach them; `start` is where this run begins."""
 
     def __init__(self, candidates, progress, lexicon_path, speaker, progress_path=None, ipa_for=None, out=print):
         self.progress, self.lexicon_path, self.speaker = progress, lexicon_path, speaker
         self.progress_path, self.ipa_for, self.out = progress_path, ipa_for, out
         entries = sh.Lexicon.load(lexicon_path).entries
         existing = covered_words(entries)
-        self.todo = [c for c in candidates if c["word"] not in progress and c["word"] not in existing]
+        self.todo = [c for c in candidates if c["word"] in progress or c["word"] not in existing]
+        self.start = next((i for i, c in enumerate(self.todo) if c["word"] not in progress), len(self.todo))
         self.in_lexicon = len(entries)
-        self.pos, self.covered = -1, 0
+        self.pos, self.covered = self.start - 1, 0
         self.cand = self.engine_ipa = self.current = None
         self.mine = False
 
     def intro(self):
-        return f"{len(self.todo)} to review, {len(self.progress)} covered before, {self.in_lexicon} already in the lexicon"
+        return (f"{len(self.todo) - self.start} to review, {self.start} covered before, "
+                f"{self.in_lexicon} already in the lexicon")
+
+    def candidate_ipa(self, cand):
+        return cand.get("kokoro_ipa") or (self.ipa_for(cand["word"]) if self.ipa_for else "")
 
     @property
     def done(self):
@@ -179,7 +212,7 @@ class Session:
                 self.cand = None
                 return False
             cand = self.todo[self.pos]
-            ipa = cand.get("kokoro_ipa") or (self.ipa_for(cand["word"]) if self.ipa_for else "")
+            ipa = self.candidate_ipa(cand)
             if ipa:
                 self.cand, self.engine_ipa, self.current, self.mine = cand, ipa, ipa, False
                 return True
@@ -224,9 +257,35 @@ class Session:
             save_progress(self.progress_path, self.progress)
         self.advance()
 
+    def back(self):
+        """Return to the word before this one and make its choice again: its
+        progress entry is dropped and, if it was accepted, its lexicon
+        stanza removed. The IPA it was given comes back as the one being
+        tried. Works from the end of the list too. False at the first word."""
+        pos = self.pos - 1
+        while pos >= 0 and not self.candidate_ipa(self.todo[pos]):
+            pos -= 1
+        if pos < 0:
+            return False
+        cand = self.todo[pos]
+        prev = self.progress.pop(cand["word"], None) or {}
+        if prev.get("status") == "accepted":
+            remove_entry(self.lexicon_path, cand["word"])
+            self.in_lexicon -= 1
+        if prev and pos >= self.start:
+            self.covered -= 1
+        self.start = min(self.start, pos)
+        if self.progress_path:
+            save_progress(self.progress_path, self.progress)
+        self.pos, self.cand = pos, cand
+        self.engine_ipa = prev.get("engine_ipa") or self.candidate_ipa(cand)
+        self.current = prev.get("ipa") or self.engine_ipa
+        self.mine = self.current != self.engine_ipa
+        return True
+
     def farewell(self):
         if self.done:
-            return f"all {len(self.todo)} reviewed."
+            return f"all {len(self.todo) - self.start} reviewed."
         return f"stopped; {self.covered} covered this run. `make review` resumes here."
 
 
@@ -240,7 +299,16 @@ def review(candidates, progress, lexicon_path, speaker, read=input, out=print, p
     ses = Session(candidates, progress, lexicon_path, speaker, progress_path, ipa_for, out)
     out(ses.intro())
     ses.advance()
-    while not ses.done:
+    while True:
+        if ses.done:
+            try:
+                cmd = key(f"\n{ses.farewell()}   [b]ack to the last word, anything else quits > ").strip().lower()
+            except (EOFError, KeyboardInterrupt):
+                cmd = "q"
+            if cmd == "b" and ses.back():
+                out(f"  back to {ses.word}")
+                continue
+            break
         out(f"\n[{ses.pos + 1}/{len(ses.todo)}] {ses.word}  ({ses.detail()})")
         if ses.example:
             out(f'  "{ses.example}"')
@@ -249,7 +317,8 @@ def review(candidates, progress, lexicon_path, speaker, read=input, out=print, p
         while True:
             label = "yours" if ses.mine else "engine"
             try:
-                cmd = key(f"  {label}: {ses.current}   [a]ccept [r]epeat [j]reject+IPA [s]kip [e]xample [q]uit > ").strip().lower()
+                cmd = key(f"  {label}: {ses.current}   [a]ccept [r]epeat [j]reject+IPA [s]kip [e]xample [b]ack [q]uit > ")
+                cmd = cmd.strip().lower()
             except (EOFError, KeyboardInterrupt):
                 cmd = "q"
             if not cmd:
@@ -280,11 +349,16 @@ def review(candidates, progress, lexicon_path, speaker, read=input, out=print, p
                 out("  skipped; the engine's reading stands")
                 ses.skip()
                 break
+            elif cmd == "b":
+                if ses.back():
+                    out("  back; its earlier choice is undone")
+                    break
+                out("  nothing before this word")
             elif cmd == "q":
                 out("\n" + ses.farewell())
                 return ses.covered
             else:
-                out("  a, r, j, s, e or q")
+                out("  a, r, j, s, e, b or q")
     out("\n" + ses.farewell())
     return ses.covered
 

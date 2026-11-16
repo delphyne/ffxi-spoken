@@ -228,7 +228,7 @@ class ReviewTest(unittest.TestCase):
         speaker = self.FakeSpeaker()
         out = []
         progress = progress if progress is not None else {}
-        covered = review.review(candidates, progress, lex, speaker, read=lambda prompt: next(keys),
+        covered = review.review(candidates, progress, lex, speaker, read=lambda prompt: next(keys, "q"),
                                 out=out.append, progress_path=prog_path)
         return covered, progress, lex.read_text(), speaker, "\n".join(out), prog_path
 
@@ -269,6 +269,65 @@ class ReviewTest(unittest.TestCase):
         self.assertEqual(covered, 1)
         self.assertEqual(speaker.said, [("word", "nˈɔːɹɡ")], "only the uncovered word is asked")
         self.assertIn("all 1 reviewed", out)
+
+    def test_back_undoes_an_accept_and_a_skip(self):
+        keys = ["a", "s", "b", "b", "a", "s"]
+        covered, progress, lexicon, speaker, out, _ = self.run_review(keys, self.cands())
+        self.assertEqual(covered, 2, "two undone, two redone")
+        self.assertEqual(progress["Altana"]["status"], "accepted")
+        self.assertEqual(progress["Norg"]["status"], "skipped")
+        self.assertEqual(lexicon.count("Altana:"), 1, "the undone accept left no stanza behind")
+        self.assertEqual([s[1] for s in speaker.said], ["ɔːltˈɑːnə", "nˈɔːɹɡ", "nˈɔːɹɡ", "ɔːltˈɑːnə", "nˈɔːɹɡ"],
+                         "each word is played again when it comes back: Norg from the end, then Altana")
+        self.assertIn("back; its earlier choice is undone", out)
+
+    def test_back_at_the_first_word_and_from_the_end(self):
+        keys = ["b", "a", "a", "b", "s", "q"]
+        covered, progress, lexicon, _, out, _ = self.run_review(keys, self.cands())
+        self.assertIn("nothing before this word", out)
+        self.assertIn("all 2 reviewed", out)
+        self.assertEqual(progress["Norg"]["status"], "skipped", "redone after backing from the end")
+        self.assertNotIn("Norg:", lexicon)
+        self.assertEqual(covered, 2)
+
+    def test_back_reaches_an_earlier_run_and_keeps_its_ipa(self):
+        _, progress, _, _, _, _ = self.run_review(["j", "ɔl'tɑːnə", "a", "q"], self.cands())
+        self.assertEqual(progress["Altana"]["ipa"], "ɔltˈɑːnə")
+        d = tempfile.TemporaryDirectory()
+        self.addCleanup(d.cleanup)
+        import review
+        lex = Path(d.name) / "lexicon.yaml"
+        lex.write_text("Jeuno: Juno\n")
+        review.append_entry(lex, "Altana", "ɔltˈɑːnə", note="1048 uses")
+        speaker = self.FakeSpeaker()
+        ses = review.Session(self.cands(), progress, lex, speaker)
+        self.assertEqual(ses.intro(), "1 to review, 1 covered before, 2 already in the lexicon")
+        self.assertTrue(ses.advance())
+        self.assertEqual(ses.word, "Norg", "the run starts after the covered word")
+        self.assertTrue(ses.back())
+        self.assertEqual((ses.word, ses.current, ses.engine_ipa, ses.mine), ("Altana", "ɔltˈɑːnə", "ɔːltˈɑːnə", True))
+        self.assertNotIn("Altana", progress)
+        self.assertEqual(lex.read_text(), "Jeuno: Juno\n", "the stanza from the earlier run is gone")
+        self.assertEqual(ses.covered, 0, "undoing an earlier run's word does not count against this one")
+        ses.accept()
+        self.assertEqual(ses.word, "Norg")
+        ses.skip()
+        self.assertTrue(ses.done)
+        self.assertEqual(ses.farewell(), "all 2 reviewed.")
+
+    def test_remove_entry_takes_only_its_stanza(self):
+        import review
+        with tempfile.TemporaryDirectory() as d:
+            lex = Path(d) / "lexicon.yaml"
+            lex.write_text("Jeuno: Juno\n")
+            review.append_entry(lex, "Cait Sith", "kˈeɪt sˈɪθ", note="456 uses")
+            review.append_entry(lex, "Ru: Lude", "x")
+            review.append_entry(lex, "Norg", "nˈɔːɹɡ")
+            self.assertTrue(review.remove_entry(lex, "Ru: Lude"))
+            self.assertFalse(review.remove_entry(lex, "Zi'Tah"))
+            self.assertEqual(set(sh.Lexicon.load(lex).entries), {"Jeuno", "Cait Sith", "Norg"})
+            self.assertTrue(review.remove_entry(lex, "Jeuno"), "a one-line entry")
+            self.assertEqual(lex.read_text(), 'Cait Sith:\n    ipa: "kˈeɪt sˈɪθ"   # 456 uses\nNorg:\n    ipa: "nˈɔːɹɡ"\n')
 
     def test_words_of_multiword_entries_are_covered(self):
         import review

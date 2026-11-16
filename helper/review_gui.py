@@ -5,8 +5,9 @@ replacement, a palette of every IPA glyph the lexicon accepts, each with
 a word that shows its sound. Tk comes with the venv's Python; the system
 python3 may lack it, so tkinter is imported only when the window opens.
 
-Keys outside the IPA field: a accept, r repeat, e example, s skip, q quit,
-j jump to the IPA field. In the field: Enter tries what is typed, Escape
+Keys outside the IPA field: a accept, r repeat, e example, s skip, b back
+to the previous word (undoing its accept or skip), q quit, j jump to the
+IPA field. In the field: Enter tries what is typed, Escape
 goes back to the keys. Clicking a glyph inserts it at the cursor.
 """
 
@@ -48,7 +49,7 @@ PALETTE = [
 SHOWN = {respell.PRIMARY: "ˈa", respell.SECONDARY: "ˌa", respell.LENGTH: "aː", respell.SYLLABLE: "a.a", " ": "_"}
 COLUMNS = 14
 
-KEYS = {"a": "accept", "r": "repeat", "e": "example", "s": "skip", "q": "quit", "j": "field"}
+KEYS = {"a": "accept", "r": "repeat", "e": "example", "s": "skip", "b": "back", "q": "quit", "j": "field"}
 
 
 def available():
@@ -130,7 +131,7 @@ class Window:
         buttons = ttk.Frame(main)
         buttons.pack(fill="x", pady=px(10))
         for text, cmd in [("Accept  a", self.accept), ("Repeat  r", self.repeat), ("Example  e", self.example),
-                          ("Skip  s", self.skip), ("Quit  q", self.quit)]:
+                          ("Skip  s", self.skip), ("Back  b", self.back), ("Quit  q", self.quit)]:
             ttk.Button(buttons, text=text, command=cmd, takefocus=0).pack(side="left", padx=(0, px(6)))
 
         pal = ttk.Frame(main)
@@ -170,6 +171,7 @@ class Window:
             self.v_ipa.set("")
             self.entry.state(["disabled"])
             return
+        self.entry.state(["!disabled"])
         self.v_count.set(f"{ses.pos + 1} / {len(ses.todo)}")
         self.v_word.set(ses.word)
         self.v_detail.set(ses.detail())
@@ -206,6 +208,13 @@ class Window:
         word = self.ses.word
         self.ses.skip()
         self.status(f"skipped {word}; the engine's reading stands")
+        self.show()
+
+    def back(self):
+        if not self.ses.back():
+            self.status("nothing before this word")
+            return
+        self.status(f"back to {self.ses.word}; its earlier choice is undone")
         self.show()
 
     def repeat(self):
