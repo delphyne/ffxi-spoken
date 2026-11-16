@@ -17,8 +17,10 @@ event bytecode, and the JP and NA string tables.
 
 Formats (verified against LandSandBoat's text ids and the XiEvents docs):
   dialogue (strings_na): every byte XOR 0x80, then a uint32 offset table
-    from byte 4 and NUL-terminated Shift-JIS strings; index N is the game's
-    text id N.
+    from byte 4 and Shift-JIS strings each ending in NUL 0x07; index N is
+    the game's text id N. Parameter codes can hold a NUL, so entries are
+    cut at the offset table, not at the first NUL (tools/ffxitext.py
+    knows the codes).
   NPC list (entities): 32-byte records, 28-byte name + uint32 id.
   event: BlockCount, BlockSizes[], then per block ActorNumber, TagCount,
     TagOffset[TagCount] (uint16), EventExecNum[TagCount] (uint16),
@@ -57,16 +59,33 @@ class Client:
             raise FileNotFoundError(f"{p} is missing from the client")
         return p
 
-    def dialog(self, zone):
+    def dialog_bytes(self, zone):
+        """Each entry's raw Shift-JIS bytes, parameter codes included.
+
+        Entries end in a NUL and a 0x07 filler; a NUL can also sit inside
+        a parameter (`0x0C 0x00 [a/b]` picks alternative 0, `0x0A 0x00` is
+        number 0), so only the terminator is stripped, never the first NUL
+        (half of all entries have one inside)."""
         data = self.zone_file(zone, "strings_na").read_bytes().translate(XOR80)
+        if len(data) < 8:
+            return []
         first = struct.unpack_from("<I", data, 4)[0]
         count = first // 4  # the table runs up to the first string
         offs = struct.unpack_from(f"<{count}I", data, 4)
         out = []
         for k, o in enumerate(offs):
             end = offs[k + 1] if k + 1 < count else len(data) - 4
-            out.append(data[4 + o:4 + end].split(b"\0")[0].decode("shift_jis", "replace"))
+            s = data[4 + o:4 + end]
+            if s.endswith(b"\0\x07"):
+                s = s[:-2]
+            elif s.endswith(b"\0"):
+                s = s.rstrip(b"\0")
+            out.append(s)
         return out
+
+    def dialog(self, zone):
+        """Entries decoded for reading; control and parameter bytes stay in."""
+        return [s.decode("shift_jis", "replace") for s in self.dialog_bytes(zone)]
 
     def npcs(self, zone):
         d = self.zone_file(zone, "entities").read_bytes()

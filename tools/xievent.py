@@ -34,6 +34,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import ffxitext  # noqa: E402
 import xidat  # noqa: E402
 
 OPCODES_JSON = HERE / "opcodes.json"
@@ -344,7 +345,10 @@ def lines(block, cs, names, strs, zone=None):
     retargets it changes who later 0x1D lines belong to; an instruction
     reached with two different entities yields two rows. Rows come out in
     offset order (step 3 will add path order). text_id is None when the
-    message id is an event variable rather than an immediate (step 4)."""
+    message id is an event variable rather than an immediate (step 4).
+    `strs` may hold bytes (Client.dialog_bytes) or str; with bytes each row
+    also gets `variants`, the cleaned renderings a pack would hold, and
+    `live_only`, the parameter kinds that stop it being enumerated."""
     code, imm = block["code"], block["imm"]
     start = block["events"][cs]
     rows = {}
@@ -374,9 +378,17 @@ def lines(block, cs, names, strs, zone=None):
                     "speaker_id": who if isinstance(who, int) else None,
                     "speaker": actor_label(who, names) if who is not None else "",
                     "text_id": text_id,
-                    "text": strs[text_id] if text_id is not None and text_id < len(strs) else None,
+                    "text": None,
                     "var": None if text_id is not None else lo | (hi << 8),
                 }
+                if text_id is not None and text_id < len(strs):
+                    raw = strs[text_id]
+                    if isinstance(raw, bytes):
+                        rows[key]["text"] = raw.decode("cp932", "replace")
+                        rows[key]["variants"] = ffxitext.variants(raw)
+                        rows[key]["live_only"] = ffxitext.expand(raw).live_only
+                    else:
+                        rows[key]["text"] = raw
         if (ins.op, ins.sub) == ENTITY_SET:
             entity = resolve_actor(ins.u32(2), entity)[0]
         elif (ins.op, ins.sub) == ENTITY_RESET:
@@ -509,7 +521,7 @@ def cmd_lines(client, args):
     targets = rov_rows(args.lsb) if args.rov else [(args.zone, args.cs)]
     out, speakers, unresolved = [], {}, []
     for zone, cs in targets:
-        names, strs = client.npcs(zone), client.dialog(zone)
+        names, strs = client.npcs(zone), client.dialog_bytes(zone)
         for block in client.event_blocks(zone):
             if cs not in block["events"]:
                 continue
@@ -523,8 +535,16 @@ def cmd_lines(client, args):
         print(json.dumps(out, ensure_ascii=False, indent=1))
     elif args.rov:
         said = [r for r in out if r["kind"] == "say"]
+        live = [r for r in said if r.get("live_only")]
+        reasons = {}
+        for r in live:
+            for why in set(r["live_only"]):
+                reasons[why] = reasons.get(why, 0) + 1
+        nvar = sum(len(r.get("variants", [])) for r in said)
         print(f"{len(said)} spoken lines, {sum(r['kind'] == 'narration' for r in out)} narration, "
               f"{sum(r['kind'] == 'menu' for r in out)} menus; {len(speakers)} speakers; {len(unresolved)} unresolved")
+        print(f"{nvar} pack texts from {len(said) - len(live)} lines; {len(live)} lines live-only: "
+              + ", ".join(f"{k} {v}" for k, v in sorted(reasons.items(), key=lambda kv: -kv[1])))
         for name, where in sorted(speakers.items(), key=lambda kv: (-len(kv[1]), kv[0])):
             n = sum(r["speaker"] == name for r in said)
             print(f"  {n:5} lines  {name:28} in {len(where)} scenes")
@@ -533,7 +553,9 @@ def cmd_lines(client, args):
     else:
         for row in out:
             tag = {"narration": "*", "menu": "?"}.get(row["kind"], "")
-            print(f"{row['offset']:04x} [{tag}{row['speaker']}] {row['text']!r}")
+            note = f"  (live-only: {', '.join(row['live_only'])})" if row.get("live_only") else ""
+            for v in row.get("variants") or [row["text"]]:
+                print(f"{row['offset']:04x} [{tag}{row['speaker']}] {v!r}{note}")
     return 0
 
 

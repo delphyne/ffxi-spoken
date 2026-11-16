@@ -127,7 +127,48 @@ also what the client shows. No `0x7A` case 2 or 3 appears. This speaker list is 
 Step 4 is therefore deferred until a storyline needs it. Step 3's walker
 exists; what remains of it is grouping lines by path and marking
 choice-only lines, which matters for playback order rather than coverage.
-Step 5 (the `text.clean` port) is next on the critical path.
+
+## Step 5 done: the text.clean port and parameter codes (2026-11-15)
+
+`tools/ffxitext.py` is `text.clean` in Python, step for step, with
+`tools/test_ffxitext.py` mirroring the Lua cases one for one (keep them in
+step). It also decodes the parameter codes a DAT entry still carries,
+which the chat log has already rendered by the time the addon sees it:
+
+| bytes | meaning | handling |
+| --- | --- | --- |
+| `0C n [a/b/...]` | alternative chosen by event parameter n | one variant per alternative |
+| `7F 85 [his/her]` | player's gender | one variant each |
+| `7F 92 n [has/have]` | plural by number n | one variant each |
+| `08` | the player's name | the token `<player>` |
+| `0A n` | a number | live-only |
+| `01 len ...` | an item or key item name | live-only |
+
+`expand(raw)` returns every byte rendering (or none with the reasons it
+cannot), `variants(raw)` the cleaned text of each. `xievent.py lines` now
+carries both per row, and `lines --rov` reports: 1,416 pack texts from
+1,367 lines; 25 lines live-only (25 mention items, 6 numbers), mostly
+Iroha describing training foods. Those stay silent in the pack.
+
+Decisions this implies, recorded in `docs/Audio-Packs.md`: a pack holds one
+file per variant, and the addon must replace the player's own name with
+`<player>` before looking a line up (the audio for such a line is rendered
+with a neutral word in that slot; which word is a casting choice).
+
+Two things found on the way:
+
+- `xidat.dialog()` used to cut each entry at its first NUL. A NUL is also
+  parameter 0 (`0C 00 [...]`, `0A 00`), so 1.4 million of the 2.7 million
+  entries were truncated, including every line that picks alternative 0.
+  Entries actually end in NUL 0x07; `dialog_bytes()` strips only that.
+  `tools/proper_nouns.py` reads the fixed decoder and will see more text.
+- `text.lua` maps `0x88 0x69` to a UTF-8 "é" before calling
+  `windower.from_shift_jis`, which may mangle it. The Python side parks the
+  code in cp932's user area and fixes it after decoding. Check what the
+  chat log shows for a line with that glyph in game.
+
+Next on the critical path: casting the 31 Rhapsodies speakers, lexicon
+review of their proper nouns, then the pack build tool.
 
 ## What the heuristic gets wrong, and why a decoder is needed
 

@@ -42,6 +42,22 @@ developer's setup, not a player's. So:
   recur in every zone. Rhapsodies of Vana'diel is 59 cutscenes and a few
   hundred lines: tens of megabytes, the right first pack.
 
+## What a line's key is
+
+A pack line is found by speaker plus cleaned text, where cleaned means what
+`text.clean` in the addon produces and `tools/ffxitext.py` reproduces from
+the DAT. Two consequences of the client's parameter codes
+(`docs/Event-Decoding-Handoff.md`, step 5):
+
+- Lines with a gender or conditional choice (`[his/her]`,
+  `[in the end/when Ragnarok cometh]`) exist once per alternative; the pack
+  holds every variant as its own file.
+- Lines that name the player hold the token `<player>` in their key. The
+  addon replaces the player's own name with that token before lookup, and
+  the audio is rendered with a neutral word in that slot.
+- Lines that embed an item name or a number cannot be enumerated and are
+  not in any pack; they stay silent. Rhapsodies has 25 of 1,392.
+
 ## Layout: ownership by directory
 
 A content-addressed store knows what a file is but not who owns it, so
