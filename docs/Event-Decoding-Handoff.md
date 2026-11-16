@@ -172,8 +172,10 @@ The 31 speakers are cast (2026-11-16): 20 by hand in `cast.py`, 11 from
 race pools, which `python3 helper/census.py --client --report` confirms.
 `make nouns ROV=1` ranks the 90 proper nouns the Rhapsodies lines contain
 for `make review`; that review is done (2026-11-16: 56 accepted into
-`lexicon.yaml`, 34 the engine already said right). Next on the critical
-path: the pack build tool.
+`lexicon.yaml`, 34 the engine already said right). `tools/build_pack.py`
+(`make pack`) turns the corpus into a pack (docs/Audio-Packs.md,
+"Building"). Next on the critical path: the first full Rhapsodies build,
+then playing pack files from the addon side.
 
 ## What the heuristic gets wrong, and why a decoder is needed
 

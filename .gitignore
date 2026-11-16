@@ -6,3 +6,4 @@ helper/cache/
 helper/voices/
 .venv/
 .*.kate-swp
+audio/

@@ -122,21 +122,41 @@ prerequisite (handoff step 5).
   identifies directly and which covers most of what a player hears while
   wandering.
 - City and zone packs later, for completeness.
-- Lines carrying the player's name or a gender choice are left out of the
-  first packs; they stay silent until a policy is chosen (generate both
-  gender variants with the name dropped, or skip).
+- Lines carrying a gender or conditional choice are rendered once per
+  alternative, and lines naming the player are rendered with a neutral
+  word in the slot ("adventurer"; `--player-word` to change it) and keyed
+  on the `<player>` token. Decided 2026-11-16 with the first build; see
+  "What a line's key is".
+- Narration lines (no speaker) are in: the first Rhapsodies pack has six.
+  The addon only looks them up when narration is enabled.
 
 ## Distribution
 
 GitHub Releases, one archive per pack version, plus a small index file
 naming the current version of each pack so the addon or helper can offer
-updates. Opus at 48 kbps mono; confirm Opus playback in the interim helper
-(paplay through libsndfile, or ffplay) before the first build.
+updates. Opus at 48 kbps mono.
+
+## Building
+
+`make pack VERSION=0.1` runs `tools/build_pack.py`: the decoder's corpus
+for the storyline (`MISSIONS=rov`), deduplicated on (speaker, cleaned
+text), each line rendered with its cast voice through the helper's
+backend into the helper's WAV cache (so a rebuild only renders what the
+lexicon, casting, or game text changed), encoded with opusenc or ffmpeg,
+and written to `audio/<pack>/<version>.part/` then renamed into place.
+`DRY=1` lists the lines and voices without rendering; `LIMIT=N` renders a
+test slice. The manifest row is as described above; `spoken` records the
+exact text the engine was given, and each source carries a short hash of
+the DAT bytes. The first Rhapsodies build: 1,193 files from 32 speakers,
+81 naming the player; skipped 26 live-only lines (item or number slots),
+15 whose text is empty after cleaning, and 38 menus.
 
 ## Open
 
 - The native player module: audio API choice under Wine, Opus decoding
   (libopus and opusfile are small and static-linkable), and how the addon
   hands it speaker and text.
-- Whether the first Rhapsodies pack ships narration (empty speaker) lines.
+- Playback of pack files by the interim helper and, later, the native
+  module: the helper plays its own WAV cache today and does not read
+  `audio/` yet.
 - The update channel's index format.

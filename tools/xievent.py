@@ -505,11 +505,16 @@ def cmd_disasm(client, args):
     return 0
 
 
-def rov_rows(lsb):
+def rov_rows(lsb, missions="rov"):
+    """(zone, event) for every scene the mission scripts in
+    scripts/missions/<missions> run; "rov" is Rhapsodies of Vana'diel."""
     import rov_events
     ids = rov_events.zone_ids(Path(lsb))
     rows = []
-    for lua in sorted((Path(lsb) / "scripts/missions/rov").glob("*.lua")):
+    folder = Path(lsb) / "scripts/missions" / missions
+    if not folder.is_dir():
+        raise FileNotFoundError(f"{folder} is not a LandSandBoat mission folder")
+    for lua in sorted(folder.glob("*.lua")):
         rows.extend(rov_events.events_in(lua, ids))
     return sorted({(r["zone_id"], r["event"]) for r in rows if r["zone_id"] is not None})
 
@@ -526,11 +531,11 @@ def event_lines(client, targets):
                 yield from lines(block, cs, names, strs, zone)
 
 
-def rov_lines(client, lsb):
-    """Every line Rhapsodies of Vana'diel can show: the decoder's rows for
-    each scene LandSandBoat's mission scripts run. This is the Rhapsodies
-    corpus; census.py and proper_nouns.py read it from here."""
-    return event_lines(client, rov_rows(lsb))
+def rov_lines(client, lsb, missions="rov"):
+    """Every line a storyline can show: the decoder's rows for each scene
+    LandSandBoat's mission scripts run, Rhapsodies of Vana'diel by default.
+    census.py, proper_nouns.py, and build_pack.py read the corpus here."""
+    return event_lines(client, rov_rows(lsb, missions))
 
 
 def speakers_of(rows):
