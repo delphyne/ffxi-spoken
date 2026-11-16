@@ -11,8 +11,12 @@ with the engine's own pronunciation, and waits for one keypress:
   e  hear the word in an example line from the game
   q  quit
 
-Only the IPA is a line ending in Enter; the commands take effect on the
-key. When stdin is not a terminal (a pipe, the tests) every read is a line.
+With a display and Tk (the venv has it) this opens a window instead: the
+same keys, buttons for each of them, one word at a time, and a palette of
+IPA glyphs with the sound each makes for building a replacement
+(review_gui.py). --cli keeps the terminal loop, where only the IPA is a
+line ending in Enter and the commands take effect on the key; when stdin
+is not a terminal (a pipe, the tests) every read is a line.
 
 Progress is kept in data/review_progress.json, so quitting and starting
 again resumes at the first word not yet covered. Words already in the
@@ -130,46 +134,130 @@ class Speaker:
         self.say(sh.Lexicon({word: {"ipa": ipa}}).apply(sentence, phonemes=True))
 
 
+class Session:
+    """The review's state, shared by the terminal loop and the window: the
+    words still to do, the current one with the engine's IPA and the IPA
+    being tried, and the bookkeeping on accept and skip. Playback goes
+    through `speaker` (a Speaker, or a fake in tests)."""
+
+    def __init__(self, candidates, progress, lexicon_path, speaker, progress_path=None, ipa_for=None, out=print):
+        self.progress, self.lexicon_path, self.speaker = progress, lexicon_path, speaker
+        self.progress_path, self.ipa_for, self.out = progress_path, ipa_for, out
+        entries = sh.Lexicon.load(lexicon_path).entries
+        existing = covered_words(entries)
+        self.todo = [c for c in candidates if c["word"] not in progress and c["word"] not in existing]
+        self.in_lexicon = len(entries)
+        self.pos, self.covered = -1, 0
+        self.cand = self.engine_ipa = self.current = None
+        self.mine = False
+
+    def intro(self):
+        return f"{len(self.todo)} to review, {len(self.progress)} covered before, {self.in_lexicon} already in the lexicon"
+
+    @property
+    def done(self):
+        return self.cand is None
+
+    @property
+    def word(self):
+        return self.cand["word"]
+
+    @property
+    def example(self):
+        return self.cand.get("example") or ""
+
+    def detail(self):
+        c = self.cand
+        return (f"{c.get('uses', '?')} uses, {c.get('rov_uses', '0')} in Rhapsodies, {c.get('zones', '?')} zones"
+                + (", NPC name" if c.get("npc") else ""))
+
+    def advance(self):
+        """Move to the next word that has an IPA to play; False at the end."""
+        while True:
+            self.pos += 1
+            if self.pos >= len(self.todo):
+                self.cand = None
+                return False
+            cand = self.todo[self.pos]
+            ipa = cand.get("kokoro_ipa") or (self.ipa_for(cand["word"]) if self.ipa_for else "")
+            if ipa:
+                self.cand, self.engine_ipa, self.current, self.mine = cand, ipa, ipa, False
+                return True
+            self.out(f"{cand['word']}: no IPA available, skipping")
+
+    def play(self):
+        self.speaker.word(self.current)
+
+    def play_example(self):
+        """The current IPA inside the example line; False when there is none."""
+        if not self.example:
+            return False
+        self.speaker.in_context(self.word, self.current, self.example)
+        return True
+
+    def set_ipa(self, typed):
+        """Validate hand-typed IPA and make it current. Raises ValueError
+        with the lexicon's explanation when it is not IPA."""
+        self.current = validate_ipa(self.word, typed)
+        self.mine = True
+        return self.current
+
+    def try_ipa(self, typed):
+        """set_ipa, then play it."""
+        self.set_ipa(typed)
+        self.play()
+        return self.current
+
+    def accept(self):
+        append_entry(self.lexicon_path, self.word, self.current, note=f"{self.cand.get('uses', '?')} uses")
+        self.progress[self.word] = {"status": "accepted", "ipa": self.current, "engine_ipa": self.engine_ipa,
+                                    "t": int(time.time())}
+        self._covered()
+
+    def skip(self):
+        self.progress[self.word] = {"status": "skipped", "engine_ipa": self.engine_ipa, "t": int(time.time())}
+        self._covered()
+
+    def _covered(self):
+        self.covered += 1
+        if self.progress_path:
+            save_progress(self.progress_path, self.progress)
+        self.advance()
+
+    def farewell(self):
+        if self.done:
+            return f"all {len(self.todo)} reviewed."
+        return f"stopped; {self.covered} covered this run. `make review` resumes here."
+
+
 def review(candidates, progress, lexicon_path, speaker, read=input, out=print, progress_path=None, ipa_for=None,
            key=None):
-    """The loop. `key` reads a command (one keypress at a terminal), `read`
-    a line of IPA; both default to line input and, with `speaker`, are
-    injectable for tests. Returns the number of words covered this run."""
+    """The terminal loop over a Session. `key` reads a command (one keypress
+    at a terminal), `read` a line of IPA; both default to line input and,
+    with `speaker`, are injectable for tests. Returns the number of words
+    covered this run."""
     key = key or read
-    entries = sh.Lexicon.load(lexicon_path).entries
-    existing = covered_words(entries)
-    todo = [c for c in candidates if c["word"] not in progress and c["word"] not in existing]
-    out(f"{len(todo)} to review, {len(progress)} covered before, {len(entries)} already in the lexicon")
-    covered = 0
-    for n, cand in enumerate(todo, 1):
-        word = cand["word"]
-        engine_ipa = cand.get("kokoro_ipa") or (ipa_for(word) if ipa_for else "")
-        if not engine_ipa:
-            out(f"{word}: no IPA available, skipping")
-            continue
-        current, mine = engine_ipa, False
-        detail = (f"{cand.get('uses', '?')} uses, {cand.get('rov_uses', '0')} in Rhapsodies, "
-                  f"{cand.get('zones', '?')} zones" + (", NPC name" if cand.get("npc") else ""))
-        example = cand.get("example") or ""
-        out(f"\n[{n}/{len(todo)}] {word}  ({detail})")
-        if example:
-            out(f'  "{example}"')
-        out(f"  engine: {engine_ipa}  ({respell.respell(engine_ipa)})")
-        speaker.word(current)
+    ses = Session(candidates, progress, lexicon_path, speaker, progress_path, ipa_for, out)
+    out(ses.intro())
+    ses.advance()
+    while not ses.done:
+        out(f"\n[{ses.pos + 1}/{len(ses.todo)}] {ses.word}  ({ses.detail()})")
+        if ses.example:
+            out(f'  "{ses.example}"')
+        out(f"  engine: {ses.engine_ipa}  ({respell.respell(ses.engine_ipa)})")
+        ses.play()
         while True:
-            label = "yours" if mine else "engine"
+            label = "yours" if ses.mine else "engine"
             try:
-                cmd = key(f"  {label}: {current}   [a]ccept [r]epeat [j]reject+IPA [s]kip [e]xample [q]uit > ").strip().lower()
+                cmd = key(f"  {label}: {ses.current}   [a]ccept [r]epeat [j]reject+IPA [s]kip [e]xample [q]uit > ").strip().lower()
             except (EOFError, KeyboardInterrupt):
                 cmd = "q"
             if not cmd:
                 continue
             if cmd == "r":
-                speaker.word(current)
+                ses.play()
             elif cmd == "e":
-                if example:
-                    speaker.in_context(word, current, example)
-                else:
+                if not ses.play_example():
                     out("  no example line for this word")
             elif cmd == "j":
                 try:
@@ -179,32 +267,26 @@ def review(candidates, progress, lexicon_path, speaker, read=input, out=print, p
                 if not typed:
                     continue
                 try:
-                    current = validate_ipa(word, typed)
+                    ses.try_ipa(typed)
                 except ValueError as e:
                     out(f"  {e}")
                     continue
-                mine = True
-                out(f"  now: {current}  ({respell.respell(current)})")
-                speaker.word(current)
+                out(f"  now: {ses.current}  ({respell.respell(ses.current)})")
             elif cmd == "a":
-                append_entry(lexicon_path, word, current, note=f"{cand.get('uses', '?')} uses")
-                progress[word] = {"status": "accepted", "ipa": current, "engine_ipa": engine_ipa, "t": int(time.time())}
-                out(f"  added {word}: {current}")
+                out(f"  added {ses.word}: {ses.current}")
+                ses.accept()
                 break
             elif cmd == "s":
-                progress[word] = {"status": "skipped", "engine_ipa": engine_ipa, "t": int(time.time())}
                 out("  skipped; the engine's reading stands")
+                ses.skip()
                 break
             elif cmd == "q":
-                out(f"\nstopped; {covered} covered this run. `make review` resumes here.")
-                return covered
+                out("\n" + ses.farewell())
+                return ses.covered
             else:
                 out("  a, r, j, s, e or q")
-        covered += 1
-        if progress_path:
-            save_progress(progress_path, progress)
-    out(f"\nall {len(todo)} reviewed.")
-    return covered
+    out("\n" + ses.farewell())
+    return ses.covered
 
 
 def main(argv=None):
@@ -216,7 +298,10 @@ def main(argv=None):
     ap.add_argument("--voice-map", default=str(HERE / "voices.json"))
     ap.add_argument("--backend", default="auto", choices=["auto", *sh.BACKENDS])
     ap.add_argument("--top", type=int, default=0, help="review only the first N candidates (0 = all)")
+    ap.add_argument("--cli", action="store_true", help="the terminal loop even when a window is possible")
     args = ap.parse_args(argv)
+    import review_gui
+    gui = not args.cli and review_gui.available()
 
     if not Path(args.candidates).exists():
         sys.exit(f"{args.candidates} is missing; run `make nouns` first")
@@ -234,9 +319,13 @@ def main(argv=None):
     if args.top:
         candidates = candidates[:args.top]
     progress = load_progress(args.progress)
+    speaker = Speaker(backend, sh.pick_player())
     try:
-        review(candidates, progress, args.lexicon, Speaker(backend, sh.pick_player()),
-               progress_path=args.progress, ipa_for=ipa_for, key=read_key)
+        if gui:
+            review_gui.run(Session(candidates, progress, args.lexicon, speaker, args.progress, ipa_for))
+        else:
+            review(candidates, progress, args.lexicon, speaker, progress_path=args.progress, ipa_for=ipa_for,
+                   key=read_key)
     finally:
         save_progress(args.progress, progress)
     return 0

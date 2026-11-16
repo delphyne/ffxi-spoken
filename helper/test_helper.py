@@ -12,6 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import spoken_helper as sh  # noqa: E402
+import respell  # noqa: E402
 
 
 class QueueTailTest(unittest.TestCase):
@@ -310,6 +311,50 @@ class ReviewTest(unittest.TestCase):
             entries = sh.Lexicon.load(lex).entries
             self.assertEqual(set(entries), {"Cait Sith", "Zi'Tah", "Ru: Lude"})
             self.assertEqual(entries["Cait Sith"]["ipa"], "kˈeɪt sˈɪθ")
+
+
+class ReviewGuiTest(unittest.TestCase):
+    """The window's tables, checked without Tk (the system python3 lacks it)."""
+
+    def test_palette_glyphs_are_ipa_the_lexicon_accepts(self):
+        import review_gui
+        for group, glyphs in review_gui.PALETTE:
+            for glyph, example in glyphs:
+                self.assertTrue(example, f"{glyph!r} in {group} has no example word")
+                sh.normalise_ipa("palette", f"b{glyph}d" if glyph.strip() else "bd")  # raises on unknown glyphs
+        self.assertIn(("ɡ", "get"), dict(review_gui.PALETTE)["Consonants"], "U+0261, not ASCII g")
+
+    def test_palette_covers_the_sounds_the_respeller_names(self):
+        import review_gui
+        shown = {g for _, glyphs in review_gui.PALETTE for g, _ in glyphs}
+        core = {"iː", "ɪ", "ɛ", "æ", "ɑː", "ɔː", "ʊ", "uː", "ʌ", "ə", "ɚ", "ɜː", "eɪ", "aɪ", "ɔɪ", "oʊ", "aʊ",
+                "θ", "ð", "ʃ", "ʒ", "ŋ", "ɹ", "tʃ", "dʒ", "ɡ", "j", respell.PRIMARY, respell.SECONDARY, respell.LENGTH}
+        self.assertEqual(core - shown, set())
+
+    def test_keys_name_window_commands(self):
+        import review_gui
+        for cmd in review_gui.KEYS.values():
+            self.assertTrue(cmd == "field" or callable(getattr(review_gui.Window, cmd)), cmd)
+
+    def test_available_needs_a_display(self):
+        import review_gui
+        with unittest.mock.patch.dict(os.environ, {"DISPLAY": "", "WAYLAND_DISPLAY": ""}):
+            self.assertFalse(review_gui.available())
+
+    def test_session_set_ipa_does_not_play(self):
+        import review
+        with tempfile.TemporaryDirectory() as d:
+            lex = Path(d) / "lexicon.yaml"
+            lex.write_text("")
+            speaker = ReviewTest.FakeSpeaker()
+            ses = review.Session(ReviewTest().cands()[:1], {}, lex, speaker)
+            self.assertTrue(ses.advance())
+            self.assertEqual(ses.set_ipa("ɔl'tɑːnə"), "ɔltˈɑːnə")
+            self.assertEqual(speaker.said, [])
+            self.assertTrue(ses.mine)
+            ses.accept()
+            self.assertTrue(ses.done)
+            self.assertIn("all 1 reviewed", ses.farewell())
 
 
 class RespellTest(unittest.TestCase):

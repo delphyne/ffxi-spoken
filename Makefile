@@ -14,6 +14,7 @@
 #   make nouns       rank the proper nouns in the game's dialogue for the lexicon (data/)
 #                    (make nouns ROV=1 keeps only the words Rhapsodies of Vana'diel speaks)
 #   make review      go through them one by one, listening, and build helper/lexicon.yaml
+#                    (a window when there is a display; make review CLI=1 for the terminal)
 #   make helper      run the host-side TTS helper against ./data
 #                    (make helper BACKEND=piper to pick an engine)
 #   make say TEXT="..." [SPEAKER=Iroha] [RAW=1] [FRESH=1]   speak one line once; FRESH ignores the cache
@@ -125,10 +126,11 @@ census:
 nouns data/proper_nouns.tsv:
 	$(PY) -I tools/proper_nouns.py --lsb "$(LSB)" $(if $(ROV),--rov)
 
-# Interactive: a accept, r repeat, j reject and type IPA, s skip, e example, q quit.
-# Resumes where it left off (data/review_progress.json).
+# Interactive: a accept, r repeat, j reject and type IPA, s skip, e example, q quit;
+# a Tk window with buttons and an IPA palette when a display is there, else the
+# terminal. Resumes where it left off (data/review_progress.json).
 review: data/proper_nouns.tsv
-	$(PY) -I helper/review.py --backend $(BACKEND)
+	$(PY) -I helper/review.py --backend $(BACKEND) $(if $(CLI),--cli)
 
 venv-cuda: venv
 	"$(UV)" pip uninstall --python "$(VENV)/bin/python" onnxruntime onnxruntime-gpu

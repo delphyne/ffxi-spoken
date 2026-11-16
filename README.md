@@ -132,11 +132,15 @@ surprised in play:
    the words the Rhapsodies cutscenes actually speak, as decoded from the
    client's event files, so the review covers that pack's vocabulary and
    nothing else.
-2. `make review` walks that list. For each word it shows the name, the
-   count, an example line, and the engine's IPA, and speaks it. One keypress answers: `a` accepts
-   the pronunciation into the lexicon, `r` repeats it, `j` rejects it and
-   asks for IPA to try instead (looping until accepted), `s` skips a word
-   the engine already says right, `e` plays the example line, `q` quits.
+2. `make review` walks that list in a window, one word at a time: the
+   name, the count, an example line, and the engine's IPA, which it speaks.
+   `a` accepts the pronunciation into the lexicon, `r` repeats it, `s`
+   skips a word the engine already says right, `e` plays the example line,
+   `q` quits; each has a button too. To replace a reading, type IPA in the
+   field (`j` jumps there) or click glyphs from the palette below it, which
+   shows every symbol the lexicon accepts with a word that has that sound;
+   Enter plays what you built, and `a` then accepts it. Without a display,
+   or with `make review CLI=1`, the same keys work in the terminal.
    Progress is kept in `data/review_progress.json`, so the next run resumes
    where you stopped; words already in the lexicon are not asked again.
 3. The running helper reloads the lexicon within a second of each accept,
