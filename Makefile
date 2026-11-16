@@ -98,6 +98,7 @@ uninstall:
 test:
 	luajit test/test_$(NAME).lua
 	python3 -I -m unittest discover -s helper -p 'test_*.py'
+	python3 -I -m unittest discover -s tools -p 'test_*.py'
 
 # Run the host-side helper against this checkout's data folder.
 helper:

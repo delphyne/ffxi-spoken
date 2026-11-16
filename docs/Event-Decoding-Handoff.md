@@ -36,7 +36,8 @@ prefix, with `tools/xidat.py`:
   | `0x1D m m` | 3 | message `m` | the current event entity (`EntityTargetIndex[1]`) |
   | `0x2B a a a a m m` | 7 | message `m` | actor `a` (uint32, resolved by `GetActorIndex`) |
   | `0xB0 ? a a a a b b b b m m` | 12 | message `m` | actor `a`, listener `b` |
-  | `0x48 m m`, `0x49 m m` | 3 | message `m` | none (narration, system text) |
+  | `0x48 m m` | 3 | message `m` | none (system text) |
+  | `0x49 a a a a m m` | 7 | message `m` | none; `a` only positions the text |
   | `0x24` | 7 | a choice menu | with `0x25`/`0x7F` waiting for the pick |
   | `0x23` | 1 | waits for the player to dismiss the message | |
 
@@ -54,6 +55,57 @@ prefix, with `tools/xidat.py`:
   right speaker on each line. Both from the pattern-matching heuristic in
   the tool, not a real decoder, so branches interleave and the order is
   approximate.
+
+## Step 1 done: the disassembler (2026-11-15)
+
+`tools/xievent.py` walks event bytecode. `tools/opcodes.json` is generated
+from the XiEvents pages (`xievent.py regen`); the forty-odd opcodes whose
+size depends on the following byte are spelled out in `VARIABLE`, and the
+tests in `tools/test_xievent.py` check the two agree. Results:
+
+- `check --rov`: all 250 block/event entries for the Rhapsodies cutscenes
+  (50 distinct zone/event ids) walk to their end, in both modes.
+- `check --all`: 84,914 entries across 295 zones, 4 failures, all in zone
+  210 (an unused zone; opcode `0x5C` sub-case `0xB0` is undocumented and the
+  bytes are ambiguous). 13 entries reach a `0x9D` sub-case 7 jump table
+  whose targets depend on an event variable and are not followed; none are
+  Rhapsodies.
+
+What the walk taught us, beyond the XiEvents pages:
+
+- **Event ids are per block, not per zone.** The same id recurs in several
+  blocks of one zone (Norg event 286 exists in Gilgamesh's and Kamui's
+  blocks as a bare END and in the nameless entity's block as the real
+  scene). LandSandBoat's `startEvent(csid)` runs against the entity that
+  triggered it, so attribution needs (zone, actor, event), and `check`
+  walks every block that has the id.
+- **Data lives inside the bytecode.** `0x9D` parks 16-bit tables (value
+  tables and jump tables) after a RET or END, so a linear walk reads them
+  as opcodes and derails. The default walk is therefore reachability:
+  follow fall-through, jumps and calls from the entry over the whole
+  block, record the table offsets, and treat an instruction landing inside
+  another as an error. `--linear` keeps the old segment walk.
+- **Segments are not self-contained.** CALL (`0x1A`) targets shared
+  subroutines outside the event's own range, so bounds are the block.
+- **`0x02` IF's else offset is absolute**, not relative as the page says
+  (`02 .. 02 4b` at Norg 0x4AD5 lands on the IF at 0x4B02). `0x3E`,
+  `0x44`, `0x82` are also absolute.
+- **`0x21` ends the event** (sets `EventExecEnd`, never advances); code
+  after it is data or unreachable. Falling or jumping exactly off the end
+  of a block also ends it (115 events do this; many blocks end without an
+  END).
+- **Pages that disagree with the client** (Feb 2022 pages, 2026 client):
+  `0xC4` is 12 bytes, not 11; `0xAE` sub-case 8 is 6, not 10; `0x5B`/`0x66`
+  are always 15. Undocumented sub-cases sized by inspection: `0xB4` 0x12
+  (6), 0x13 (20), 0x14 (12), 0x15 (2); `0xB6` 0x16 (22), 0x17 (4); `0xB1` 3
+  (4) and 4 (6); `0x46` 3 (8); opcode `0xDA` (3, one instance). Each is
+  marked in `VARIABLE`/`INFERRED` with where it was seen.
+- `0x9D` sub-case 0x0E is 8 or 10 bytes depending on a zone table at run
+  time and is left as an error; it has not appeared in a reachable walk.
+
+Steps 2 (speaker tracking) and 4 (event variables) are next. Step 3's
+walker exists; what remains of it is grouping lines by path and marking
+choice-only lines.
 
 ## What the heuristic gets wrong, and why a decoder is needed
 
@@ -151,7 +203,8 @@ addon reads:
 ## Pointers
 
 - `tools/xidat.py`: dialogue, entities, events, and the heuristic
-  `cutscene` reader. Start the disassembler as a new module beside it.
+  `cutscene` reader. `tools/xievent.py`: the disassembler (`disasm`,
+  `check`, `regen`), with `tools/opcodes.json` and `tools/test_xievent.py`.
 - `tools/rov_events.py`: the Rhapsodies cutscene list.
 - `~/scm/github/atom0s/XiEvents`: structures, VM functions, one page per
   opcode. `Event VM Functions.md` has `getworkofs` and `GetActorIndex`.

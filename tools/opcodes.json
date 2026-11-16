@@ -1,0 +1,1205 @@
+{
+ "source": "atom0s/XiEvents OpCodes/*.md, 'OpCode Size' rows",
+ "opcodes": {
+  "0x00": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x01": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x02": {
+   "sizes": [
+    8
+   ],
+   "name": "CodeIF"
+  },
+  "0x03": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x04": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x05": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x06": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x07": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x08": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x09": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x0A": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x0B": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x0C": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x0D": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x0E": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x0F": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x10": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x11": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x12": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x13": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x14": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x15": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x16": {
+   "sizes": [
+    7
+   ]
+  },
+  "0x17": {
+   "sizes": [
+    7
+   ]
+  },
+  "0x18": {
+   "sizes": [
+    7
+   ]
+  },
+  "0x19": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x1A": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x1B": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x1C": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x1D": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x1E": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x1F": {
+   "sizes": [
+    2,
+    8
+   ],
+   "name": "CodeMOVE"
+  },
+  "0x20": {
+   "sizes": [
+    2
+   ]
+  },
+  "0x21": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x22": {
+   "sizes": [
+    2
+   ]
+  },
+  "0x23": {
+   "sizes": [
+    1
+   ],
+   "name": "MESWAIT"
+  },
+  "0x24": {
+   "sizes": [
+    7
+   ],
+   "name": "CodeQUERY"
+  },
+  "0x25": {
+   "sizes": [
+    1
+   ],
+   "name": "CodeQUERYWAIT"
+  },
+  "0x26": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x27": {
+   "sizes": [
+    7
+   ]
+  },
+  "0x28": {
+   "sizes": [
+    7
+   ],
+   "name": "CodeREQSW"
+  },
+  "0x29": {
+   "sizes": [
+    7
+   ],
+   "name": "CodeREQEW"
+  },
+  "0x2A": {
+   "sizes": [
+    6
+   ]
+  },
+  "0x2B": {
+   "sizes": [
+    7
+   ]
+  },
+  "0x2C": {
+   "sizes": [
+    13
+   ],
+   "name": "CodeSCHEDULOR"
+  },
+  "0x2D": {
+   "sizes": [
+    13
+   ],
+   "name": "CodeMAPSCHEDULOR"
+  },
+  "0x2E": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x2F": {
+   "sizes": [
+    6
+   ]
+  },
+  "0x30": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x31": {
+   "sizes": [
+    2,
+    10
+   ],
+   "name": "CodeSMOVE"
+  },
+  "0x32": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x33": {
+   "sizes": [
+    2
+   ]
+  },
+  "0x34": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x35": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x36": {
+   "sizes": [
+    7
+   ]
+  },
+  "0x37": {
+   "sizes": [
+    9
+   ]
+  },
+  "0x38": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x39": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x3A": {
+   "sizes": [
+    7
+   ]
+  },
+  "0x3B": {
+   "sizes": [
+    11
+   ]
+  },
+  "0x3C": {
+   "sizes": [
+    7
+   ]
+  },
+  "0x3D": {
+   "sizes": [
+    7
+   ]
+  },
+  "0x3E": {
+   "sizes": [
+    7
+   ]
+  },
+  "0x3F": {
+   "sizes": [
+    7
+   ]
+  },
+  "0x40": {
+   "sizes": [
+    9
+   ],
+   "name": "CodeSETBITWORK"
+  },
+  "0x41": {
+   "sizes": [
+    9
+   ],
+   "name": "CodeGETBITWORK"
+  },
+  "0x42": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x43": {
+   "sizes": [
+    2
+   ]
+  },
+  "0x44": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x45": {
+   "sizes": [
+    17
+   ],
+   "name": "CodeLOADSCHEDULER"
+  },
+  "0x46": {
+   "sizes": [
+    2,
+    4
+   ],
+   "name": "CodeDEFCAMERA"
+  },
+  "0x47": {
+   "sizes": [
+    2,
+    10
+   ]
+  },
+  "0x48": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x49": {
+   "sizes": [
+    7
+   ]
+  },
+  "0x4A": {
+   "sizes": [
+    9
+   ],
+   "name": "CodeDTURA"
+  },
+  "0x4B": {
+   "sizes": [
+    7
+   ]
+  },
+  "0x4C": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x4D": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x4E": {
+   "sizes": [
+    6
+   ]
+  },
+  "0x4F": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x50": {
+   "sizes": [
+    13
+   ],
+   "name": "CodeENDSCHEDULOR"
+  },
+  "0x51": {
+   "sizes": [
+    13
+   ],
+   "name": "CodeENDMAPSCHEDULOR"
+  },
+  "0x52": {
+   "sizes": [
+    15
+   ],
+   "name": "CodeENDLOADSCHEDULER_Main"
+  },
+  "0x53": {
+   "sizes": [
+    13
+   ],
+   "name": "CodeWAITSCHEDULOR"
+  },
+  "0x54": {
+   "sizes": [
+    13
+   ],
+   "name": "CodeWAITMAPSCHEDULOR"
+  },
+  "0x55": {
+   "sizes": [
+    15
+   ],
+   "name": "CodeWAITLOADSCHEDULER_Main"
+  },
+  "0x56": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x57": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x58": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x59": {
+   "sizes": [
+    4,
+    6,
+    7,
+    8
+   ]
+  },
+  "0x5A": {
+   "sizes": [
+    2,
+    8
+   ],
+   "name": "CodeMOVE2"
+  },
+  "0x5B": {
+   "sizes": [
+    15,
+    17
+   ],
+   "name": "CodeLOADEXTSCHEDULERMain"
+  },
+  "0x5C": {
+   "sizes": [
+    4,
+    6
+   ]
+  },
+  "0x5D": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x5E": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x5F": {
+   "sizes": [
+    2,
+    6,
+    14,
+    16,
+    18
+   ]
+  },
+  "0x60": {
+   "sizes": [
+    2,
+    4,
+    6
+   ]
+  },
+  "0x61": {
+   "sizes": [
+    2
+   ]
+  },
+  "0x62": {
+   "sizes": [
+    17
+   ],
+   "name": "CodeLOADEVENTSCHEDULER"
+  },
+  "0x63": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x64": {
+   "sizes": [
+    11
+   ]
+  },
+  "0x65": {
+   "sizes": [
+    11
+   ],
+   "name": "CodeGETDISTANCEAA"
+  },
+  "0x66": {
+   "sizes": [
+    15,
+    17
+   ],
+   "name": "CodeLOADEXTSCHEDULERMain"
+  },
+  "0x67": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x68": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x69": {
+   "sizes": [
+    4
+   ]
+  },
+  "0x6A": {
+   "sizes": [
+    7
+   ]
+  },
+  "0x6B": {
+   "sizes": [
+    9
+   ]
+  },
+  "0x6C": {
+   "sizes": [
+    9
+   ],
+   "name": "CodeTRANSPAR"
+  },
+  "0x6D": {
+   "sizes": [
+    7
+   ]
+  },
+  "0x6E": {
+   "sizes": [
+    7
+   ],
+   "name": "CodeEMOT"
+  },
+  "0x6F": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x70": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x71": {
+   "sizes": [
+    2,
+    4,
+    6,
+    8,
+    10
+   ],
+   "name": "CodeOPENPASSWIN"
+  },
+  "0x72": {
+   "sizes": [
+    4,
+    6,
+    10
+   ],
+   "name": "CodeGETWEATER"
+  },
+  "0x73": {
+   "sizes": [
+    11
+   ],
+   "name": "CodeMAGICSCHEDULOR"
+  },
+  "0x74": {
+   "sizes": [
+    2
+   ]
+  },
+  "0x75": {
+   "sizes": [
+    2,
+    4
+   ],
+   "name": "CodeLOADROOM"
+  },
+  "0x76": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x77": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x78": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x79": {
+   "sizes": [
+    10,
+    12
+   ]
+  },
+  "0x7A": {
+   "sizes": [
+    2,
+    6,
+    7,
+    8
+   ]
+  },
+  "0x7B": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x7C": {
+   "sizes": [
+    6
+   ]
+  },
+  "0x7D": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x7E": {
+   "sizes": [
+    6,
+    8,
+    16,
+    18
+   ],
+   "name": "CodeCHOCOBO"
+  },
+  "0x7F": {
+   "sizes": [
+    1
+   ],
+   "name": "CodeQUERYWAIT2"
+  },
+  "0x80": {
+   "sizes": [
+    5
+   ],
+   "name": "CodeLOADWAIT"
+  },
+  "0x81": {
+   "sizes": [
+    6
+   ]
+  },
+  "0x82": {
+   "sizes": [
+    7
+   ]
+  },
+  "0x83": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x84": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x85": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x86": {
+   "sizes": [
+    6
+   ]
+  },
+  "0x87": {
+   "sizes": [
+    2
+   ]
+  },
+  "0x88": {
+   "sizes": [
+    2
+   ]
+  },
+  "0x89": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x8A": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x8B": {
+   "sizes": [
+    25
+   ],
+   "name": "CodeSETEVENTMARK"
+  },
+  "0x8C": {
+   "sizes": [
+    2,
+    8,
+    10,
+    12,
+    14
+   ]
+  },
+  "0x8D": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x8E": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x8F": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x90": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x91": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x92": {
+   "sizes": [
+    6
+   ]
+  },
+  "0x93": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x94": {
+   "sizes": [
+    6
+   ]
+  },
+  "0x95": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x96": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x97": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x98": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x99": {
+   "sizes": [
+    5
+   ]
+  },
+  "0x9A": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x9B": {
+   "sizes": [
+    1
+   ]
+  },
+  "0x9C": {
+   "sizes": [
+    3
+   ]
+  },
+  "0x9D": {
+   "sizes": [
+    6,
+    8,
+    9,
+    10,
+    23
+   ]
+  },
+  "0x9E": {
+   "sizes": [
+    2
+   ]
+  },
+  "0x9F": {
+   "sizes": [
+    17
+   ],
+   "name": "CodeLOADEVENTSCHEDULER2"
+  },
+  "0xA0": {
+   "sizes": [
+    15
+   ],
+   "name": "CodeWAITLOADSCHEDULER_Main"
+  },
+  "0xA1": {
+   "sizes": [
+    15
+   ],
+   "name": "CodeENDLOADSCHEDULER_Main"
+  },
+  "0xA2": {
+   "sizes": [
+    15
+   ],
+   "name": "CodeWAITLOADSCHEDULER_Main"
+  },
+  "0xA3": {
+   "sizes": [
+    15
+   ],
+   "name": "CodeENDLOADSCHEDULER_Main"
+  },
+  "0xA4": {
+   "sizes": [
+    2
+   ]
+  },
+  "0xA5": {
+   "sizes": [
+    2
+   ]
+  },
+  "0xA6": {
+   "sizes": [
+    2,
+    4
+   ]
+  },
+  "0xA7": {
+   "sizes": [
+    2,
+    4
+   ]
+  },
+  "0xA8": {
+   "sizes": [
+    6
+   ]
+  },
+  "0xA9": {
+   "sizes": [
+    3
+   ]
+  },
+  "0xAA": {
+   "sizes": [
+    17
+   ]
+  },
+  "0xAB": {
+   "sizes": [
+    2,
+    4,
+    6
+   ]
+  },
+  "0xAC": {
+   "sizes": [
+    4,
+    6,
+    8
+   ]
+  },
+  "0xAD": {
+   "sizes": [
+    12
+   ]
+  },
+  "0xAE": {
+   "sizes": [
+    6,
+    8,
+    10
+   ]
+  },
+  "0xAF": {
+   "sizes": [
+    8
+   ]
+  },
+  "0xB0": {
+   "sizes": [
+    12
+   ]
+  },
+  "0xB1": {
+   "sizes": [
+    4
+   ]
+  },
+  "0xB2": {
+   "sizes": [
+    2,
+    4
+   ]
+  },
+  "0xB3": {
+   "sizes": [
+    2,
+    4,
+    14,
+    18
+   ]
+  },
+  "0xB4": {
+   "sizes": [
+    2,
+    3,
+    4,
+    6,
+    12,
+    20
+   ]
+  },
+  "0xB5": {
+   "sizes": [
+    4
+   ]
+  },
+  "0xB6": {
+   "sizes": [
+    2,
+    4,
+    6,
+    14,
+    16,
+    20
+   ]
+  },
+  "0xB7": {
+   "sizes": [
+    8,
+    10
+   ]
+  },
+  "0xB8": {
+   "sizes": [
+    27
+   ]
+  },
+  "0xB9": {
+   "sizes": [
+    8
+   ]
+  },
+  "0xBA": {
+   "sizes": [
+    13
+   ]
+  },
+  "0xBB": {
+   "sizes": [
+    17
+   ]
+  },
+  "0xBC": {
+   "sizes": [
+    15
+   ]
+  },
+  "0xBD": {
+   "sizes": [
+    15
+   ]
+  },
+  "0xBE": {
+   "sizes": [
+    3
+   ]
+  },
+  "0xBF": {
+   "sizes": [
+    8,
+    10
+   ]
+  },
+  "0xC0": {
+   "sizes": [
+    3
+   ]
+  },
+  "0xC1": {
+   "sizes": [
+    5
+   ]
+  },
+  "0xC2": {
+   "sizes": [
+    2,
+    4,
+    6
+   ]
+  },
+  "0xC3": {
+   "sizes": [
+    7
+   ]
+  },
+  "0xC4": {
+   "sizes": [
+    11
+   ]
+  },
+  "0xC5": {
+   "sizes": [
+    17
+   ]
+  },
+  "0xC6": {
+   "sizes": [
+    15
+   ]
+  },
+  "0xC7": {
+   "sizes": [
+    15
+   ]
+  },
+  "0xC8": {
+   "sizes": [
+    7
+   ]
+  },
+  "0xC9": {
+   "sizes": [
+    1
+   ]
+  },
+  "0xCA": {
+   "sizes": []
+  },
+  "0xCB": {
+   "sizes": []
+  },
+  "0xCC": {
+   "sizes": [
+    4,
+    6,
+    10,
+    14
+   ]
+  },
+  "0xCD": {
+   "sizes": [
+    17
+   ]
+  },
+  "0xCE": {
+   "sizes": [
+    15
+   ]
+  },
+  "0xCF": {
+   "sizes": [
+    15
+   ]
+  },
+  "0xD0": {
+   "sizes": [
+    17
+   ]
+  },
+  "0xD1": {
+   "sizes": [
+    15
+   ]
+  },
+  "0xD2": {
+   "sizes": [
+    15
+   ]
+  },
+  "0xD3": {
+   "sizes": [
+    6
+   ]
+  },
+  "0xD4": {
+   "sizes": [
+    2,
+    6,
+    8,
+    12
+   ]
+  },
+  "0xD5": {
+   "sizes": [
+    17
+   ]
+  },
+  "0xD6": {
+   "sizes": [
+    15
+   ]
+  },
+  "0xD7": {
+   "sizes": [
+    15
+   ]
+  },
+  "0xD8": {
+   "sizes": [
+    6,
+    8,
+    12
+   ]
+  },
+  "0xD9": {
+   "sizes": [
+    2
+   ]
+  }
+ }
+}
