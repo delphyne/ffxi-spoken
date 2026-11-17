@@ -39,6 +39,9 @@
 #                    turn helper/voice_designs.yaml into reference clips with Qwen3 VoiceDesign
 #                    (helper/voices/moss/refs/); only missing or changed ones unless FRESH
 #   make review-voices   a page with every designed voice and its description, to listen to
+#   make voice-review    a window to edit descriptions, audition, regenerate, accept, or reset each voice,
+#                    filtered by race, gender, storyline, or a partial name (tools/voice_review.py)
+#   make voice-stories   rebuild helper/voice_stories.json: each speaker's lines per storyline
 #   make venv-moss   build .venv-moss with MOSS-TTS from a checkout (MOSS_DIR=~/scm/github/OpenMOSS/MOSS-TTS)
 #   make spike-moss [LIMIT=N] [FRESH=1] [INT8=1]
 #                    the same lines through MOSS-TTS-Local, cloned from the Qwen-designed clips, with
@@ -104,7 +107,7 @@ NATIVE_CFLAGS := -O2 -Wall -Wextra -D_WIN32_WINNT=0x0600 -I$(DEPS)/include -I$(D
 # the Wine prefix two levels above drive_c/Windower4, for running the test exe
 WINEPREFIX := $(abspath $(WINDOWER)/../..)
 
-.PHONY: install uninstall where test lint check helper say venv venv-cuda venv-qwen spike-qwen design-voices review-voices venv-moss spike-moss voices census nouns review pack release deps native native-test
+.PHONY: install uninstall where test lint check helper say venv venv-cuda venv-qwen spike-qwen design-voices review-voices voice-review voice-stories venv-moss spike-moss voices census nouns review pack release deps native native-test
 
 # Each recipe below is one shell command, so an exit inside it ends the target.
 
@@ -243,6 +246,15 @@ design-voices:
 
 review-voices:
 	$(PY) -I tools/design_voices.py --review
+
+voice-review:
+	@test -x "$(VENV_QWEN)/bin/python" || { echo ".venv-qwen is missing; run make venv-qwen" >&2; exit 1; }; \
+	HF_HOME="$(VOICES)/qwen3/hf" PYTORCH_ALLOC_CONF=expandable_segments:True \
+		"$(VENV_QWEN)/bin/python" -I tools/voice_review.py
+
+# Needs the client and a LandSandBoat checkout, like make pack; system python3.
+voice-stories:
+	python3 -I tools/voice_stories.py --lsb "$(LSB)"
 
 # MOSS-TTS is installed from its checkout (pip -e) because it is not on PyPI;
 # it pins torch 2.9.1+cu128, so it cannot share .venv-qwen. The model

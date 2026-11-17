@@ -80,6 +80,56 @@ class DesignsTest(unittest.TestCase):
         self.assertEqual(d.voices["tenzen"]["seed"], 1862)
 
 
+class EditAndDumpTest(unittest.TestCase):
+    def test_group_metadata_and_race_gender(self):
+        data = minimal(cast={"Ekokoko": {"description": "Chirpy.", "group": "hume_m"}})
+        self.assertEqual(designs.Designs(data, groups=GROUPS).voices["ekokoko"]["group"], "hume_m")
+        with self.assertRaises(ValueError):
+            designs.Designs(minimal(cast={"E": {"description": "x", "group": "orc"}}), groups=GROUPS)
+        self.assertEqual(designs.race_gender("taru_f"), ("tarutaru", "female"))
+        self.assertEqual(designs.race_gender(None), ("unknown", "unknown"))
+        self.assertEqual(set(designs.GROUP_INFO), set(casting.POOLS), "every casting group has a race and gender")
+
+    def test_update_and_add_cast(self):
+        d = designs.Designs(minimal(), groups=GROUPS)
+        d.update("iroha", "  New   words. ", 9)
+        self.assertEqual((d.voices["iroha"]["description"], d.voices["iroha"]["seed"]), ("New words.", 9))
+        with self.assertRaises(ValueError):
+            d.update("iroha", "", 9)
+        voice = d.add_cast("Numi Adaligo", "Sly.", 3, "hume_m")
+        self.assertEqual((voice, d.speakers["Numi Adaligo"]), ("numi-adaligo", "numi-adaligo"))
+        with self.assertRaises(ValueError):
+            d.add_cast("Volto Oscuro", "x")   # already shares Iroha's voice
+
+    def test_dump_round_trips_and_keeps_the_header(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "v.yaml"
+            p.write_text("# keep me\n\ncalibration: x\ncast: {}\npools: {hume_m: [a], narrator: [b]}\n")
+            d = designs.Designs(minimal(cast={"#7 Guard": {"description": "A gate guard."},
+                                              "Cait Sith": {"description": "Prim.", "also": [f"Cait Sith {n}"
+                                                            for n in range(12)]}}), groups=GROUPS)
+            d.add_cast("Grav'iton", "Cold. " * 30, 5, "hume_m")
+            d.dump(p)
+            text = p.read_text(encoding="utf-8")
+            again = designs.Designs.load(p, groups=GROUPS)
+        self.assertTrue(text.startswith("# keep me\n\ncalibration: >-\n"))
+        self.assertEqual((again.voices, again.speakers, again.pools, again.calibration),
+                         (d.voices, d.speakers, d.pools, d.calibration))
+        self.assertTrue(all(len(line) <= designs.WIDTH for line in text.splitlines()), "lines stay wrapped")
+        self.assertIn('"#7 Guard":', text, "a key YAML would misread as a comment is quoted")
+
+    def test_dump_of_the_committed_file_changes_nothing_it_means(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "v.yaml"
+            p.write_text(designs.DEFAULT_PATH.read_text(encoding="utf-8"), encoding="utf-8")
+            d = designs.Designs.load(p, groups=set(casting.POOLS))
+            d.dump(p)
+            again = designs.Designs.load(p, groups=set(casting.POOLS))
+            header = p.read_text(encoding="utf-8").split("\ncalibration:")[0]
+        self.assertEqual(again.voices, d.voices)
+        self.assertIn("# Voice designs for the MOSS backend", header)
+
+
 class MossCastingTest(unittest.TestCase):
     def setUp(self):
         self.d = designs.Designs(minimal(pools={g: [f"{g} voice"] * (3 if g == "galka" else 1)

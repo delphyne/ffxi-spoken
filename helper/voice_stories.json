@@ -1,0 +1,1910 @@
+{
+ "stories": {
+  "sandoria": "San d'Oria",
+  "bastok": "Bastok",
+  "windurst": "Windurst",
+  "rotz": "Rise of the Zilart",
+  "cop": "Chains of Promathia",
+  "toau": "Treasures of Aht Urhgan",
+  "wotg": "Wings of the Goddess",
+  "acp": "A Crystalline Prophecy",
+  "amk": "A Moogle Kupo d'Etat",
+  "asa": "A Shantotto Ascension",
+  "soa": "Seekers of Adoulin",
+  "rov": "Rhapsodies of Vana'diel"
+ },
+ "speakers": {
+  "": {
+   "acp": 18,
+   "amk": 101,
+   "asa": 26,
+   "bastok": 169,
+   "cop": 251,
+   "rotz": 159,
+   "rov": 60,
+   "sandoria": 244,
+   "soa": 2190,
+   "toau": 115,
+   "windurst": 221,
+   "wotg": 447
+  },
+  "1": {
+   "wotg": 2
+  },
+  "10": {
+   "asa": 2
+  },
+  "2": {
+   "wotg": 3
+  },
+  "4": {
+   "wotg": 2
+  },
+  "6": {
+   "amk": 1
+  },
+  "9": {
+   "asa": 3
+  },
+  "???": {
+   "acp": 20,
+   "amk": 7,
+   "asa": 8,
+   "bastok": 12,
+   "cop": 74,
+   "rov": 18,
+   "sandoria": 3,
+   "soa": 11,
+   "toau": 48,
+   "windurst": 3,
+   "wotg": 50
+  },
+  "??? Warmachine": {
+   "cop": 1
+  },
+  "Abd-al-Raziq": {
+   "asa": 3
+  },
+  "Abda-Lurabda": {
+   "toau": 41
+  },
+  "Abelard": {
+   "rov": 19
+  },
+  "Abquhbah": {
+   "toau": 99
+  },
+  "Ace of Cups": {
+   "windurst": 2
+  },
+  "Ace of Swords": {
+   "windurst": 2
+  },
+  "Ace of Wands": {
+   "windurst": 2
+  },
+  "Ada": {
+   "bastok": 2
+  },
+  "Adelheid": {
+   "wotg": 15
+  },
+  "Adhemar": {
+   "wotg": 1
+  },
+  "Adolie": {
+   "cop": 1
+  },
+  "Aissaville": {
+   "wotg": 4
+  },
+  "Ajido-Marujido": {
+   "windurst": 113
+  },
+  "Aldo": {
+   "acp": 10,
+   "bastok": 13,
+   "cop": 23,
+   "rotz": 80,
+   "rov": 19,
+   "sandoria": 13,
+   "windurst": 13
+  },
+  "Alexander": {
+   "rov": 25,
+   "toau": 13
+  },
+  "Allaipre": {
+   "wotg": 5
+  },
+  "Alois": {
+   "bastok": 25
+  },
+  "Altair": {
+   "bastok": 17
+  },
+  "Altiret": {
+   "cop": 1
+  },
+  "Amar": {
+   "bastok": 1
+  },
+  "Amaura": {
+   "wotg": 36
+  },
+  "Ambrotien": {
+   "sandoria": 40
+  },
+  "Amchuchu": {
+   "soa": 39
+  },
+  "Amkeen": {
+   "toau": 4
+  },
+  "Amnaf": {
+   "toau": 65
+  },
+  "Andagge": {
+   "wotg": 3
+  },
+  "Andrause": {
+   "asa": 22
+  },
+  "Andreine": {
+   "soa": 42
+  },
+  "Anilla": {
+   "soa": 6
+  },
+  "Anoki": {
+   "cop": 7
+  },
+  "Answald": {
+   "cop": 1
+  },
+  "Aphmau": {
+   "toau": 287
+  },
+  "Apururu": {
+   "windurst": 76
+  },
+  "Aquila": {
+   "wotg": 64
+  },
+  "Aramaviont": {
+   "sandoria": 4
+  },
+  "Arciela": {
+   "soa": 1246
+  },
+  "Argus": {
+   "bastok": 9
+  },
+  "Arnau": {
+   "cop": 13
+  },
+  "Arsha": {
+   "sandoria": 1
+  },
+  "Arzizah": {
+   "toau": 7
+  },
+  "Atomos": {
+   "wotg": 2
+  },
+  "Atori-Tutori": {
+   "bastok": 44,
+   "sandoria": 44,
+   "windurst": 44,
+   "wotg": 2
+  },
+  "Aubejart": {
+   "sandoria": 1
+  },
+  "Audibert": {
+   "soa": 5
+  },
+  "Augevinne": {
+   "sandoria": 1
+  },
+  "Aurfet": {
+   "wotg": 8
+  },
+  "Awoken Vampyr Jarl": {
+   "toau": 6
+  },
+  "Ayame": {
+   "bastok": 51,
+   "cop": 1,
+   "sandoria": 6,
+   "toau": 16,
+   "windurst": 6
+  },
+  "Babenn": {
+   "bastok": 3,
+   "sandoria": 2,
+   "windurst": 2
+  },
+  "Bacherume": {
+   "toau": 7
+  },
+  "Bahamut": {
+   "cop": 35
+  },
+  "Bakool Ja": {
+   "toau": 2
+  },
+  "Baraka": {
+   "bastok": 2
+  },
+  "Barnabas": {
+   "wotg": 16
+  },
+  "Bartholomaus": {
+   "wotg": 10
+  },
+  "Bastingart": {
+   "soa": 6
+  },
+  "Bataumnalle": {
+   "toau": 2
+  },
+  "Behsa Alehgo": {
+   "soa": 5
+  },
+  "Bellue": {
+   "cop": 1
+  },
+  "Blamor": {
+   "bastok": 2,
+   "sandoria": 2,
+   "windurst": 2
+  },
+  "Bonarpant": {
+   "cop": 1
+  },
+  "Boytz": {
+   "bastok": 1
+  },
+  "Brakobrik": {
+   "cop": 7
+  },
+  "Brandolf": {
+   "wotg": 35
+  },
+  "Brenna": {
+   "soa": 5
+  },
+  "Brenton": {
+   "soa": 68
+  },
+  "Cait Sith": {
+   "rov": 35,
+   "wotg": 484
+  },
+  "Cait Sith Aon": {
+   "wotg": 7
+  },
+  "Cait Sith Ceithir": {
+   "wotg": 41
+  },
+  "Cait Sith Coig": {
+   "wotg": 18
+  },
+  "Cait Sith Dha": {
+   "wotg": 6
+  },
+  "Cait Sith Naoi": {
+   "wotg": 58
+  },
+  "Cait Sith Ochd": {
+   "wotg": 7
+  },
+  "Cait Sith Seachd": {
+   "wotg": 14
+  },
+  "Cait Sith Sia": {
+   "wotg": 6
+  },
+  "Cait Sith Tri": {
+   "wotg": 10
+  },
+  "Carbuncle": {
+   "cop": 26,
+   "windurst": 11
+  },
+  "Carey": {
+   "cop": 3
+  },
+  "Catalia": {
+   "sandoria": 3
+  },
+  "Cavernous Maw": {
+   "wotg": 114
+  },
+  "Chalvatot": {
+   "sandoria": 15
+  },
+  "Chalvava": {
+   "soa": 49
+  },
+  "Chantain": {
+   "sandoria": 10
+  },
+  "Chapi Galepilai": {
+   "cop": 1
+  },
+  "Chasalvige": {
+   "cop": 68
+  },
+  "Chekochuk": {
+   "cop": 21
+  },
+  "Chero-Machero": {
+   "soa": 96
+  },
+  "Cherukiki": {
+   "cop": 103
+  },
+  "Chimene": {
+   "wotg": 2
+  },
+  "Chipmy-Popmy": {
+   "cop": 6
+  },
+  "Chupaile": {
+   "sandoria": 1
+  },
+  "Cid": {
+   "bastok": 84,
+   "cop": 309
+  },
+  "Claidie": {
+   "sandoria": 52
+  },
+  "Cleades": {
+   "bastok": 9
+  },
+  "Cloud Walker": {
+   "wotg": 12
+  },
+  "Clovis": {
+   "wotg": 7
+  },
+  "Comitiolus": {
+   "rov": 1
+  },
+  "Cornelia": {
+   "bastok": 81,
+   "cop": 14,
+   "sandoria": 2,
+   "windurst": 2
+  },
+  "Corseihaut": {
+   "wotg": 15
+  },
+  "Coteaulepoint": {
+   "sandoria": 15
+  },
+  "Coucheutand": {
+   "wotg": 8
+  },
+  "Count Bifrons": {
+   "wotg": 14
+  },
+  "Courisaille": {
+   "bastok": 4,
+   "sandoria": 4,
+   "windurst": 4
+  },
+  "Cousseraux": {
+   "wotg": 49
+  },
+  "Crooked Arrow": {
+   "cop": 2
+  },
+  "Curilla": {
+   "sandoria": 36,
+   "toau": 24
+  },
+  "Cyranuce": {
+   "sandoria": 7
+  },
+  "Daigraffeaux": {
+   "wotg": 4
+  },
+  "Dalzakk": {
+   "bastok": 1
+  },
+  "Dancing Wolf": {
+   "bastok": 16
+  },
+  "Dangueubert": {
+   "soa": 11
+  },
+  "Darcia": {
+   "soa": 92
+  },
+  "Daswil": {
+   "toau": 16
+  },
+  "Davyad": {
+   "bastok": 7
+  },
+  "Dazbog": {
+   "bastok": 16,
+   "sandoria": 16,
+   "windurst": 16
+  },
+  "Deadly Spider": {
+   "bastok": 1
+  },
+  "Deaufrain": {
+   "sandoria": 4
+  },
+  "Deidogg": {
+   "bastok": 2
+  },
+  "Demon Befouler": {
+   "wotg": 1
+  },
+  "Demon Suppressor": {
+   "wotg": 2
+  },
+  "Despachiaire": {
+   "cop": 87
+  },
+  "Destin": {
+   "sandoria": 108
+  },
+  "Detzo": {
+   "bastok": 4
+  },
+  "Diabolos": {
+   "cop": 73,
+   "rov": 3
+  },
+  "Dionaste": {
+   "wotg": 1
+  },
+  "Dixon": {
+   "wotg": 1
+  },
+  "Drake Fang": {
+   "bastok": 12
+  },
+  "Drangord": {
+   "bastok": 1
+  },
+  "Duke Alloces": {
+   "bastok": 22,
+   "sandoria": 22,
+   "windurst": 22
+  },
+  "Eald'narche": {
+   "bastok": 13,
+   "rotz": 49,
+   "sandoria": 13,
+   "windurst": 13
+  },
+  "Eaugouint": {
+   "cop": 1
+  },
+  "Echo Hawk": {
+   "bastok": 3
+  },
+  "Eideialc": {
+   "bastok": 8,
+   "sandoria": 24,
+   "windurst": 8
+  },
+  "Ekokoko": {
+   "rov": 20
+  },
+  "Elmric": {
+   "soa": 15
+  },
+  "Elnonde": {
+   "wotg": 3
+  },
+  "Endracion": {
+   "sandoria": 40
+  },
+  "Equesobillot": {
+   "sandoria": 4
+  },
+  "Erminold": {
+   "soa": 7
+  },
+  "Erpolant": {
+   "sandoria": 3
+  },
+  "Esha'ntarl": {
+   "cop": 173
+  },
+  "Esteban": {
+   "rov": 4
+  },
+  "Estienneux": {
+   "soa": 15
+  },
+  "Ethelbert": {
+   "wotg": 4
+  },
+  "Eumielle": {
+   "wotg": 7
+  },
+  "Eunsoo": {
+   "rov": 3
+  },
+  "Eusmard": {
+   "wotg": 2
+  },
+  "Falzum": {
+   "toau": 14
+  },
+  "Farouel": {
+   "wotg": 10
+  },
+  "Faulpie": {
+   "asa": 3
+  },
+  "Felippe": {
+   "cop": 1
+  },
+  "Fenrir": {
+   "cop": 30,
+   "windurst": 9
+  },
+  "Ferdechiond": {
+   "sandoria": 2
+  },
+  "Festauve": {
+   "wotg": 5
+  },
+  "Fhu Madihmin": {
+   "toau": 35
+  },
+  "Fickblix": {
+   "bastok": 26,
+   "rotz": 7,
+   "sandoria": 26,
+   "windurst": 26
+  },
+  "Five Moons": {
+   "wotg": 1
+  },
+  "Flaviria": {
+   "soa": 3
+  },
+  "Flit": {
+   "toau": 110,
+   "wotg": 14
+  },
+  "Fodderchief Vokdek": {
+   "sandoria": 3
+  },
+  "Forine": {
+   "sandoria": 4
+  },
+  "Foss": {
+   "soa": 15
+  },
+  "Foudeel": {
+   "toau": 2
+  },
+  "Francmage": {
+   "bastok": 14,
+   "sandoria": 14,
+   "windurst": 14
+  },
+  "Franziska": {
+   "bastok": 15
+  },
+  "Gabbot": {
+   "bastok": 16
+  },
+  "Gadalar": {
+   "rotz": 1
+  },
+  "Gaheel Ja": {
+   "toau": 13
+  },
+  "Galaihaurat": {
+   "sandoria": 5
+  },
+  "Gallauciond": {
+   "wotg": 10
+  },
+  "Garnev": {
+   "rotz": 1
+  },
+  "Gawful": {
+   "bastok": 1
+  },
+  "Geebeh": {
+   "bastok": 5,
+   "rotz": 3,
+   "sandoria": 5,
+   "windurst": 5
+  },
+  "Gerbaum": {
+   "bastok": 1
+  },
+  "Gessho": {
+   "toau": 258
+  },
+  "Ghatsad": {
+   "toau": 122
+  },
+  "Ghebi Damomohe": {
+   "cop": 14
+  },
+  "Gilgamesh": {
+   "bastok": 17,
+   "rotz": 51,
+   "rov": 125
+  },
+  "Gindaff": {
+   "wotg": 4
+  },
+  "Goblin Enforcer": {
+   "amk": 3
+  },
+  "Goblin Geologist": {
+   "amk": 12
+  },
+  "Goblin Grenadier": {
+   "amk": 21
+  },
+  "Goblin Intimidator": {
+   "amk": 1
+  },
+  "Goblin Repossessor": {
+   "amk": 23
+  },
+  "Goggehn": {
+   "bastok": 16
+  },
+  "Gogoroon": {
+   "toau": 14
+  },
+  "Gold Skull": {
+   "bastok": 4
+  },
+  "Gottah Maporushanoh": {
+   "soa": 7
+  },
+  "Gottna": {
+   "rov": 2
+  },
+  "Gratzigg": {
+   "soa": 47
+  },
+  "Grav'iton": {
+   "cop": 5,
+   "rotz": 24,
+   "rov": 24,
+   "windurst": 5
+  },
+  "Gregoirion": {
+   "wotg": 1
+  },
+  "Grennith": {
+   "soa": 4
+  },
+  "Grilau": {
+   "sandoria": 40
+  },
+  "Gringey": {
+   "sandoria": 1
+  },
+  "Grohm": {
+   "sandoria": 29,
+   "windurst": 29
+  },
+  "Guilerme": {
+   "toau": 9
+  },
+  "Guilloud": {
+   "cop": 9
+  },
+  "Gulool Ja Ja": {
+   "toau": 30
+  },
+  "Gumbah": {
+   "bastok": 99
+  },
+  "Gurfurlur": {
+   "toau": 9
+  },
+  "Gutrender Trooper": {
+   "wotg": 2
+  },
+  "HEISHI_A": {
+   "soa": 18
+  },
+  "HEISHI_B": {
+   "soa": 28
+  },
+  "Hades": {
+   "soa": 115
+  },
+  "Hagreface": {
+   "wotg": 1
+  },
+  "Haja Zhwan": {
+   "wotg": 7
+  },
+  "Hakkuru-Rinkuru": {
+   "windurst": 4
+  },
+  "Halver": {
+   "bastok": 26,
+   "sandoria": 82,
+   "toau": 110,
+   "windurst": 26,
+   "wotg": 10
+  },
+  "Halver M Borel": {
+   "wotg": 47
+  },
+  "Hani": {
+   "bastok": 8,
+   "sandoria": 6,
+   "windurst": 6
+  },
+  "Hans": {
+   "bastok": 1
+  },
+  "Harbuhl": {
+   "toau": 3
+  },
+  "Hauberliond": {
+   "wotg": 5
+  },
+  "Haudrale": {
+   "wotg": 94
+  },
+  "Hauramus": {
+   "wotg": 1
+  },
+  "Hegouard": {
+   "wotg": 12
+  },
+  "Heillal": {
+   "rov": 1
+  },
+  "Heimji-Keimji": {
+   "windurst": 17
+  },
+  "Helaku": {
+   "bastok": 29
+  },
+  "Henchman Moogle": {
+   "amk": 4
+  },
+  "Henrinaud": {
+   "wotg": 11
+  },
+  "Heruze-Moruze": {
+   "windurst": 1
+  },
+  "High Wind": {
+   "bastok": 3,
+   "sandoria": 3,
+   "windurst": 3
+  },
+  "Hilda": {
+   "bastok": 4
+  },
+  "Hildebert": {
+   "soa": 137
+  },
+  "Hinaree": {
+   "cop": 57
+  },
+  "Honoi-Gomoi": {
+   "cop": 30
+  },
+  "Horand": {
+   "toau": 2
+  },
+  "Ikhi Askamot": {
+   "soa": 44
+  },
+  "Illeuse": {
+   "wotg": 3
+  },
+  "Illusory Image": {
+   "rotz": 12
+  },
+  "Ingrid": {
+   "soa": 198
+  },
+  "Invincible Shield": {
+   "wotg": 8
+  },
+  "Iroha": {
+   "rov": 382
+  },
+  "Iron Eater": {
+   "bastok": 101,
+   "sandoria": 2,
+   "windurst": 2
+  },
+  "Iru-Kuiru": {
+   "bastok": 4,
+   "sandoria": 4,
+   "windurst": 4
+  },
+  "Irwyn": {
+   "wotg": 13
+  },
+  "Jabbos": {
+   "cop": 171
+  },
+  "Jakoh Wahcondalo": {
+   "rotz": 2
+  },
+  "Janshura-Rashura": {
+   "windurst": 4
+  },
+  "Jazaraat": {
+   "toau": 19
+  },
+  "Jima": {
+   "sandoria": 17
+  },
+  "Joker": {
+   "windurst": 12
+  },
+  "Josef": {
+   "bastok": 2
+  },
+  "Joseph": {
+   "acp": 2
+  },
+  "Judith": {
+   "wotg": 12
+  },
+  "Justinius": {
+   "cop": 47
+  },
+  "Kagero": {
+   "rov": 11
+  },
+  "Kalgahn": {
+   "toau": 1
+  },
+  "Kam'lanaut": {
+   "bastok": 20,
+   "rotz": 34,
+   "sandoria": 20,
+   "windurst": 20,
+   "wotg": 10
+  },
+  "Kamui": {
+   "rotz": 4,
+   "rov": 3
+  },
+  "Kapeh Myohrye": {
+   "cop": 3
+  },
+  "Karababa": {
+   "toau": 161
+  },
+  "Karaha-Baruha": {
+   "bastok": 3,
+   "sandoria": 3,
+   "windurst": 3
+  },
+  "Kareh'ayollio": {
+   "bastok": 2,
+   "cop": 3,
+   "sandoria": 2,
+   "windurst": 2
+  },
+  "Karst": {
+   "bastok": 89
+  },
+  "Kasaroro": {
+   "windurst": 24
+  },
+  "Kayeel-Payeel": {
+   "wotg": 16
+  },
+  "Kenapa-Keppa": {
+   "cop": 2
+  },
+  "Kerutoto": {
+   "cop": 8,
+   "windurst": 5
+  },
+  "King of Hearts": {
+   "toau": 87
+  },
+  "Kipligg": {
+   "soa": 33
+  },
+  "Klara": {
+   "wotg": 3
+  },
+  "Klaus": {
+   "cop": 2
+  },
+  "Koetsu": {
+   "rotz": 3
+  },
+  "Koru-Moru": {
+   "asa": 4,
+   "cop": 5
+  },
+  "Kukki-Chebukki": {
+   "cop": 105
+  },
+  "Kupatete": {
+   "amk": 28
+  },
+  "Kupert": {
+   "amk": 28
+  },
+  "Kupignol": {
+   "amk": 28
+  },
+  "Kupipi": {
+   "windurst": 7
+  },
+  "Kupiruru": {
+   "amk": 4
+  },
+  "Kupuckl": {
+   "amk": 28
+  },
+  "Kuroido-Moido": {
+   "asa": 4
+  },
+  "Kyume-Romeh": {
+   "cop": 11
+  },
+  "Lady Lilith": {
+   "wotg": 159
+  },
+  "Laila": {
+   "bastok": 8,
+   "sandoria": 8,
+   "windurst": 8
+  },
+  "Lansoise": {
+   "wotg": 1
+  },
+  "Larzos": {
+   "wotg": 98
+  },
+  "Laurisse": {
+   "sandoria": 2
+  },
+  "Leepe-Hoppe": {
+   "windurst": 5
+  },
+  "Lehko Habhoka": {
+   "wotg": 16
+  },
+  "Leillaine": {
+   "cop": 1
+  },
+  "Levil": {
+   "soa": 293
+  },
+  "Lhe Lhangavo": {
+   "soa": 64
+  },
+  "Lilisette": {
+   "rov": 75,
+   "wotg": 792
+  },
+  "Lilith Ascendant": {
+   "wotg": 3
+  },
+  "Lion": {
+   "bastok": 56,
+   "rotz": 64,
+   "rov": 190,
+   "sandoria": 66,
+   "windurst": 65
+  },
+  "Loillie": {
+   "wotg": 3
+  },
+  "Lourima": {
+   "sandoria": 2
+  },
+  "Louvairausse": {
+   "wotg": 4
+  },
+  "Louverance": {
+   "cop": 301
+  },
+  "Louxiard": {
+   "wotg": 4
+  },
+  "Lucius": {
+   "bastok": 62
+  },
+  "Ludwig Eichberg": {
+   "wotg": 3
+  },
+  "Lutia": {
+   "sandoria": 9
+  },
+  "Luzaf": {
+   "toau": 257
+  },
+  "Lysander": {
+   "wotg": 3
+  },
+  "Machionage": {
+   "wotg": 3
+  },
+  "Magh Bihu": {
+   "bastok": 11,
+   "sandoria": 11,
+   "windurst": 11
+  },
+  "Magriffon": {
+   "cop": 14
+  },
+  "Mailleronce": {
+   "wotg": 4
+  },
+  "Makarim": {
+   "bastok": 3
+  },
+  "Makki-Chebukki": {
+   "cop": 128
+  },
+  "Malduc": {
+   "bastok": 9
+  },
+  "Mandragora Warden": {
+   "windurst": 1
+  },
+  "Margret": {
+   "soa": 40
+  },
+  "Marilionne": {
+   "rov": 4
+  },
+  "Marquis Amon": {
+   "wotg": 2
+  },
+  "Maryoh Comyujah": {
+   "rotz": 20
+  },
+  "Masad": {
+   "soa": 1
+  },
+  "Mathilde": {
+   "cop": 7
+  },
+  "Matildie": {
+   "soa": 6
+  },
+  "Maunadolace": {
+   "bastok": 1,
+   "sandoria": 1,
+   "windurst": 1
+  },
+  "Mawl'gofaur": {
+   "bastok": 6,
+   "cop": 3,
+   "sandoria": 6,
+   "windurst": 6
+  },
+  "Maximilian Berger": {
+   "wotg": 14
+  },
+  "Mayakov": {
+   "wotg": 189
+  },
+  "Medicine Eagle": {
+   "bastok": 5
+  },
+  "Megomak": {
+   "toau": 41
+  },
+  "Melderphaux": {
+   "wotg": 6
+  },
+  "Melek": {
+   "bastok": 4
+  },
+  "Melvien": {
+   "soa": 75
+  },
+  "Mengrenaux": {
+   "cop": 2
+  },
+  "Meransarget": {
+   "cop": 26
+  },
+  "Merfanont": {
+   "wotg": 5
+  },
+  "Meyaada": {
+   "toau": 16
+  },
+  "Michea": {
+   "bastok": 3
+  },
+  "Mih Ketto": {
+   "windurst": 2
+  },
+  "Mihli Aliapoh": {
+   "rotz": 1
+  },
+  "Milchupain": {
+   "sandoria": 5
+  },
+  "Mildaurion": {
+   "cop": 62
+  },
+  "Minfram": {
+   "toau": 4
+  },
+  "Mishhar": {
+   "toau": 5
+  },
+  "Mnejing": {
+   "toau": 74
+  },
+  "Mokyokyo": {
+   "windurst": 2
+  },
+  "Molaal Ja": {
+   "toau": 16
+  },
+  "Monberaux": {
+   "bastok": 6,
+   "cop": 71,
+   "sandoria": 6,
+   "windurst": 6
+  },
+  "Moogle": {
+   "amk": 187,
+   "asa": 51
+  },
+  "Moreno-Toeno": {
+   "windurst": 22
+  },
+  "Morimar": {
+   "soa": 115
+  },
+  "Morjean": {
+   "sandoria": 5
+  },
+  "Mourices": {
+   "sandoria": 7
+  },
+  "Movamuq": {
+   "cop": 19
+  },
+  "Moyoyo": {
+   "windurst": 2
+  },
+  "Muchavatte": {
+   "cop": 4
+  },
+  "Muckvix": {
+   "bastok": 18,
+   "sandoria": 18,
+   "windurst": 18
+  },
+  "Muhk Johldy": {
+   "cop": 3
+  },
+  "Muruk-Mojiruk": {
+   "soa": 5
+  },
+  "Mydon": {
+   "bastok": 1
+  },
+  "NPC01": {
+   "acp": 10
+  },
+  "NPC02": {
+   "acp": 8
+  },
+  "NPC03": {
+   "acp": 5
+  },
+  "NPC04": {
+   "acp": 3
+  },
+  "NPC05": {
+   "acp": 1
+  },
+  "Nachou": {
+   "sandoria": 2
+  },
+  "Nadeey": {
+   "toau": 42
+  },
+  "Nag'molada": {
+   "cop": 310,
+   "wotg": 47
+  },
+  "Nahshib": {
+   "toau": 19
+  },
+  "Naillina": {
+   "rov": 16
+  },
+  "Naja Salaheem": {
+   "toau": 216
+  },
+  "Najelith": {
+   "rotz": 1
+  },
+  "Naji": {
+   "bastok": 61,
+   "cop": 1,
+   "sandoria": 3,
+   "toau": 42,
+   "windurst": 3
+  },
+  "Nanaa Mihgo": {
+   "amk": 3,
+   "windurst": 4
+  },
+  "Nareema": {
+   "toau": 17
+  },
+  "Narvecaint": {
+   "sandoria": 1
+  },
+  "Nashmeira": {
+   "rov": 12,
+   "toau": 121
+  },
+  "Nasshawan": {
+   "toau": 1
+  },
+  "Nelcabrit": {
+   "sandoria": 20
+  },
+  "Neraf-Najiruf": {
+   "cop": 2
+  },
+  "Nicolaus": {
+   "wotg": 4
+  },
+  "Nizahluf": {
+   "toau": 1
+  },
+  "Noillurie": {
+   "wotg": 43
+  },
+  "Nonterene": {
+   "bastok": 1,
+   "sandoria": 1,
+   "windurst": 1
+  },
+  "Numi Adaligo": {
+   "rov": 19
+  },
+  "Nyline": {
+   "soa": 15
+  },
+  "Odin": {
+   "toau": 11
+  },
+  "Odin Prime": {
+   "toau": 5
+  },
+  "Ohbiru-Dohbiru": {
+   "cop": 4
+  },
+  "Omer": {
+   "acp": 2
+  },
+  "Omran": {
+   "bastok": 1,
+   "sandoria": 1,
+   "windurst": 1
+  },
+  "Ondieulix": {
+   "cop": 1
+  },
+  "One-eyed Gwajboj": {
+   "wotg": 12
+  },
+  "Oscairn": {
+   "soa": 17
+  },
+  "Oshasha": {
+   "soa": 8
+  },
+  "Ovjang": {
+   "toau": 100
+  },
+  "Pacomart": {
+   "rov": 3
+  },
+  "Pakh Jatalfih": {
+   "windurst": 18
+  },
+  "Palometa": {
+   "bastok": 13,
+   "sandoria": 13,
+   "windurst": 13
+  },
+  "Parelbriaux": {
+   "cop": 3
+  },
+  "Parraggoh": {
+   "bastok": 1
+  },
+  "Patt-Pott": {
+   "windurst": 51
+  },
+  "Pavvke": {
+   "bastok": 3
+  },
+  "Pawnpix": {
+   "cop": 4
+  },
+  "Paya-Sabya": {
+   "bastok": 4,
+   "rotz": 2,
+   "sandoria": 4,
+   "windurst": 4
+  },
+  "Perfaumand": {
+   "sandoria": 5
+  },
+  "Perih Vashai": {
+   "cop": 26
+  },
+  "Pherimociel": {
+   "cop": 21,
+   "toau": 10
+  },
+  "Phillarceaux": {
+   "wotg": 1
+  },
+  "Pieuje": {
+   "bastok": 2,
+   "sandoria": 69,
+   "toau": 129,
+   "windurst": 2
+  },
+  "Pius": {
+   "sandoria": 7,
+   "windurst": 7
+  },
+  "Ploh Trishbahk": {
+   "soa": 60
+  },
+  "Pollimio": {
+   "soa": 36
+  },
+  "Portentous Woman": {
+   "wotg": 39
+  },
+  "Portia": {
+   "wotg": 177
+  },
+  "Povall": {
+   "bastok": 14
+  },
+  "Prien": {
+   "wotg": 20
+  },
+  "Prietta": {
+   "cop": 1
+  },
+  "Prishe": {
+   "cop": 538,
+   "rov": 94
+  },
+  "Promathia": {
+   "cop": 12
+  },
+  "Putori-Tutori": {
+   "wotg": 2
+  },
+  "Pyopyoroon": {
+   "toau": 27
+  },
+  "Quasilumin": {
+   "cop": 3
+  },
+  "Qultada": {
+   "toau": 5
+  },
+  "Rabntah": {
+   "bastok": 4,
+   "sandoria": 4,
+   "windurst": 4
+  },
+  "Radford": {
+   "wotg": 8
+  },
+  "Ragelise": {
+   "wotg": 388
+  },
+  "Rahal": {
+   "sandoria": 33,
+   "toau": 34
+  },
+  "Raibaht": {
+   "bastok": 4,
+   "cop": 4
+  },
+  "Raina": {
+   "wotg": 14
+  },
+  "Rakoh Buuma": {
+   "windurst": 6
+  },
+  "Rakorok": {
+   "cop": 3
+  },
+  "Ranperre": {
+   "sandoria": 8
+  },
+  "Raogrimm": {
+   "bastok": 23,
+   "rotz": 14,
+   "sandoria": 20,
+   "windurst": 20
+  },
+  "Rashid": {
+   "bastok": 9
+  },
+  "Rasmus": {
+   "bastok": 1
+  },
+  "Ratol Ja": {
+   "toau": 6
+  },
+  "Raubahn": {
+   "toau": 58
+  },
+  "Raustigne": {
+   "wotg": 15
+  },
+  "Razfahd": {
+   "toau": 236
+  },
+  "Regal Feline": {
+   "wotg": 9
+  },
+  "Reginald": {
+   "soa": 2
+  },
+  "Remiotte": {
+   "wotg": 15
+  },
+  "Ren": {
+   "bastok": 4,
+   "sandoria": 4,
+   "windurst": 4
+  },
+  "Rhy Epocan": {
+   "windurst": 2
+  },
+  "Riault": {
+   "sandoria": 15
+  },
+  "Rigobertine": {
+   "soa": 9
+  },
+  "Riko Kupenreich": {
+   "amk": 39
+  },
+  "Rishfee": {
+   "toau": 99
+  },
+  "Robel-Akbel": {
+   "wotg": 46
+  },
+  "Rochefogne": {
+   "bastok": 4,
+   "sandoria": 82,
+   "windurst": 4
+  },
+  "Rodin-Comidin": {
+   "toau": 12
+  },
+  "Romaa Mihgo": {
+   "windurst": 3,
+   "wotg": 5
+  },
+  "Rongelouts N Distaud": {
+   "wotg": 93
+  },
+  "Rughadjeen": {
+   "rotz": 1
+  },
+  "Ruillont": {
+   "sandoria": 10
+  },
+  "Rukususu": {
+   "windurst": 19
+  },
+  "Sabiliont": {
+   "wotg": 5
+  },
+  "Sainene": {
+   "soa": 3
+  },
+  "Salabwahn": {
+   "toau": 7
+  },
+  "Salimah": {
+   "bastok": 5
+  },
+  "Sattal-Mansal": {
+   "cop": 2,
+   "rotz": 2
+  },
+  "Savae E Paleade": {
+   "sandoria": 29
+  },
+  "Schultz": {
+   "bastok": 37,
+   "sandoria": 37,
+   "windurst": 37
+  },
+  "Searcher": {
+   "bastok": 6,
+   "sandoria": 6,
+   "windurst": 6
+  },
+  "Sedal-Godjal": {
+   "windurst": 6
+  },
+  "Seed Goblin": {
+   "bastok": 2,
+   "sandoria": 2,
+   "windurst": 2
+  },
+  "Seed Orc": {
+   "bastok": 2,
+   "sandoria": 2,
+   "windurst": 2
+  },
+  "Seed Quadav": {
+   "bastok": 1,
+   "sandoria": 1,
+   "windurst": 1
+  },
+  "Seed Yagudo": {
+   "bastok": 2,
+   "sandoria": 2,
+   "windurst": 2
+  },
+  "Seeker": {
+   "bastok": 6,
+   "sandoria": 6,
+   "windurst": 6
+  },
+  "Selh'teus": {
+   "cop": 66
+  },
+  "Semih Lafihna": {
+   "bastok": 4,
+   "sandoria": 4,
+   "windurst": 74
+  },
+  "Shadow Lord": {
+   "bastok": 23,
+   "rotz": 2,
+   "sandoria": 23,
+   "windurst": 23,
+   "wotg": 10
+  },
+  "Shadow of Darkness": {
+   "bastok": 4,
+   "sandoria": 4,
+   "windurst": 4
+  },
+  "Shakir": {
+   "bastok": 1
+  },
+  "Shamarhaan": {
+   "toau": 7
+  },
+  "Shamonde": {
+   "sandoria": 53
+  },
+  "Shantotto": {
+   "amk": 29,
+   "asa": 74,
+   "cop": 13,
+   "toau": 57,
+   "windurst": 17
+  },
+  "Shaz Norem": {
+   "windurst": 1
+  },
+  "Shikaree X": {
+   "cop": 30
+  },
+  "Shikaree Y": {
+   "cop": 34
+  },
+  "Shikaree Z": {
+   "cop": 99
+  },
+  "Shomera": {
+   "acp": 2
+  },
+  "Siren": {
+   "rov": 26
+  },
+  "Soni-Muni": {
+   "soa": 17
+  },
+  "Spotter": {
+   "bastok": 6,
+   "sandoria": 6,
+   "windurst": 6
+  },
+  "Star Sibyl": {
+   "windurst": 82
+  },
+  "Stooge Moogle": {
+   "amk": 110
+  },
+  "Stout Weir": {
+   "soa": 3
+  },
+  "Stufstix": {
+   "cop": 4
+  },
+  "Sueleen": {
+   "cop": 11
+  },
+  "Svenja": {
+   "soa": 80
+  },
+  "Swipostik": {
+   "cop": 8
+  },
+  "Talking Doll": {
+   "windurst": 64
+  },
+  "Tall Mountain": {
+   "bastok": 6
+  },
+  "Tanja": {
+   "wotg": 20
+  },
+  "Tarnotik": {
+   "cop": 3
+  },
+  "Tateeya": {
+   "toau": 13
+  },
+  "Tedimout": {
+   "sandoria": 1
+  },
+  "Tenzen": {
+   "cop": 467,
+   "rov": 171
+  },
+  "Teodor": {
+   "soa": 154
+  },
+  "Tiana": {
+   "soa": 52
+  },
+  "Tih Pikeh": {
+   "windurst": 3
+  },
+  "Tiyaash": {
+   "toau": 2
+  },
+  "Tonasav": {
+   "rov": 3
+  },
+  "Topuru-Kuperu": {
+   "windurst": 14
+  },
+  "Tosuka-Porika": {
+   "cop": 22,
+   "windurst": 62
+  },
+  "Toto Kupeliaure": {
+   "amk": 28
+  },
+  "Travialce": {
+   "toau": 78
+  },
+  "Tressia": {
+   "cop": 3
+  },
+  "Trikotrak": {
+   "cop": 12
+  },
+  "Trion": {
+   "bastok": 7,
+   "sandoria": 119,
+   "toau": 12,
+   "windurst": 7
+  },
+  "Turlough": {
+   "wotg": 16
+  },
+  "Ulmia": {
+   "cop": 424,
+   "rov": 2
+  },
+  "Ulrich": {
+   "bastok": 17,
+   "sandoria": 13,
+   "windurst": 13
+  },
+  "Uran-Mafran": {
+   "toau": 8
+  },
+  "Uu Zhoumo": {
+   "bastok": 8,
+   "sandoria": 1
+  },
+  "Vahn Paineesha": {
+   "windurst": 1
+  },
+  "Valkeng": {
+   "toau": 14
+  },
+  "Vanono": {
+   "windurst": 3
+  },
+  "Vaseradoul": {
+   "sandoria": 5
+  },
+  "Vauderame": {
+   "sandoria": 4
+  },
+  "Vavaroon": {
+   "toau": 16
+  },
+  "Velda-Galda": {
+   "wotg": 15
+  },
+  "Verena": {
+   "acp": 2,
+   "bastok": 33,
+   "rotz": 24,
+   "sandoria": 33,
+   "windurst": 33
+  },
+  "Vestillet": {
+   "wotg": 75
+  },
+  "Vhino Delkahngo": {
+   "wotg": 2
+  },
+  "Vichauxdat": {
+   "wotg": 11
+  },
+  "Vicorpasse": {
+   "sandoria": 7
+  },
+  "Viridiana": {
+   "wotg": 1
+  },
+  "Volker": {
+   "bastok": 76,
+   "sandoria": 9,
+   "toau": 51,
+   "windurst": 9,
+   "wotg": 2
+  },
+  "Volto Oscuro": {
+   "rov": 8
+  },
+  "Vortimere": {
+   "soa": 49
+  },
+  "Vukki-Chebukki": {
+   "cop": 44
+  },
+  "Wahboud": {
+   "toau": 3
+  },
+  "Warlord Rojgnoj": {
+   "bastok": 3,
+   "sandoria": 5,
+   "windurst": 3
+  },
+  "Waudeen": {
+   "toau": 16
+  },
+  "Wawaroon": {
+   "toau": 28
+  },
+  "Wegellion": {
+   "soa": 10
+  },
+  "Werei": {
+   "bastok": 21
+  },
+  "Whafael": {
+   "toau": 1
+  },
+  "Wharudu": {
+   "toau": 2
+  },
+  "Wolfgang": {
+   "bastok": 11,
+   "cop": 90,
+   "sandoria": 11,
+   "toau": 28,
+   "windurst": 11
+  },
+  "Yagudo Inquisitor": {
+   "bastok": 2,
+   "sandoria": 2,
+   "windurst": 2
+  },
+  "Yaucevouchat": {
+   "sandoria": 1
+  },
+  "Yazhaal": {
+   "toau": 1
+  },
+  "Yefafa": {
+   "soa": 3
+  },
+  "Yeggha Dolashi": {
+   "soa": 3
+  },
+  "Yin Pocanakhu": {
+   "rotz": 2
+  },
+  "Yoran-Oran": {
+   "asa": 6,
+   "cop": 63,
+   "windurst": 9
+  },
+  "Yujuju": {
+   "cop": 5
+  },
+  "Yve'noile": {
+   "cop": 29,
+   "rotz": 45
+  },
+  "Zantaviat": {
+   "sandoria": 16
+  },
+  "Zazarg": {
+   "rotz": 1,
+   "wotg": 44
+  },
+  "Zeid": {
+   "bastok": 72,
+   "rotz": 40,
+   "rov": 74,
+   "sandoria": 44,
+   "windurst": 44,
+   "wotg": 5
+  },
+  "Zokima-Rokima": {
+   "windurst": 7
+  },
+  "Zolku-Azolku": {
+   "wotg": 4
+  },
+  "Zonpa-Zippa": {
+   "windurst": 58
+  },
+  "Zubaba": {
+   "windurst": 5
+  }
+ }
+}

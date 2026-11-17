@@ -12,11 +12,29 @@ is, and what every voice's description and seed are. It validates the file
 on load so a typo fails here rather than halfway through designing.
 """
 
+import json
 import re
+import textwrap
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_PATH = HERE / "voice_designs.yaml"
+
+# casting group -> (race, gender), for the voice review's filters. The group
+# comes from a design's own `group`, else cast.py's CAST, else the census.
+GROUP_INFO = {
+    "hume_m": ("hume", "male"), "hume_f": ("hume", "female"), "old_m": ("hume", "male"),
+    "boy": ("hume", "male"), "elvaan_m": ("elvaan", "male"), "elvaan_f": ("elvaan", "female"),
+    "old_elvaan_m": ("elvaan", "male"), "taru_m": ("tarutaru", "male"), "taru_f": ("tarutaru", "female"),
+    "mithra": ("mithra", "female"), "galka": ("galka", "male"), "zilart_m": ("zilart", "male"),
+    "zilart_f": ("zilart", "female"), "deity_m": ("deity", "male"), "deity_f": ("deity", "female"),
+    "small": ("creature", "unknown"), "dark": ("dark", "male"), "dark_f": ("dark", "female"),
+    "cait": ("cait sith", "female"), "narrator": ("narrator", "male"),
+}
+
+
+def race_gender(group):
+    return GROUP_INFO.get(group, ("unknown", "unknown"))
 
 
 def voice_slug(name):
@@ -56,13 +74,18 @@ class Designs:
             name = str(name)
             if not isinstance(entry, dict):
                 raise ValueError(f"{source}: cast entry {name!r} must be a mapping with a description")
-            extra = set(entry) - {"description", "seed", "also"}
+            extra = set(entry) - {"description", "seed", "also", "group"}
             if extra:
                 raise ValueError(f"{source}: cast entry {name!r} has unknown key(s) {', '.join(sorted(extra))}")
             voice = voice_slug(name)
             also = [str(a) for a in (entry.get("also") or [])]
-            self._add(voice, entry.get("description"), entry.get("seed", 1), source, f"cast entry {name!r}",
-                      kind="cast", names=[name] + also)
+            info = {"kind": "cast", "names": [name] + also}
+            if entry.get("group") is not None:
+                group = str(entry["group"])
+                if groups is not None and group not in groups:
+                    raise ValueError(f"{source}: cast entry {name!r} has group {group!r}, not a casting group")
+                info["group"] = group
+            self._add(voice, entry.get("description"), entry.get("seed", 1), source, f"cast entry {name!r}", **info)
             for speaker in [name] + also:
                 if speaker in self.speakers:
                     raise ValueError(f"{source}: {speaker!r} is cast twice "
@@ -110,6 +133,86 @@ class Designs:
 
     def voice_for_speaker(self, speaker):
         return self.speakers.get(speaker)
+
+    # -- editing (the voice review) ----------------------------------------
+
+    def update(self, voice, description, seed):
+        """A new description and seed for an existing voice."""
+        description = " ".join(str(description).split())
+        if not description:
+            raise ValueError(f"{voice}: the description is empty")
+        if isinstance(seed, bool) or not isinstance(seed, int):
+            raise ValueError(f"{voice}: seed must be a whole number")
+        self.voices[voice].update(description=description, seed=seed)
+
+    def add_cast(self, name, description, seed=1, group=None):
+        """Give `name` a voice of their own; returns the new voice name."""
+        if name in self.speakers:
+            raise ValueError(f"{name!r} already has a voice, {self.speakers[name]}")
+        voice = voice_slug(name)
+        if voice in self.voices:
+            raise ValueError(f"voice name {voice!r} is taken")
+        info = {"kind": "cast", "names": [name]}
+        if group:
+            info["group"] = group
+        self._add(voice, description, seed, "voice review", f"new voice for {name!r}", **info)
+        self.speakers[name] = voice
+        return voice
+
+    def dump(self, path):
+        """Write the designs back, keeping the comment block that opens the
+        file and laying out the rest the way the hand-written file does."""
+        path = Path(path)
+        old = path.read_text(encoding="utf-8") if path.exists() else ""
+        header = old[:old.index("\ncalibration:") + 1] if "\ncalibration:" in old else ""
+        out = [header + "calibration: >-", *fold(self.calibration, 2), "", "cast:"]
+        for voice, v in self.voices.items():
+            if v["kind"] != "cast":
+                continue
+            name, *also = v["names"]
+            out += [f"  {yaml_key(name)}:", "    description: >-", *fold(v["description"], 6)]
+            if v["seed"] != 1:
+                out.append(f"    seed: {v['seed']}")
+            if v.get("group"):
+                out.append(f"    group: {v['group']}")
+            if also:
+                out += wrap_list("    also: [", [yaml_key(a) for a in also])
+        out += ["", "pools:"]
+        for group, voices in self.pools.items():
+            out.append(f"  {group}:")
+            out += [f"    - {json.dumps(self.voices[v]['description'], ensure_ascii=False)}" for v in voices]
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text("\n".join(out) + "\n", encoding="utf-8")
+        tmp.replace(path)
+
+
+WIDTH = 80
+PLAIN_KEY = re.compile(r"^[A-Za-z][A-Za-z0-9 .'\-]*$")
+
+
+def yaml_key(name):
+    """A name as a YAML key or list item: plain when safe, else quoted."""
+    return name if PLAIN_KEY.match(name) and not name.endswith(" ") else json.dumps(name, ensure_ascii=False)
+
+
+def wrap_list(lead, items):
+    """A flow list broken between items, continuation lines aligned under
+    the first item."""
+    lines, line = [], lead
+    for i, item in enumerate(items):
+        piece = item + ("]" if i == len(items) - 1 else ",")
+        if line != lead and len(line) + 1 + len(piece) > WIDTH:
+            lines.append(line)
+            line = " " * len(lead) + piece
+        else:
+            line += ("" if line == lead else " ") + piece
+    return lines + [line]
+
+
+def fold(text, indent):
+    """A folded (>-) block's lines: wrapped, indented."""
+    return textwrap.wrap(text, width=WIDTH, initial_indent=" " * indent, subsequent_indent=" " * indent,
+                         break_long_words=False, break_on_hyphens=False)
 
 
 _cached = {}
