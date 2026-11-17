@@ -149,7 +149,7 @@ class Session:
         return {"race": [("all", "all races")] + [(r, r) for r in races],
                 "gender": [("all", "all genders")] + [(g, g) for g in genders],
                 "story": [("all", "all storylines")] + list(self.story_names.items()),
-                "kind": [(k, k) for k in KINDS]}
+                "kind": [("all", "all kinds")] + [(k, k) for k in KINDS if k != "all"]}
 
     def filter(self, query="", race="all", gender="all", story="all", kind="all"):
         q = query.strip().lower()

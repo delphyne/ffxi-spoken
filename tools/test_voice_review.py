@@ -118,7 +118,7 @@ class SessionTest(unittest.TestCase):
         opts = self.ses.options()
         self.assertIn(("cop", "Chains of Promathia"), opts["story"])
         self.assertIn(("mithra", "mithra"), opts["race"])
-        self.assertEqual(opts["kind"][0], ("all", "all"))
+        self.assertEqual(opts["kind"][0], ("all", "all kinds"))
 
     def test_audition_then_accept_writes_clip_index_and_yaml(self):
         take = self.ses.audition("iroha", "Gender female, warmer.")

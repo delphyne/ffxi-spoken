@@ -48,72 +48,98 @@ class Window:
 
         root = self.root = tk.Tk()
         root.title("Spoken: voice review")
-        root.geometry("1280x760")
+        try:
+            ttk.Style().theme_use("clam")
+        except tk.TclError:
+            pass
+        # As in the lexicon review (helper/review_gui.py): the venv's Tk has
+        # no Xft, so it sees only the X server's core fonts and defaults to
+        # the bitmap "fixed", which ignores the desktop's scale. A scalable
+        # family at point sizes follows Tk's scaling (from Xft.dpi, 240 under
+        # KDE at 2.5x); pixel sizes are scaled by hand with px().
+        from tkinter import font
+        scale = float(root.tk.call("tk", "scaling")) / (96 / 72)
+        px = self.px = lambda n: round(n * scale)
+        size = 10
+        families = {f.lower(): f for f in font.families()}
+        family = next((families[f] for f in ("dejavu sans", "noto sans", "liberation sans") if f in families),
+                      font.nametofont("TkDefaultFont").cget("family"))
+        for name in ("TkDefaultFont", "TkTextFont", "TkHeadingFont", "TkMenuFont", "TkFixedFont"):
+            font.nametofont(name).configure(family=family, size=size)
+        self.f_title = font.Font(family=family, size=size + 4, weight="bold")
+        self.f_text = font.Font(family=family, size=size + 1)
+        # a Treeview's rows do not grow with its font
+        ttk.Style().configure("Treeview", rowheight=font.nametofont("TkDefaultFont").metrics("linespace") + px(6))
+        root.option_add("*TCombobox*Listbox.font", "TkDefaultFont")   # the drop-down lists
+        width = min(px(1280), int(root.winfo_screenwidth() * 0.9))
+        height = min(px(760), int(root.winfo_screenheight() * 0.85))
+        root.geometry(f"{width}x{height}")
+        root.minsize(min(px(900), width), min(px(520), height))
         root.columnconfigure(0, weight=3)
         root.columnconfigure(1, weight=2)
         root.rowconfigure(1, weight=1)
 
-        bar = ttk.Frame(root, padding=6)
+        bar = ttk.Frame(root, padding=px(6))
         bar.grid(row=0, column=0, columnspan=2, sticky="ew")
         ttk.Label(bar, text="Search").pack(side="left")
         self.query = tk.StringVar()
         search = ttk.Entry(bar, textvariable=self.query, width=24)
-        search.pack(side="left", padx=(4, 12))
+        search.pack(side="left", padx=(px(4), px(12)))
         self.query.trace_add("write", lambda *_: self.refresh())
         self.filters = {}
         for name, width in (("race", 12), ("gender", 10), ("story", 26), ("kind", 11)):
             var = tk.StringVar()
             box = ttk.Combobox(bar, textvariable=var, state="readonly", width=width)
-            box.pack(side="left", padx=4)
+            box.pack(side="left", padx=px(4))
             box.bind("<<ComboboxSelected>>", lambda e: self.refresh())
             self.filters[name] = (var, box)
         self.count = ttk.Label(bar, text="")
-        self.count.pack(side="left", padx=12)
+        self.count.pack(side="left", padx=px(12))
         self.fill_filters()
 
-        left = ttk.Frame(root, padding=(6, 0, 3, 6))
+        left = ttk.Frame(root, padding=(px(6), 0, px(3), px(6)))
         left.grid(row=1, column=0, sticky="nsew")
         left.rowconfigure(0, weight=1)
         left.columnconfigure(0, weight=1)
         cols = ("voice", "race", "gender", "lines", "stories", "state")
         tree = self.tree = ttk.Treeview(left, columns=cols, selectmode="browse")
         tree.heading("#0", text="speaker")
-        tree.column("#0", width=200)
+        tree.column("#0", width=px(200))
         for col, width in zip(cols, (120, 80, 70, 60, 200, 80)):
             tree.heading(col, text=col)
-            tree.column(col, width=width, anchor="e" if col == "lines" else "w")
+            tree.column(col, width=px(width), anchor="e" if col == "lines" else "w")
         scroll = ttk.Scrollbar(left, orient="vertical", command=tree.yview)
         tree.configure(yscrollcommand=scroll.set)
         tree.grid(row=0, column=0, sticky="nsew")
         scroll.grid(row=0, column=1, sticky="ns")
         tree.bind("<<TreeviewSelect>>", lambda e: self.select())
 
-        right = ttk.Frame(root, padding=(3, 0, 6, 6))
+        right = ttk.Frame(root, padding=(px(3), 0, px(6), px(6)))
         right.grid(row=1, column=1, sticky="nsew")
         right.columnconfigure(0, weight=1)
-        self.title = ttk.Label(right, text="Select a speaker or a voice", font=("TkDefaultFont", 14, "bold"))
+        self.title = ttk.Label(right, text="Select a speaker or a voice", font=self.f_title)
         self.title.grid(row=0, column=0, sticky="w")
-        self.info = ttk.Label(right, text="", wraplength=480, justify="left")
-        self.info.grid(row=1, column=0, sticky="w", pady=(2, 6))
+        self.info = ttk.Label(right, text="", wraplength=px(480), justify="left")
+        self.info.grid(row=1, column=0, sticky="w", pady=(px(2), px(6)))
         self.own = ttk.Button(right, text="", command=self.give_own)
         self.own.grid(row=2, column=0, sticky="w")
         self.own.grid_remove()
-        ttk.Label(right, text="Description").grid(row=3, column=0, sticky="w", pady=(8, 0))
-        self.text = tk.Text(right, wrap="word", height=7, font=("TkDefaultFont", 11), undo=True)
+        ttk.Label(right, text="Description").grid(row=3, column=0, sticky="w", pady=(px(8), 0))
+        self.text = tk.Text(right, wrap="word", height=7, font=self.f_text, undo=True, padx=px(4), pady=px(4))
         self.text.grid(row=4, column=0, sticky="ew")
         self.seed = ttk.Label(right, text="")
-        self.seed.grid(row=5, column=0, sticky="w", pady=(2, 8))
+        self.seed.grid(row=5, column=0, sticky="w", pady=(px(2), px(8)))
         buttons = ttk.Frame(right)
         buttons.grid(row=6, column=0, sticky="w")
         self.buttons = {}
         for name, label in (("play_saved", "Play saved"), ("audition", "Audition"), ("regenerate", "Regenerate"),
                             ("play_take", "Play take"), ("accept", "Accept"), ("reset", "Reset")):
             b = ttk.Button(buttons, text=label, command=getattr(self, name))
-            b.pack(side="left", padx=(0, 6))
+            b.pack(side="left", padx=(0, px(6)))
             self.buttons[name] = b
-        self.calibration = ttk.Label(right, text="", wraplength=480, justify="left", foreground="#666")
-        self.calibration.grid(row=7, column=0, sticky="w", pady=(10, 0))
-        self.status_line = ttk.Label(root, text="", padding=6, anchor="w")
+        self.calibration = ttk.Label(right, text="", wraplength=px(480), justify="left", foreground="#666")
+        self.calibration.grid(row=7, column=0, sticky="w", pady=(px(10), 0))
+        self.status_line = ttk.Label(root, text="", padding=px(6), anchor="w")
         self.status_line.grid(row=2, column=0, columnspan=2, sticky="ew")
 
         root.bind("<Control-Return>", lambda e: (self.audition(), "break")[1])
