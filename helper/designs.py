@@ -1,15 +1,27 @@
 """The MOSS backend's voice designs, from helper/voice_designs.yaml.
 
-A design is a description Qwen3-TTS VoiceDesign turns into a reference clip
+A design is what Qwen3-TTS VoiceDesign turns into a reference clip
 (tools/design_voices.py); MOSS-TTS then continues that clip for every line in
 the voice. Each design has a voice name, which is also its clip's file name:
 
     cast voice   the character's name as a slug: "Cait Sith" -> cait-sith
     pool voice   the group and its index: hume_m-0, hume_m-1, ...
 
+A design is meta plus a description. The meta is gender, age, and race: a
+cast voice carries all three; a pool voice takes gender and race from its
+casting group and carries its own age. The description is everything else
+(timbre, accent, pace, manner). `compose` builds the string Qwen is given:
+
+    Gender: female. Age: young adult. <the race's phrase> <description>
+
+The race phrases are the file's `races` section, because Qwen has no idea
+what a Galka or a Tarutaru sounds like unless told. A blank phrase, or an
+unknown gender or age, leaves that part out.
+
 `Designs` answers which voice a named character has, what each group's pool
-is, and what every voice's description and seed are. It validates the file
-on load so a typo fails here rather than halfway through designing.
+is, and what every voice's design is. It validates the file on load so a
+typo fails here rather than halfway through designing, and `dump` writes it
+back keeping the comment block that opens it.
 """
 
 import json
@@ -20,8 +32,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 DEFAULT_PATH = HERE / "voice_designs.yaml"
 
-# casting group -> (race, gender), for the voice review's filters. The group
-# comes from a design's own `group`, else cast.py's CAST, else the census.
+# casting group -> (race, gender): a pool voice's meta, and a speaker's when
+# they have no design of their own (via cast.py's CAST or the census race)
 GROUP_INFO = {
     "hume_m": ("hume", "male"), "hume_f": ("hume", "female"), "old_m": ("hume", "male"),
     "boy": ("hume", "male"), "elvaan_m": ("elvaan", "male"), "elvaan_f": ("elvaan", "female"),
@@ -31,6 +43,11 @@ GROUP_INFO = {
     "small": ("creature", "unknown"), "dark": ("dark", "male"), "dark_f": ("dark", "female"),
     "cait": ("cait sith", "female"), "narrator": ("narrator", "male"),
 }
+GENDERS = ("female", "male", "unknown")
+AGES = ("child", "young", "late teens", "young adult", "twenties", "thirties", "forties", "fifties",
+        "middle-aged", "mature", "older", "elderly", "ageless")
+CAST_KEYS = {"gender", "age", "race", "description", "seed", "also"}
+POOL_KEYS = {"age", "description", "seed"}
 
 
 def race_gender(group):
@@ -50,74 +67,97 @@ def pool_voice(group, index):
     return f"{group}-{index}"
 
 
+def tidy(text):
+    return " ".join(str(text or "").split())
+
+
 class Designs:
     """Parsed and checked voice_designs.yaml.
 
-    voices   voice name -> {"description", "seed", "kind" ("cast"|"pool"),
-             "group" (pool voices), "names" (cast voices: every speaker name)}
+    voices   voice name -> {"kind" ("cast"|"pool"), "gender", "age", "race",
+             "description", "seed", and "names" (cast: every speaker name)
+             or "group" (pool)}
     speakers speaker name -> voice name, for the cast section and its `also`
     pools    group -> [voice names]
+    races    race -> the phrase `compose` puts in for it
     """
 
     def __init__(self, data, groups=None, source="voice_designs.yaml"):
         if not isinstance(data, dict):
-            raise ValueError(f"{source}: expected a mapping with calibration, cast, and pools")
-        unknown = set(data) - {"calibration", "cast", "pools"}
+            raise ValueError(f"{source}: expected a mapping with calibration, races, cast, and pools")
+        unknown = set(data) - {"calibration", "races", "cast", "pools"}
         if unknown:
             raise ValueError(f"{source}: unknown section(s) {', '.join(sorted(unknown))}")
-        self.calibration = " ".join(str(data.get("calibration") or "").split())
+        self.source = source
+        self.calibration = tidy(data.get("calibration"))
         if not self.calibration:
             raise ValueError(f"{source}: calibration sentence is missing")
+        races = data.get("races") or {}
+        if not isinstance(races, dict):
+            raise ValueError(f"{source}: races must map each race to a phrase (blank for none)")
+        self.races = {str(k): tidy(v) for k, v in races.items()}
         self.voices, self.speakers, self.pools = {}, {}, {}
 
         for name, entry in (data.get("cast") or {}).items():
             name = str(name)
             if not isinstance(entry, dict):
                 raise ValueError(f"{source}: cast entry {name!r} must be a mapping with a description")
-            extra = set(entry) - {"description", "seed", "also", "group"}
+            extra = set(entry) - CAST_KEYS
             if extra:
                 raise ValueError(f"{source}: cast entry {name!r} has unknown key(s) {', '.join(sorted(extra))}")
-            voice = voice_slug(name)
             also = [str(a) for a in (entry.get("also") or [])]
-            info = {"kind": "cast", "names": [name] + also}
-            if entry.get("group") is not None:
-                group = str(entry["group"])
-                if groups is not None and group not in groups:
-                    raise ValueError(f"{source}: cast entry {name!r} has group {group!r}, not a casting group")
-                info["group"] = group
-            self._add(voice, entry.get("description"), entry.get("seed", 1), source, f"cast entry {name!r}", **info)
+            self._add(voice_slug(name), f"cast entry {name!r}", kind="cast", names=[name] + also,
+                      gender=entry.get("gender"), age=entry.get("age"), race=entry.get("race"),
+                      description=entry.get("description"), seed=entry.get("seed", 1))
             for speaker in [name] + also:
                 if speaker in self.speakers:
                     raise ValueError(f"{source}: {speaker!r} is cast twice "
-                                     f"({self.speakers[speaker]} and {voice})")
-                self.speakers[speaker] = voice
+                                     f"({self.speakers[speaker]} and {voice_slug(name)})")
+                self.speakers[speaker] = voice_slug(name)
 
-        for group, descriptions in (data.get("pools") or {}).items():
+        for group, entries in (data.get("pools") or {}).items():
             group = str(group)
             if groups is not None and group not in groups:
                 raise ValueError(f"{source}: pool {group!r} is not a casting group "
                                  f"(one of {', '.join(sorted(groups))})")
-            if not isinstance(descriptions, list) or not descriptions:
-                raise ValueError(f"{source}: pool {group!r} needs a list of at least one description")
+            if not isinstance(entries, list) or not entries:
+                raise ValueError(f"{source}: pool {group!r} needs a list of at least one voice")
+            race, gender = race_gender(group)
             self.pools[group] = []
-            for i, d in enumerate(descriptions):
+            for i, e in enumerate(entries):
+                e = e if isinstance(e, dict) else {"description": e}
+                extra = set(e) - POOL_KEYS
+                if extra:
+                    raise ValueError(f"{source}: pool {group!r} voice {i} has unknown key(s) "
+                                     f"{', '.join(sorted(extra))}")
                 voice = pool_voice(group, i)
-                self._add(voice, d, 1, source, f"pool {group!r} voice {i}", kind="pool", group=group)
+                self._add(voice, f"pool {group!r} voice {i}", kind="pool", group=group, gender=gender,
+                          age=e.get("age"), race=race, description=e.get("description"), seed=e.get("seed", 1))
                 self.pools[group].append(voice)
         if groups is not None:
             missing = sorted(set(groups) - set(self.pools))
             if missing:
                 raise ValueError(f"{source}: no pool for casting group(s) {', '.join(missing)}")
 
-    def _add(self, voice, description, seed, source, what, **info):
-        description = " ".join(str(description or "").split())
+    def _check(self, what, gender, age, race, description, seed):
+        gender, age, race, description = tidy(gender), tidy(age), tidy(race), tidy(description)
         if not description:
-            raise ValueError(f"{source}: {what} has no description")
+            raise ValueError(f"{self.source}: {what} has no description")
         if isinstance(seed, bool) or not isinstance(seed, int):
-            raise ValueError(f"{source}: {what} seed must be a whole number, not {seed!r}")
+            raise ValueError(f"{self.source}: {what} seed must be a whole number, not {seed!r}")
+        if race and self.races and race not in self.races:
+            raise ValueError(f"{self.source}: {what} has race {race!r}, which the races section does not list "
+                             f"({', '.join(sorted(self.races))})")
+        if re.match(r"(?i)\s*(gender|age)\s*:", description):
+            raise ValueError(f"{self.source}: {what}'s description starts with a {description.split(':')[0]}; "
+                             "that belongs in the meta, which compose() puts in front")
+        return {"gender": gender or "unknown", "age": age, "race": race or "unknown",
+                "description": description, "seed": seed}
+
+    def _add(self, voice, what, kind, gender, age, race, description, seed, **info):
         if voice in self.voices:
-            raise ValueError(f"{source}: {what} gives voice name {voice!r}, which another entry already has")
-        self.voices[voice] = dict(info, description=description, seed=seed)
+            raise ValueError(f"{self.source}: {what} gives voice name {voice!r}, which another entry already has")
+        self.voices[voice] = dict(info, kind=kind, **self._check(what, gender, age, race, description, seed))
 
     @classmethod
     def load(cls, path=DEFAULT_PATH, groups=None):
@@ -134,28 +174,44 @@ class Designs:
     def voice_for_speaker(self, speaker):
         return self.speakers.get(speaker)
 
+    # -- the string Qwen is given ------------------------------------------
+
+    def compose(self, voice=None, **design):
+        """Qwen's instruction for a voice, or for a design not saved yet
+        (gender, age, race, description as keywords)."""
+        d = dict(self.voices[voice]) if voice else {}
+        d.update({k: v for k, v in design.items() if v is not None})
+        parts = []
+        gender, age = tidy(d.get("gender")), tidy(d.get("age"))
+        if gender and gender != "unknown":
+            parts.append(f"Gender: {gender}.")
+        if age:
+            parts.append(f"Age: {age}.")
+        phrase = self.races.get(tidy(d.get("race")), "")
+        if phrase:
+            parts.append(phrase)
+        parts.append(tidy(d.get("description")))
+        return " ".join(p for p in parts if p)
+
     # -- editing (the voice review) ----------------------------------------
 
-    def update(self, voice, description, seed):
-        """A new description and seed for an existing voice."""
-        description = " ".join(str(description).split())
-        if not description:
-            raise ValueError(f"{voice}: the description is empty")
-        if isinstance(seed, bool) or not isinstance(seed, int):
-            raise ValueError(f"{voice}: seed must be a whole number")
-        self.voices[voice].update(description=description, seed=seed)
+    def update(self, voice, description, seed, gender=None, age=None, race=None):
+        """A new design for an existing voice. A pool voice's gender and race
+        are its group's and cannot change here."""
+        v = self.voices[voice]
+        if v["kind"] == "pool":
+            gender, race = v["gender"], v["race"]
+        new = self._check(voice, v["gender"] if gender is None else gender, v["age"] if age is None else age,
+                          v["race"] if race is None else race, description, seed)
+        v.update(new)
 
-    def add_cast(self, name, description, seed=1, group=None):
+    def add_cast(self, name, description, seed=1, gender=None, age=None, race=None):
         """Give `name` a voice of their own; returns the new voice name."""
         if name in self.speakers:
             raise ValueError(f"{name!r} already has a voice, {self.speakers[name]}")
         voice = voice_slug(name)
-        if voice in self.voices:
-            raise ValueError(f"voice name {voice!r} is taken")
-        info = {"kind": "cast", "names": [name]}
-        if group:
-            info["group"] = group
-        self._add(voice, description, seed, "voice review", f"new voice for {name!r}", **info)
+        self._add(voice, f"new voice for {name!r}", kind="cast", names=[name], gender=gender, age=age,
+                  race=race, description=description, seed=seed)
         self.speakers[name] = voice
         return voice
 
@@ -165,22 +221,32 @@ class Designs:
         path = Path(path)
         old = path.read_text(encoding="utf-8") if path.exists() else ""
         header = old[:old.index("\ncalibration:") + 1] if "\ncalibration:" in old else ""
-        out = [header + "calibration: >-", *fold(self.calibration, 2), "", "cast:"]
-        for voice, v in self.voices.items():
+        out = [header + "calibration: >-", *fold(self.calibration, 2), "", "races:"]
+        out += [f"  {yaml_key(race)}: {json.dumps(phrase, ensure_ascii=False)}" for race, phrase in self.races.items()]
+        out += ["", "cast:"]
+        for v in self.voices.values():
             if v["kind"] != "cast":
                 continue
             name, *also = v["names"]
-            out += [f"  {yaml_key(name)}:", "    description: >-", *fold(v["description"], 6)]
+            out.append(f"  {yaml_key(name)}:")
+            out += [f"    {k}: {yaml_key(v[k])}" for k in ("gender", "age", "race") if v[k] and v[k] != "unknown"]
+            out += ["    description: >-", *fold(v["description"], 6)]
             if v["seed"] != 1:
                 out.append(f"    seed: {v['seed']}")
-            if v.get("group"):
-                out.append(f"    group: {v['group']}")
             if also:
                 out += wrap_list("    also: [", [yaml_key(a) for a in also])
         out += ["", "pools:"]
         for group, voices in self.pools.items():
             out.append(f"  {group}:")
-            out += [f"    - {json.dumps(self.voices[v]['description'], ensure_ascii=False)}" for v in voices]
+            for voice in voices:
+                v = self.voices[voice]
+                lead = "    - "
+                if v["age"]:
+                    out.append(f"{lead}age: {yaml_key(v['age'])}")
+                    lead = "      "
+                out.append(f"{lead}description: {json.dumps(v['description'], ensure_ascii=False)}")
+                if v["seed"] != 1:
+                    out.append(f"      seed: {v['seed']}")
         tmp = path.with_suffix(".tmp")
         tmp.write_text("\n".join(out) + "\n", encoding="utf-8")
         tmp.replace(path)
@@ -191,7 +257,8 @@ PLAIN_KEY = re.compile(r"^[A-Za-z][A-Za-z0-9 .'\-]*$")
 
 
 def yaml_key(name):
-    """A name as a YAML key or list item: plain when safe, else quoted."""
+    """A name as a YAML key or value: plain when safe, else quoted."""
+    name = str(name)
     return name if PLAIN_KEY.match(name) and not name.endswith(" ") else json.dumps(name, ensure_ascii=False)
 
 

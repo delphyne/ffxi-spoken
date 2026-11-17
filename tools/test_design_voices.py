@@ -15,9 +15,14 @@ import spoken_helper as sh  # noqa: E402
 GROUPS = {"hume_m"}
 
 
+IROHA = {"gender": "female", "age": "young adult", "race": "hume", "description": "Warm.", "seed": 7,
+         "also": ["Volto Oscuro"]}
+
+
 def make_designs(**cast):
-    cast = cast or {"Iroha": {"description": "Gender: female.", "seed": 7, "also": ["Volto Oscuro"]}}
-    return designs.Designs({"calibration": "Wait here.", "cast": cast, "pools": {"hume_m": ["plain", "gruff"]}},
+    cast = cast or {"Iroha": IROHA}
+    return designs.Designs({"calibration": "Wait here.", "races": {"hume": "", "galka": "Huge."}, "cast": cast,
+                            "pools": {"hume_m": ["plain", {"age": "fifties", "description": "gruff"}]}},
                            groups=GROUPS)
 
 
@@ -44,7 +49,8 @@ class DesignVoicesTest(unittest.TestCase):
 
     def run_design(self, d, **kw):
         index = dv.load_index(self.refs)
-        todo = dv.plan(d, index, self.refs, dv.selected(d, kw.pop("only", None)), fresh=kw.pop("fresh", False))
+        todo = dv.plan(d, index, self.refs, dv.selected(d, kw.pop("only", None)), fresh=kw.pop("fresh", False),
+                       changed=kw.pop("changed", False))
         engine = FakeQwen()
         dv.design_all(d, todo, self.refs, engine, index, **kw)
         return todo, engine
@@ -53,21 +59,34 @@ class DesignVoicesTest(unittest.TestCase):
         d = make_designs()
         todo, engine = self.run_design(d)
         self.assertEqual(todo, [("iroha", "missing"), ("hume_m-0", "missing"), ("hume_m-1", "missing")])
-        self.assertEqual(engine.calls[0], ("Wait here.", "Gender: female."))
+        self.assertEqual(engine.calls, [("Wait here.", "Gender: female. Age: young adult. Warm."),
+                                        ("Wait here.", "Gender: male. plain"),
+                                        ("Wait here.", "Gender: male. Age: fifties. gruff")],
+                         "Qwen is given the composed instruction")
         self.assertEqual(engine.seeds, [7, 1, 1])
         index = json.loads((self.refs / "index.json").read_text())
         self.assertEqual(index["calibration"], "Wait here.")
         rec = index["voices"]["iroha"]
         self.assertEqual(rec["names"], ["Iroha", "Volto Oscuro"])
+        self.assertEqual((rec["gender"], rec["age"], rec["race"], rec["description"]),
+                         ("female", "young adult", "hume", "Warm."))
+        self.assertEqual(rec["instruct"], "Gender: female. Age: young adult. Warm.")
         self.assertEqual(rec["sha256"], dv.sha256_file(self.refs / "iroha.wav"))
         self.assertEqual(index["voices"]["hume_m-1"]["group"], "hume_m")
 
-    def test_second_run_only_redoes_what_changed(self):
+    def test_changed_designs_are_listed_and_redone_only_on_request(self):
         self.run_design(make_designs())
         todo, _ = self.run_design(make_designs())
         self.assertEqual(todo, [])
-        changed = make_designs(Iroha={"description": "Gender: female.", "seed": 8, "also": ["Volto Oscuro"]})
-        todo, engine = self.run_design(changed)
+        for change in ({"seed": 8}, {"race": "galka"}, {"age": "forties"}, {"description": "Cool."}):
+            changed = make_designs(Iroha=dict(IROHA, **change))
+            with self.subTest(change=change):
+                todo, _ = self.run_design(changed)
+                self.assertEqual(todo, [], "a heard clip is not replaced unasked")
+                self.assertEqual(dv.stale(changed, dv.load_index(self.refs), self.refs, list(changed.voices)),
+                                 ["iroha"])
+        changed = make_designs(Iroha=dict(IROHA, seed=8))
+        todo, engine = self.run_design(changed, changed=True)
         self.assertEqual(todo, [("iroha", "changed")])
         self.assertEqual(engine.seeds, [8])
         (self.refs / "hume_m-0.wav").unlink()
@@ -85,7 +104,7 @@ class DesignVoicesTest(unittest.TestCase):
         spike.mkdir()
         sh.write_wav(spike / "iroha.wav", [0.1] * 4800, 24000)
         _, engine = self.run_design(make_designs(), adopt=spike)
-        self.assertEqual([c[1] for c in engine.calls], ["plain", "gruff"])   # iroha was adopted
+        self.assertEqual([c[1] for c in engine.calls], ["Gender: male. plain", "Gender: male. Age: fifties. gruff"])
         self.assertEqual((self.refs / "iroha.wav").read_bytes(), (spike / "iroha.wav").read_bytes())
         index = json.loads((self.refs / "index.json").read_text())["voices"]
         self.assertTrue(index["iroha"]["how"].startswith("adopted from"))
@@ -101,6 +120,17 @@ class DesignVoicesTest(unittest.TestCase):
         self.assertIn("Iroha, Volto Oscuro", text)
         self.assertIn("pool: hume_m", text)
         self.assertEqual(text.count("not designed yet"), 2)
+        self.assertIn("Gender: female. Age: young adult. Warm.", text, "the page shows the composed instruction")
+
+    def test_old_records_compare_by_their_whole_description(self):
+        """Index records from before the meta split kept the whole instruction
+        as `description`; a hume's composed instruction equals it, so its clip
+        stays current."""
+        d = make_designs()
+        rec = {"description": "Gender: female. Age: young adult. Warm.", "seed": 7, "calibration": "Wait here."}
+        self.assertEqual(dv.made_with(rec), d.compose("iroha"))
+        self.assertFalse(dv.is_changed(d, "iroha", rec))
+        self.assertTrue(dv.is_changed(make_designs(Iroha=dict(IROHA, race="galka")), "iroha", rec))
 
 
 if __name__ == "__main__":

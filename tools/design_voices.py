@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
-"""Design the MOSS backend's voices: each description in
-helper/voice_designs.yaml becomes a reference clip, Qwen3-TTS VoiceDesign
-speaking the calibration sentence in that voice.
+"""Design the MOSS backend's voices: each design in helper/voice_designs.yaml
+becomes a reference clip, Qwen3-TTS VoiceDesign speaking the calibration
+sentence with the design's composed instruction (designs.compose: gender,
+age, the race's phrase, the description).
 
-    make design-voices [ONLY=Name] [FRESH=1]     render missing or changed clips
+    make design-voices [ONLY=Name] [CHANGED=1] [FRESH=1]
     make review-voices                           a page with every clip to listen to
+    make voice-review                            edit, audition, and accept one at a time
     .venv-qwen/bin/python -I tools/design_voices.py --help
 
 Clips go to helper/voices/moss/refs/<voice>.wav (gitignored; audio is never
-committed), with refs/index.json recording each voice's description, seed,
-and sha256. A clip is redesigned when it is missing, when its description or
-seed in the YAML no longer matches the index, or with --fresh. To reroll a
-voice you dislike, change its seed and run again.
+committed), with refs/index.json recording each voice's meta, description,
+the exact instruction Qwen was given, seed, and sha256. A run designs the
+voices with no clip. A voice whose design changed since its clip was made is
+only listed, because its clip may be one you have heard and like; --changed
+redesigns those too, --fresh everything selected.
 
 --adopt DIR takes clips already designed elsewhere (the listening spike's
 data/spike/ref/) for voices whose clip is missing, so voices that were heard
@@ -163,28 +166,47 @@ def selected(d, only):
     return out
 
 
-def plan(d, index, refs, voices, fresh=False):
+def made_with(rec):
+    """The instruction a clip was made with. Records from before the meta
+    split kept the whole instruction as `description`."""
+    return rec.get("instruct", rec.get("description"))
+
+
+def is_changed(d, voice, rec):
+    """Whether the clip on record was made from something other than the
+    design as it stands."""
+    v = d.voices[voice]
+    return (made_with(rec) != d.compose(voice) or rec.get("seed") != v["seed"]
+            or rec.get("calibration") != d.calibration)
+
+
+def plan(d, index, refs, voices, fresh=False, changed=False):
     """(voice, reason) for each clip to (re)design; reason is missing,
-    changed, or fresh."""
+    changed, or fresh. A changed voice is in the plan only with `changed`."""
     todo = []
     for voice in voices:
-        v, rec = d.voices[voice], index.get(voice)
+        rec = index.get(voice)
         clip = Path(refs) / f"{voice}.wav"
         if fresh:
             todo.append((voice, "fresh"))
         elif not clip.exists() or rec is None:
             todo.append((voice, "missing"))
-        elif rec.get("description") != v["description"] or rec.get("seed") != v["seed"] \
-                or rec.get("calibration") != d.calibration:
+        elif changed and is_changed(d, voice, rec):
             todo.append((voice, "changed"))
     return todo
 
 
+def stale(d, index, refs, voices):
+    """Voices with a clip made from an older design."""
+    return [v for v in voices
+            if (Path(refs) / f"{v}.wav").exists() and v in index and is_changed(d, v, index[v])]
+
+
 def record(d, voice, clip, how):
     v = d.voices[voice]
-    rec = {k: v[k] for k in ("kind", "description", "seed") if k in v}
+    rec = {k: v[k] for k in ("kind", "gender", "age", "race", "description", "seed") if k in v}
     rec.update({k: v[k] for k in ("group", "names") if k in v})
-    rec.update(calibration=d.calibration, sha256=sha256_file(clip), how=how)
+    rec.update(instruct=d.compose(voice), calibration=d.calibration, sha256=sha256_file(clip), how=how)
     return rec
 
 
@@ -204,7 +226,7 @@ def design_all(d, todo, refs, engine, index, adopt=None):
         v = d.voices[voice]
         engine.manual_seed(v["seed"])
         t0 = time.perf_counter()
-        samples, rate = engine.design(d.calibration, v["description"])
+        samples, rate = engine.design(d.calibration, d.compose(voice))
         sh.write_wav(clip, samples, rate)
         index[voice] = record(d, voice, clip, "designed")
         log(f"design  {voice:16} {reason:8} {time.perf_counter() - t0:5.1f}s")
@@ -222,7 +244,7 @@ def write_review(d, refs, index):
     parts = ["<!doctype html><meta charset=utf-8><title>Spoken: designed voices</title>",
              f"<style>{sp.STYLE}</style><h1>Designed voices</h1>",
              f"<p>Each clip says: <i>{e(d.calibration)}</i></p>",
-             "<table><tr><th>voice</th><th>speakers</th><th>description</th><th>seed</th><th>clip</th></tr>"]
+             "<table><tr><th>voice</th><th>speakers</th><th>instruction</th><th>seed</th><th>clip</th></tr>"]
     for voice, v in d.voices.items():
         clip = refs / f"{voice}.wav"
         who = ", ".join(v.get("names", [])) or f"pool: {v['group']}"
@@ -230,7 +252,7 @@ def write_review(d, refs, index):
                 else "<span class=small>not designed yet</span>")
         how = index.get(voice, {}).get("how", "")
         parts.append(f"<tr><td>{e(voice)}<div class=small>{e(how)}</div></td><td>{e(who)}</td>"
-                     f"<td class=txt>{e(v['description'])}</td><td>{v['seed']}</td><td>{cell}</td></tr>")
+                     f"<td class=txt>{e(d.compose(voice))}</td><td>{v['seed']}</td><td>{cell}</td></tr>")
     parts.append("</table>")
     page = refs / "review.html"
     page.write_text("\n".join(parts), encoding="utf-8")
@@ -242,6 +264,7 @@ def main(argv=None):
     ap.add_argument("--designs", default=str(designs_module.DEFAULT_PATH))
     ap.add_argument("--refs", default=str(REFS))
     ap.add_argument("--only", action="append", help="a voice or speaker name; repeatable")
+    ap.add_argument("--changed", action="store_true", help="also redesign voices whose design changed")
     ap.add_argument("--fresh", action="store_true", help="redesign even if the clip is current")
     ap.add_argument("--adopt", metavar="DIR", help="copy missing clips from DIR/<voice>.wav instead of designing")
     ap.add_argument("--dry-run", action="store_true", help="list what would be designed")
@@ -253,8 +276,14 @@ def main(argv=None):
     d = designs_module.Designs.load(args.designs, groups=set(casting.POOLS))
     index = load_index(args.refs)
     if not args.review:
-        todo = plan(d, index, args.refs, selected(d, args.only), fresh=args.fresh)
+        chosen = selected(d, args.only)
+        todo = plan(d, index, args.refs, chosen, fresh=args.fresh, changed=args.changed)
         log(f"{len(todo)} of {len(d.voices)} voices to design")
+        if not (args.fresh or args.changed):
+            old = stale(d, index, args.refs, chosen)
+            if old:
+                log(f"{len(old)} clips were made from an older design and are kept "
+                    f"(CHANGED=1 redesigns them): {', '.join(old)}")
         if args.dry_run:
             for voice, reason in todo:
                 log(f"  {voice:16} {reason}")

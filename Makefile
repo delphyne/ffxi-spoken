@@ -35,9 +35,9 @@
 #   make spike-qwen [LIMIT=N] [RAW=1] [FRESH=1]
 #                    render a fixed set of Rhapsodies lines through Kokoro and Qwen3-TTS into
 #                    data/spike/listen.html, to judge a Qwen3 backend by ear (tools/spike_qwen3.py)
-#   make design-voices [ONLY=Name] [FRESH=1] [ADOPT=dir]
+#   make design-voices [ONLY=Name] [CHANGED=1] [FRESH=1] [ADOPT=dir]
 #                    turn helper/voice_designs.yaml into reference clips with Qwen3 VoiceDesign
-#                    (helper/voices/moss/refs/); only missing or changed ones unless FRESH
+#                    (helper/voices/moss/refs/); voices with no clip, plus changed ones with CHANGED
 #   make review-voices   a page with every designed voice and its description, to listen to
 #   make voice-review    a window to edit descriptions, audition, regenerate, accept, or reset each voice,
 #                    filtered by race, gender, storyline, or a partial name (tools/voice_review.py)
@@ -242,7 +242,7 @@ design-voices:
 	@test -x "$(VENV_QWEN)/bin/python" || { echo ".venv-qwen is missing; run make venv-qwen" >&2; exit 1; }; \
 	HF_HOME="$(VOICES)/qwen3/hf" PYTORCH_ALLOC_CONF=expandable_segments:True \
 		"$(VENV_QWEN)/bin/python" -I tools/design_voices.py \
-		$(if $(ONLY),--only "$(ONLY)") $(if $(FRESH),--fresh) $(if $(ADOPT),--adopt "$(ADOPT)")
+		$(if $(ONLY),--only "$(ONLY)") $(if $(CHANGED),--changed) $(if $(FRESH),--fresh) $(if $(ADOPT),--adopt "$(ADOPT)")
 
 review-voices:
 	$(PY) -I tools/design_voices.py --review

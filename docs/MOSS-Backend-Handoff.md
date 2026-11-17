@@ -58,11 +58,19 @@ quick checks.
 - **`helper/voice_designs.yaml`**, hand-edited like the lexicon:
   - `calibration`: the neutral sentence every clip says, and so the
     transcript MOSS continues from.
-  - `cast`: a description and seed per named character. It starts with the
+  - `races`: a phrase per race, because Qwen does not know what a Galka or
+    a Tarutaru sounds like unless told; blank for none.
+  - `cast`: per named character, meta (gender, age, race), a description of
+    the rest (timbre, accent, pace, manner), and a seed. It starts with the
     Rhapsodies speakers. Variant names share a voice the way `cast.py` pins
     them (Volto Oscuro is Iroha; the twelve Cait Siths are one).
-  - `pools`: four descriptions per casting group (the keys of
-    `casting.POOLS`), for the thousands of NPCs cast by race.
+  - `pools`: voices per casting group (the keys of `casting.POOLS`), for
+    the thousands of NPCs cast by race; the group gives gender and race,
+    each voice its age and description.
+
+  Qwen is given `designs.compose`: "Gender: …. Age: …. <race phrase>
+  <description>". `make voice-review` edits all of it with auditions and
+  shows the composed instruction in a popout.
 - **`tools/design_voices.py`** runs under `.venv-qwen` and renders each
   description into `helper/voices/moss/refs/<voice>.wav`, then encodes the
   clip's MOSS codes beside it as `<voice>.codes.pt` under `.venv-moss`. A

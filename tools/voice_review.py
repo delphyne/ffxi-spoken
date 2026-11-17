@@ -6,11 +6,12 @@
 
 A window lists every speaker the storylines have and every pool voice, with
 filters for race, gender, storyline, and kind, and a search box that
-matches any part of a name. For the selected voice you can edit its
-description, audition it (Qwen3 VoiceDesign speaks the calibration sentence
-with that description and seed), regenerate with a new seed, then accept
-the take or reset to what is saved. A speaker on a shared pool voice can be
-given a voice of their own, starting from the pool's description.
+matches any part of a name. For the selected voice you can edit its meta
+(gender, age, race) and description, see the instruction they compose into
+(designs.compose), audition it (Qwen3 VoiceDesign speaks the calibration
+sentence with that instruction and seed), regenerate with a new seed, then
+accept the take or reset to what is saved. A speaker on a shared pool voice
+can be given a voice of their own, starting from the pool's design.
 
 Accepting writes the clip to helper/voices/moss/refs/, its record to the
 clips' index, and the description and seed to voice_designs.yaml; a new
@@ -18,9 +19,9 @@ voice also regenerates helper/voices.json. The YAML is re-read from disk
 before each write and only the accepted voice changes, so edits made in an
 editor meanwhile survive. Takes not accepted stay in refs/.candidates/.
 
-Race and gender come from the speaker's casting group: a design's own
-`group`, else helper/cast.py's CAST, else the census race. Storylines come
-from helper/voice_stories.json (make voice-stories).
+Race and gender come from a design's meta when the speaker has one, else
+from their casting group (helper/cast.py's CAST, else the census race).
+Storylines come from helper/voice_stories.json (make voice-stories).
 
 Runs under .venv-qwen, which has Tk and the Qwen3 model. `Session` is the
 logic and has no Tk in it; voice_review_gui.py is the window.
@@ -81,7 +82,7 @@ class Session:
         self.engine_factory = engine_factory or (lambda: dv.Qwen())
         self._engine = None
         self.rng = rng or random.Random()
-        self.drafts = {}   # voice -> {"description", "seed", "candidate", "new": speaker or None}
+        self.drafts = {}   # voice -> {"meta", "description", "seed", "candidate", "new": speaker or None}
         self.reload()
 
     # -- catalogue -------------------------------------------------------
@@ -90,15 +91,14 @@ class Session:
         self.designs = designs_module.Designs.load(self.designs_path, groups=set(casting.POOLS))
         for voice, draft in self.drafts.items():   # a voice given in this session, not yet accepted
             if draft.get("new") and voice not in self.designs.voices:
-                self.designs.add_cast(draft["new"], draft["description"], draft["seed"], draft.get("group"))
+                self.designs.add_cast(draft["new"], draft["description"], draft["seed"], **draft["meta"])
         self.index = dv.load_index(self.refs)
         self.voice_map = load_json(self.voices_json, {}).get("moss", {})
         self.rows = self._rows()
 
     def group_of(self, name, voice):
-        own = self.designs.voices.get(self.designs.voice_for_speaker(name) or "", {}).get("group")
-        if own:
-            return own
+        """The speaker's casting group, from cast.py or the census, else the
+        pool voice they are on."""
         if name in self.cast_groups:
             return self.cast_groups[name]
         race = (self.census.get(name) or {}).get("race")
@@ -115,41 +115,55 @@ class Session:
             return casting.voice_for_group(casting.RACE_GROUPS[census], name, "moss", designs=self.designs)
         return self.voice_map.get("default") or self.designs.pools["hume_m"][0]
 
+    def meta_of(self, name, voice):
+        """(race, gender, age) for a speaker: their own design's meta, else
+        their casting group's race and gender and their pool voice's age."""
+        v = self.designs.voices.get(voice, {})
+        if v.get("kind") == "cast":
+            return v["race"], v["gender"], v["age"]
+        race, gender = designs_module.race_gender(self.group_of(name, voice))
+        return race, gender, v.get("age", "")
+
     def _rows(self):
         names = set(self.speaker_stories) | set(self.designs.speakers) | (set(self.voice_map) - {"default"})
         rows, users = [], {}
         for name in names:
             voice = self.voice_of(name)
             group = self.group_of(name, voice)
-            race, gender = designs_module.race_gender(group)
+            race, gender, age = self.meta_of(name, voice)
             stories = self.speaker_stories.get(name, {})
             own = self.designs.voices.get(voice, {}).get("kind") == "cast"
             rows.append({"key": f"speaker:{name}", "label": name or NARRATION, "name": name, "voice": voice,
                          "kind": "own voice" if own else "pool voice", "group": group, "race": race,
-                         "gender": gender, "stories": stories, "lines": sum(stories.values())})
+                         "gender": gender, "age": age, "stories": stories, "lines": sum(stories.values())})
             users.setdefault(voice, []).append(rows[-1])
         for group, voices in self.designs.pools.items():
             race, gender = designs_module.race_gender(group)
             for voice in voices:
+                age = self.designs.voices[voice]["age"]
                 who = users.get(voice, [])
                 stories = {}
                 for r in who:
                     for code, n in r["stories"].items():
                         stories[code] = stories.get(code, 0) + n
                 rows.append({"key": f"voice:{voice}", "label": f"pool {voice}", "name": None, "voice": voice,
-                             "kind": "pools", "group": group, "race": race, "gender": gender, "stories": stories,
+                             "kind": "pools", "group": group, "race": race, "gender": gender, "age": age,
+                             "stories": stories,
                              "lines": sum(stories.values())})
         self.users = {v: sorted((r["label"] for r in rs), key=str.lower) for v, rs in users.items()}
         return sorted(rows, key=lambda r: (-r["lines"], r["label"].lower()))
 
     def options(self):
-        """The filter menus' choices: (value, label) pairs."""
+        """The filter menus' choices, (value, label) pairs, and the meta
+        fields' suggestions."""
         races = sorted({r["race"] for r in self.rows})
         genders = sorted({r["gender"] for r in self.rows})
         return {"race": [("all", "all races")] + [(r, r) for r in races],
                 "gender": [("all", "all genders")] + [(g, g) for g in genders],
                 "story": [("all", "all storylines")] + list(self.story_names.items()),
-                "kind": [("all", "all kinds")] + [(k, k) for k in KINDS if k != "all"]}
+                "kind": [("all", "all kinds")] + [(k, k) for k in KINDS if k != "all"],
+                "meta_gender": list(designs_module.GENDERS), "meta_age": list(designs_module.AGES),
+                "meta_race": list(self.designs.races)}
 
     def filter(self, query="", race="all", gender="all", story="all", kind="all"):
         q = query.strip().lower()
@@ -180,44 +194,69 @@ class Session:
         return path if path.exists() else None
 
     def state(self, voice):
-        """What the editor shows for a voice."""
+        """What the editor shows for a voice. `instruct` is what an
+        audition would give Qwen; `clip_instruct` what the saved clip was
+        made with, and `stale` whether that differs from the saved design."""
         v = self.designs.voices[voice]
         draft = self.drafts.get(voice, {})
+        meta = {k: v[k] for k in ("gender", "age", "race")}
+        meta.update(draft.get("meta", {}))
+        description = draft.get("description", v["description"])
         cand = draft.get("candidate")
+        rec = self.index.get(voice)
+        clip = self.clip(voice)
         return {"voice": voice, "kind": v["kind"], "group": v.get("group"),
                 "saved_description": v["description"], "saved_seed": v["seed"],
-                "description": draft.get("description", v["description"]),
-                "seed": draft.get("seed", v["seed"]), "clip": self.clip(voice),
+                "saved_meta": {k: v[k] for k in ("gender", "age", "race")},
+                "description": description, "seed": draft.get("seed", v["seed"]), **meta,
+                "instruct": self.compose(voice, description, **meta), "saved_instruct": self.designs.compose(voice),
+                "clip": clip, "clip_instruct": dv.made_with(rec) if clip and rec else None,
+                "stale": bool(clip and rec and dv.is_changed(self.designs, voice, rec)),
                 "candidate": cand if cand and Path(cand).exists() else None,
                 "new": bool(draft.get("new")), "users": self.users.get(voice, []),
                 "calibration": self.designs.calibration, "pending": voice in self.drafts}
+
+    def compose(self, voice, description, gender=None, age=None, race=None):
+        """The instruction a design would give Qwen. A pool voice's gender
+        and race are its group's whatever is passed."""
+        if self.designs.voices[voice]["kind"] == "pool":
+            gender = race = None
+        return self.designs.compose(voice, gender=gender, age=age, race=race, description=description)
 
     def engine(self):
         if self._engine is None:
             self._engine = self.engine_factory()
         return self._engine
 
-    def audition(self, voice, description, seed=None):
-        """Design a take with `description` (and `seed`, else the draft's or
-        the saved one) into refs/.candidates/; returns its path."""
+    def audition(self, voice, description, seed=None, gender=None, age=None, race=None):
+        """Design a take from `description` and the meta (each, when None,
+        the draft's or the saved one) with `seed`, likewise, into
+        refs/.candidates/; returns its path."""
         description = " ".join(description.split())
         if not description:
             raise ValueError("the description is empty")
         st = self.state(voice)
         seed = st["seed"] if seed is None else seed
+        meta = {"gender": st["gender"] if gender is None else gender, "age": st["age"] if age is None else age,
+                "race": st["race"] if race is None else race}
+        if self.designs.voices[voice]["kind"] == "pool":
+            meta.update(gender=st["saved_meta"]["gender"], race=st["saved_meta"]["race"])
+        if meta["race"] not in self.designs.races:
+            raise ValueError(f"race {meta['race']!r} is not in the races section")
+        instruct = self.compose(voice, description, **meta)
         out = self.refs / ".candidates" / f"{voice}.{seed}.wav"
         out.parent.mkdir(parents=True, exist_ok=True)
         engine = self.engine()
         engine.manual_seed(seed)
-        samples, rate = engine.design(self.designs.calibration, description)
+        samples, rate = engine.design(self.designs.calibration, instruct)
         sh.write_wav(out, samples, rate)
         draft = self.drafts.setdefault(voice, {})
-        draft.update(description=description, seed=seed, candidate=out)
+        draft.update(description=description, seed=seed, meta=meta, candidate=out, instruct=instruct)
         return out
 
-    def regenerate(self, voice, description):
-        """A take with the same description and a new seed."""
-        return self.audition(voice, description, seed=self.rng.randrange(1, 1 << 31))
+    def regenerate(self, voice, description, **meta):
+        """A take with the same design and a new seed."""
+        return self.audition(voice, description, seed=self.rng.randrange(1, 1 << 31), **meta)
 
     def give_own_voice(self, name):
         """A voice of `name`'s own, starting from their current voice's
@@ -226,10 +265,10 @@ class Session:
         if self.designs.voices.get(current, {}).get("kind") == "cast":
             raise ValueError(f"{name or NARRATION} already has a voice of their own")
         src = self.designs.voices[current]
-        group = self.group_of(name, current)
-        voice = self.designs.add_cast(name, src["description"], src["seed"], group)
-        self.drafts[voice] = {"description": src["description"], "seed": src["seed"], "new": name,
-                              "group": group}
+        race, gender, age = self.meta_of(name, current)
+        meta = {"gender": gender, "age": age, "race": race if race in self.designs.races else "hume"}
+        voice = self.designs.add_cast(name, src["description"], src["seed"], **meta)
+        self.drafts[voice] = {"description": src["description"], "seed": src["seed"], "new": name, "meta": meta}
         self.rows = self._rows()
         return voice
 
@@ -241,9 +280,9 @@ class Session:
             raise ValueError("audition a take before accepting it")
         fresh = designs_module.Designs.load(self.designs_path, groups=set(casting.POOLS))
         if draft.get("new"):
-            fresh.add_cast(draft["new"], draft["description"], draft["seed"], draft.get("group"))
+            fresh.add_cast(draft["new"], draft["description"], draft["seed"], **draft["meta"])
         else:
-            fresh.update(voice, draft["description"], draft["seed"])
+            fresh.update(voice, draft["description"], draft["seed"], **draft.get("meta", {}))
         fresh.dump(self.designs_path)
         self.refs.mkdir(parents=True, exist_ok=True)
         clip = self.refs / f"{voice}.wav"
