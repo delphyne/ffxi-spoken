@@ -26,9 +26,9 @@
 # prints which form was used.
 
 Vana'diel:
-    ipa: vɑː.nɑː.dil
+    ipa: "vˌɑː.nɑː.dˈil"
 Vana'diel's:
-    ipa: vɑː.nɑː.dilz
+    ipa: "vˌɑː.nɑː.dˈilz"
 Lilisette:
     ipa: "ˌlɪl.ɪ.ˈsɛt"   # lil-i-SET; a value starting with a stress mark or , ' needs quotes
 Cait Sith:
@@ -109,8 +109,6 @@ Aldo:
     ipa: "ˈɔːldoʊ"   # 406 uses
 Qufim:
     ipa: "kuːfˈiːm"   # 5358 uses
-Hmph:
-    ipa: "hʊmf"   # 808 uses
 Zahbi:
     ipa: "zˈɑːbiː"   # 372 uses
 Urk:
@@ -130,7 +128,7 @@ Yhoator:
 Windurstian:
     ipa: "wˈɪndɜːstʃən"   # 1569 uses
 Tarutaru:
-    ipa: "tˈɑːɹɹuːtˌɑːɹɹuː"   # 928 uses
+    ipa: "tˈɑːɹɹuːtˈɑːɹɹuː"   # 928 uses
 Alzadaal:
     ipa: "ˈɐlzɜːdˌɑːl"   # 457 uses
 Kazham:
@@ -163,3 +161,97 @@ Lilith:
     ipa: "lˈɪlɪθ"   # 45 uses
 Lilisette's:
     ipa: "lˌɪlɪsˈɛtz"   # 328 uses
+Zvahl:
+    ipa: "zvˈɑːl"   # 1941 uses
+Ronfaure:
+    ipa: "ɹɑːnfˈɔɹə"   # 18731 uses
+Xarcabard:
+    ipa: "zˈɑːɹkɐbˌɑːɹd"   # 12717 uses
+Beaucedine:
+    ipa: "bˈoʊsɪdˌiːn"   # 7355 uses
+Pashhow:
+    ipa: "pˈæʃhaʊ"   # 4047 uses
+Jugner:
+    ipa: "dʒˈʌɡnɚ"   # 3683 uses
+Batallia:
+    ipa: "bætˈɑːliə"   # 3341 uses
+Grauberg:
+    ipa: "ɡɹˈɔːbɜːɡ"   # 3193 uses
+Quadav:
+    ipa: "kwˈɑːdæv"   # 1833 uses
+Bastokan:
+    ipa: "bˈæstʊkən"   # 1658 uses
+Karugo-Narugo:
+    ipa: "kɑːɹɹˈuːɡoʊnɑːɹɹˈuːɡoʊ"   # 1395 uses
+Orcish:
+    ipa: "ˈɔːɹkɪʃ"   # 1247 uses
+Davoi:
+    ipa: "dɐvˈɔɪ"   # 1151 uses
+Windurst's:
+    ipa: "wˈɪndɜːsts"   # 962 uses
+Vunkerl:
+    ipa: "vˈʌŋkɜːl"   # 916 uses
+Valdeaunia:
+    ipa: "vældˈoʊniə"   # 901 uses
+Bastok's:
+    ipa: "bˈæstʊkz"   # 901 uses
+Elvaan:
+    ipa: "ˈɛlvɑːn"   # 823 uses
+Galka:
+    ipa: "ɡˈælkə"   # 650 uses
+Sith:
+    ipa: "ʃˈiː"   # 596 uses
+Tavnazian:
+    ipa: "tævnˈaːziən"   # 497 uses
+Tavnazia's:
+    ipa: "tævnˈaːziəz"   # 14 uses
+Mithran:
+    ipa: "mˈɪθɹən"   # 488 uses
+Cait:
+    ipa: "kˈeɪt"   # 458 uses
+Vaule:
+    ipa: "vˈɔːl"   # 329 uses
+Mythril:
+    ipa: "mˈɪθɹəl"   # 269 uses
+Volker:
+    ipa: "vˈɑːlkɚ"   # 176 uses
+Gutrenders:
+    ipa: "ɡˈʌt ɹɛndɚz"   # 165 uses
+Bifrons:
+    ipa: "bˈɪfɹɑːnz"   # 157 uses
+Melusine:
+    ipa: "mˈɛluːsˌiːn"   # 153 uses
+Halver:
+    ipa: "hˈælvɚ"   # 149 uses
+Altana's:
+    ipa: "ɔːltˈɑːnəz"   # 134 uses
+Lehko:
+    ipa: "lˈɛkoʊ"   # 133 uses
+Nag'molada:
+    ipa: "nˌæɡməlˈɑːdə"   # 114 uses
+Valeriano:
+    ipa: "vælˈɛɹiˈɑːnoʊ"   # 91 uses
+Mihgo:
+    ipa: "mˈihɡoʊ"   # 85 uses
+Portia:
+    ipa: "pˈɔːɹʃə"   # 81 uses
+Zazarg:
+    ipa: "zˈæzɑːɹɡ"   # 73 uses
+Jeunoan:
+    ipa: "dʒjˈuːnoʊɛn"   # 64 uses
+Romaa:
+    ipa: "ɹˈɑːmɑː"   # 64 uses
+Bastoker:
+    ipa: "bˈæstʊkɚ"   # 60 uses
+Jeuno's:
+    ipa: "dʒjˈuːnoʊz"   # 49 uses
+Noillurie:
+    ipa: "nˈɔɪlɚɹi"   # 48 uses
+Kam'lanaut:
+    ipa: "kˈæmlɐnˌɔːt"   # 47 uses
+Bastokers:
+    ipa: "bˈæstʊkɚz"   # 46 uses
+Kayeel-Payeel:
+    ipa: "kˈeɪiːlpˈeɪiːl"   # 42 uses
+Robel-Akbel:
+    ipa: "ɹˈoʊbəl ˈækbəl"   # 38 uses
