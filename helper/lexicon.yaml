@@ -26,9 +26,9 @@
 # prints which form was used.
 
 Vana'diel:
-    ipa: vɑː.nɑː.djɛl
+    ipa: vɑː.nɑː.dil
 Vana'diel's:
-    ipa: vɑː.nɑː.djɛlz
+    ipa: vɑː.nɑː.dilz
 Lilisette:
     ipa: "ˌlɪl.ɪ.ˈsɛt"   # lil-i-SET; a value starting with a stress mark or , ' needs quotes
 Cait Sith:
@@ -98,7 +98,7 @@ Kagero:
 Windurst:
     ipa: "wˈɪndɜːst"   # 10418 uses
 Bastok:
-    ipa: "bˈæstɑːk"   # 9648 uses
+    ipa: "bˈæstʊk"   # 9648 uses
 Delkfutt's:
     ipa: "dˈɛlkfʌts"   # 2123 uses
 Iroha:
@@ -155,3 +155,11 @@ Pikini-Mikini:
     ipa: "pɪkˈiːnɪ mɪkˈiːnɪ"   # 2 uses
 Selbina's:
     ipa: "sɛlbˈiːnəz"   # 2 uses
+Ragelise:
+    ipa: "ɹˈɑdʒɐliːs"   # 142 uses
+Mayakov:
+    ipa: "mˈɑːjɐkˌɑːv"   # 86 uses
+Lilith:
+    ipa: "lˈɪlɪθ"   # 45 uses
+Lilisette's:
+    ipa: "lˌɪlɪsˈɛtz"   # 328 uses
