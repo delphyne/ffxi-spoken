@@ -3,7 +3,9 @@ census fallback (everyone else). Standard library only.
 
 A group is a race-and-sex bucket. Each has a pool of Kokoro voices and one
 Piper voice; a name is drawn from its pool by a stable hash so the choice
-never changes when other names are added."""
+never changes when other names are added. The MOSS engine's pools are the
+designed voices in voice_designs.yaml (designs.py), drawn the same way; only
+that engine needs PyYAML."""
 
 import hashlib
 
@@ -41,16 +43,27 @@ RACE_GROUPS = {
 }
 
 ENGINE_INDEX = {"kokoro": 0, "piper": 1}
+ENGINES = ("kokoro", "piper", "moss")
 
 
 def pick(pool, name):
     return pool[int(hashlib.sha1(name.encode("utf-8")).hexdigest(), 16) % len(pool)]
 
 
-def voice_for_group(group, name, engine):
+def moss_pools(designs=None):
+    """group -> designed voice names, from voice_designs.yaml unless given."""
+    if designs is None:
+        import designs as designs_module  # beside this file
+        designs = designs_module.load_default(groups=set(POOLS))
+    return designs.pools
+
+
+def voice_for_group(group, name, engine, designs=None):
     """A voice from `group`'s pool for `engine`, or None if either is unknown."""
-    if group not in POOLS or engine not in ENGINE_INDEX:
+    if group not in POOLS or engine not in ENGINES:
         return None
+    if engine == "moss":
+        return pick(moss_pools(designs)[group], name)
     kokoro_pool, piper_voice = POOLS[group]
     return pick(kokoro_pool, name) if engine == "kokoro" else piper_voice
 

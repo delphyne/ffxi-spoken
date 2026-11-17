@@ -10,6 +10,10 @@ Moogles, and Qiqirn the lightest; Galka and the great avatars the deepest.
 Narration (empty speaker) gets a storyteller, as do the ??? voices in
 cutscenes. Volto Oscuro is Iroha's shadow and shares her voice.
 
+The MOSS engine's section comes from voice_designs.yaml: a character with
+a design gets that voice, the rest of the cast their group's designed pool
+by the same hash. Edit the designs there, then re-run this.
+
 The NPC list is Balloon's portrait set. Fix a miscast by moving the name to
 another group here and re-running; hand edits to voices.json are lost.
 
@@ -24,6 +28,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from casting import POOLS, pick  # noqa: E402
+from designs import load_default as load_designs  # noqa: E402
 
 # Each entry is one character; a list is one character under several names.
 CAST = {
@@ -88,20 +93,37 @@ DEFAULTS = {"kokoro": {"default": "am_adam", "": "bm_fable"},
             "piper": {"default": "en_US-lessac-medium", "": "en_GB-alan-medium"}}
 
 
-def build():
+def moss_defaults(d):
+    """The unnamed speaker is narration; anyone uncast and unknown to the
+    census gets the first ordinary voice."""
+    return {"default": d.pools["hume_m"][0], "": d.pools["narrator"][0]}
+
+
+def build(designs=None):
+    """voices.json: per engine, speaker -> voice. MOSS voices come from
+    voice_designs.yaml: a character with a design gets their own voice, the
+    rest of the cast their group's designed pool, by the same hash."""
+    if designs is None:
+        designs = load_designs(groups=set(POOLS))
     out = {engine: dict(defaults) for engine, defaults in DEFAULTS.items()}
+    out["moss"] = moss_defaults(designs)
     seen = set()
     for group, characters in CAST.items():
         kokoro_pool, piper_voice = POOLS[group]
         for names in characters:
             names = [names] if isinstance(names, str) else names
             voice = pick(kokoro_pool, names[0])
+            moss = designs.voice_for_speaker(names[0]) or pick(designs.pools[group], names[0])
             for name in names:
                 if name in seen:
                     raise SystemExit(f"{name!r} is cast twice")
                 seen.add(name)
                 out["kokoro"][name] = voice
                 out["piper"][name] = piper_voice
+                out["moss"][name] = designs.voice_for_speaker(name) or moss
+    # designed characters outside the hand cast (minor NPCs given a voice of their own)
+    for name, voice in designs.speakers.items():
+        out["moss"].setdefault(name, voice)
     order = lambda kv: (kv[0] != "default", kv[0] != "", kv[0])  # noqa: E731
     return {engine: dict(sorted(voices.items(), key=order)) for engine, voices in out.items()}
 

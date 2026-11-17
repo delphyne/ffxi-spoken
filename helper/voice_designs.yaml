@@ -1,0 +1,184 @@
+# Voice designs for the MOSS backend (docs/MOSS-Backend-Handoff.md).
+#
+# Each description becomes a reference clip: Qwen3-TTS VoiceDesign speaks
+# the calibration sentence in that voice (tools/design_voices.py, `make
+# design-voices`), and MOSS-TTS continues that clip for every line the voice
+# says. The clips live in helper/voices/moss/refs/ and are never committed.
+#
+# Descriptions follow the attribute style Qwen's examples use: gender, age,
+# timbre, pace, accent, manner. Changing one, or its seed, and running `make
+# design-voices ONLY=Name FRESH=1` gives a new clip; the pack cache then
+# re-renders only that voice's lines. Listen with `make review-voices`.
+#
+#   calibration  the sentence every clip says, and the text MOSS continues
+#                from, so it must stay what the clips actually say
+#   cast         one voice per named character; `also` lists other names
+#                that share it (Volto Oscuro is Iroha's shadow)
+#   pools        voices per casting group (helper/casting.py's POOLS), for
+#                everyone else; a speaker is drawn from their group's list by
+#                a stable hash of their name
+#
+# A seed is optional (1 by default); the nine characters heard in the
+# listening spike keep the seeds their spike clips were drawn with.
+
+calibration: >-
+  Wait here while I speak with the guards. If anything goes wrong, follow
+  the road back to town and do not look behind you.
+
+cast:
+  Iroha:
+    description: >-
+      Gender: female. Age: young adult. A clear, warm, earnest voice with a
+      soft Japanese accent; measured pace, formal and respectful, a little grave.
+    seed: 1733
+    also: [Iroha Red, Volto Oscuro]
+  Tenzen:
+    description: >-
+      Gender: male. Age: middle-aged. A calm, low, dignified samurai's voice
+      with a slight Japanese accent; unhurried, precise, formal.
+    seed: 1862
+  Gilgamesh:
+    description: >-
+      Gender: male. Age: fifties. A booming, gravelly pirate captain's voice;
+      hearty and brash, rough working-class English accent, quick and loud.
+    seed: 2147
+  Lilisette:
+    description: >-
+      Gender: female. Age: late teens. A bright, lively, energetic voice with a
+      light French accent; quick, expressive, easily excited.
+    seed: 2177
+  Cait Sith:
+    description: >-
+      Gender: female. A prim, precise, feline voice with a refined British
+      accent; crisp consonants, slightly haughty, a hint of purr.
+    seed: 2059
+    also: [Cait Sith Prime, Cait Sith Aon, Cait Sith Dha, Cait Sith Tri, Cait Sith Ceithir, Cait Sith Coig,
+           Cait Sith Sia, Cait Sith Seachd, Cait Sith Ochd, Cait Sith Naoi, Cait Sith Deich]
+  Prishe:
+    description: >-
+      Gender: female. Age: young adult. A brash, husky, confident voice with a
+      working-class British accent; fast, blunt, amused.
+    seed: 1853
+  Zeid:
+    description: >-
+      Gender: male. Age: mature. A very deep, grim, resonant voice; slow and
+      heavy, few words, weary gravity.
+    seed: 1630
+  Alexander:
+    description: >-
+      Gender: male. An immense, ancient, resonant voice like a cathedral organ;
+      slow, archaic, solemn and faintly amused.
+    seed: 2150
+  Ekokoko:
+    description: >-
+      Gender: female. Age: young. A small, high, chirpy voice; quick and
+      cheerful, a little flustered.
+    seed: 1957
+  Lion:
+    description: >-
+      Gender: female. Age: young adult. A warm, bold, slightly husky voice with a
+      relaxed American accent; confident, playful, quick to laugh, steel underneath.
+  Siren:
+    description: >-
+      Gender: female. An ethereal, airy, melodious voice that seems to echo
+      over water; slow, lilting, serene and a little sorrowful.
+  Grav'iton:
+    description: >-
+      Gender: male. Age: ageless. A cold, smooth, aristocratic voice with a
+      clipped British accent; precise, disdainful, softly menacing.
+  Aldo:
+    description: >-
+      Gender: male. Age: young adult. A smooth, low, wry voice with a streetwise
+      American accent; laconic, dry humour, quietly protective.
+  Abelard:
+    description: >-
+      Gender: male. Age: elderly. A gruff, weathered, kindly voice with a rural
+      English accent; slow, warm, a little hoarse.
+  Nashmeira:
+    description: >-
+      Gender: female. Age: young adult. A clear, gracious, regal voice with a
+      soft Middle Eastern accent; composed, gentle, quietly commanding.
+  Kagero:
+    description: >-
+      Gender: female. Age: young adult. A low, cool, controlled voice with a
+      slight Japanese accent; terse, watchful, dry.
+  Diabolos:
+    description: >-
+      Gender: male. A deep, velvet, echoing voice from somewhere dark; slow,
+      silky, amused and faintly threatening.
+  Kamui:
+    description: >-
+      Gender: male. Age: elderly. A dry, thin, scholarly voice with a refined
+      English accent; slow, measured, faintly melancholy.
+  Ulmia:
+    description: >-
+      Gender: female. Age: young adult. A soft, sweet, musical voice with a
+      light French accent; gentle, earnest, a little shy.
+
+pools:
+  hume_m:
+    - "Gender: male. Age: thirties. A plain, friendly, mid-pitched voice with a neutral American accent; easygoing and direct."
+    - "Gender: male. Age: fifties. A gravelly, tired, working man's voice with a northern English accent; blunt, unhurried."
+    - "Gender: male. Age: twenties. A quick, eager, slightly nasal voice with an American accent; chatty and bright."
+    - "Gender: male. Age: forties. A steady, deep, confident merchant's voice with a Mediterranean accent; warm and persuasive."
+  hume_f:
+    - "Gender: female. Age: thirties. A warm, clear, practical voice with a neutral American accent; friendly and brisk."
+    - "Gender: female. Age: fifties. A rich, motherly, slightly husky voice with a Scottish accent; kind but firm."
+    - "Gender: female. Age: twenties. A bright, quick, cheerful voice with an American accent; animated and curious."
+    - "Gender: female. Age: forties. A cool, low, poised voice with a Spanish accent; measured and wry."
+  elvaan_m:
+    - "Gender: male. Age: thirties. A noble, resonant, precise voice with a formal British accent; proud and courteous."
+    - "Gender: male. Age: fifties. A deep, stern, commanding knight's voice with a received-pronunciation accent; slow and grave."
+    - "Gender: male. Age: twenties. A clear, earnest, slightly haughty voice with a refined French accent; quick and sincere."
+    - "Gender: male. Age: forties. A smooth, cultured, reserved voice with a British accent; dry and deliberate."
+  elvaan_f:
+    - "Gender: female. Age: thirties. A cool, elegant, precise voice with a formal British accent; reserved and dignified."
+    - "Gender: female. Age: twenties. A clear, bright, earnest voice with a light French accent; courteous and warm."
+    - "Gender: female. Age: fifties. A low, stern, aristocratic voice with a received-pronunciation accent; slow and exacting."
+    - "Gender: female. Age: thirties. A soft, melodic, devout voice with a British accent; gentle and serene."
+  taru_m:
+    - "Gender: male. A small, high, bouncy child-like voice; quick, cheerful and talkative."
+    - "Gender: male. A high, squeaky, fussy scholar's voice; rapid, precise, self-important."
+    - "Gender: male. A small, light, mischievous voice; playful, sing-song, quick to giggle."
+    - "Gender: male. A high but calm and wise little voice; gentle, slow, kindly."
+  taru_f:
+    - "Gender: female. A tiny, high, sweet voice; bubbly, quick and cheerful."
+    - "Gender: female. A high, sharp, bossy little voice; fast, imperious, easily annoyed."
+    - "Gender: female. A small, soft, dreamy voice; slow, airy, a little absent-minded."
+    - "Gender: female. A high, bright, sing-song voice; chatty, warm and teasing."
+  mithra:
+    - "Gender: female. Age: twenties. A lively, sly, purring voice with a playful drawl; quick and teasing."
+    - "Gender: female. Age: thirties. A husky, confident huntress's voice; low, direct, cool."
+    - "Gender: female. Age: young. A bright, energetic, slightly cheeky voice; fast and bouncy."
+    - "Gender: female. Age: forties. A smoky, worldly, mercenary voice; slow, amused, a little dangerous."
+  galka:
+    - "Gender: male. Age: mature. A very deep, slow, rumbling voice; plain-spoken, patient and steady."
+    - "Gender: male. Age: older. A deep, gravelly, tired miner's voice; gruff and laconic."
+    - "Gender: male. Age: young adult. A deep, booming, good-natured voice; loud and hearty."
+    - "Gender: male. Age: mature. A deep, quiet, thoughtful voice; soft-spoken and grave."
+  old_m:
+    - "Gender: male. Age: elderly. A thin, creaky, kindly old man's voice; slow and rambling."
+  old_elvaan_m:
+    - "Gender: male. Age: elderly. A dry, dignified, aristocratic old man's voice with a British accent; slow and precise."
+  boy:
+    - "Gender: male. Age: child. A young boy's bright, eager voice; quick, excited, a little breathless."
+  zilart_m:
+    - "Gender: male. Age: ageless. A cold, smooth, aristocratic voice with a clipped British accent; precise and disdainful."
+  zilart_f:
+    - "Gender: female. Age: ageless. A cool, smooth, distant voice with a refined British accent; serene and superior."
+  deity_m:
+    - "Gender: male. An immense, ancient, resonant voice like distant thunder; slow, solemn, otherworldly."
+    - "Gender: male. A deep, fierce, booming elemental voice; forceful, proud, crackling with power."
+  deity_f:
+    - "Gender: female. A vast, luminous, ethereal voice; slow, serene, gently echoing."
+    - "Gender: female. A cool, crystalline, regal elemental voice; clear, aloof, commanding."
+  small:
+    - "A tiny, squeaky, fluffy creature's voice; high, quick, earnest and a little silly."
+  dark:
+    - "Gender: male. A deep, hollow, hateful voice from the dark; slow, cold, echoing."
+  dark_f:
+    - "Gender: female. A low, silky, sinister voice from the dark; slow, cold, seductive."
+  cait:
+    - "Gender: female. A prim, precise, feline voice with a refined British accent; crisp, slightly haughty."
+  narrator:
+    - "Gender: male. Age: mature. A warm, rich, storyteller's voice with a British accent; measured, clear, quietly dramatic."
