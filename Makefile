@@ -21,7 +21,9 @@
 #                    (ROV=1 is the old spelling of MISSIONS=rov ONLY=1)
 #   make review      go through them one by one, listening, and build helper/lexicon.yaml
 #                    (a window when there is a display; make review CLI=1 for the terminal)
-#   make pack VERSION=0.1 [PACK=rhapsodies] [MISSIONS=rov] [LIMIT=N] [DRY=1] [FORCE=1]
+#   make pack VERSION=0.1 [PACK=rhapsodies] [MISSIONS=rov] [LIMIT=N] [DRY=1] [FORCE=1] [BACKEND=moss]
+#                    (BACKEND=moss runs under .venv-moss; MOSS_TEMPERATURE, MOSS_N_VQ, MOSS_INT8,
+#                    MOSS_CODEC=cpu32|gpu16 tune it, see helper/moss.py)
 #                    build an audio pack: audio/<pack>/<version>/, the zip beside it,
 #                    and packs/<pack>/<version>/manifest.json plus packs/index.json to commit
 #   make release VERSION=0.1 [PACK=rhapsodies] [GH_REPO=owner/name]
@@ -74,6 +76,9 @@ VOICES := $(REPO)/helper/voices
 PIPER_VOICES ?= en_US-lessac-medium en_US-amy-medium en_GB-alan-medium
 KOKORO_URL := https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0
 BACKEND ?= auto
+# The moss backend lives in its own venv (torch 2.9.1, transformers 5) with its
+# models under helper/voices/moss/hf; every other backend uses .venv.
+ENGINE_PY := $(if $(filter moss,$(BACKEND)),HF_HOME="$(VOICES)/moss/hf" PYTORCH_ALLOC_CONF=expandable_segments:True $(VENV_MOSS)/bin/python,$(PY))
 
 # onnxruntime-gpu 1.32 is built against CUDA 13; these pip packages supply the
 # libraries and onnxruntime.preload_dlls() finds them, so no system CUDA is
@@ -150,7 +155,7 @@ helper:
 
 say:
 	@if [ -z "$(TEXT)" ]; then echo 'usage: make say TEXT="Welcome to Vana'"'"'diel." [SPEAKER=Iroha] [RAW=1]' >&2; exit 1; fi; \
-	$(PY) -I helper/spoken_helper.py --backend $(BACKEND) --say "$(TEXT)" --speaker "$(SPEAKER)" $(if $(RAW),--no-lexicon) $(if $(FRESH),--fresh)
+	$(ENGINE_PY) -I helper/spoken_helper.py --backend $(BACKEND) --say "$(TEXT)" --speaker "$(SPEAKER)" $(if $(RAW),--no-lexicon) $(if $(FRESH),--fresh)
 
 venv:
 	@if [ -z "$(UV)" ]; then \
@@ -179,7 +184,7 @@ MISSIONS ?= rov
 GH_REPO ?= delphyne/ffxi-spoken
 pack:
 	@if [ -z "$(VERSION)" ]; then echo 'usage: make pack VERSION=0.1 [PACK=rhapsodies] [MISSIONS=rov] [LIMIT=N] [DRY=1] [FORCE=1]' >&2; exit 1; fi; \
-	$(PY) -I tools/build_pack.py $(PACK) $(VERSION) --missions $(MISSIONS) --backend $(BACKEND) --lsb "$(LSB)" \
+	$(ENGINE_PY) -I tools/build_pack.py $(PACK) $(VERSION) --missions $(MISSIONS) --backend $(BACKEND) --lsb "$(LSB)" \
 		--repo $(GH_REPO) $(if $(LIMIT),--limit $(LIMIT)) $(if $(DRY),--dry-run) $(if $(FORCE),--force)
 
 release:

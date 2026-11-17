@@ -115,6 +115,76 @@ class Build(unittest.TestCase):
         self.assertEqual(written["engine"]["name"], "fake")
         self.assertEqual(written["source"]["commit"], "abc123")
 
+    def test_two_pass_backend_renders_codes_then_audio(self):
+        calls = []
+
+        class TwoPass:
+            name = "fake2"
+
+            def prepare(self, keys):
+                calls.append(("prepare", tuple(keys)))
+
+            def begin_generate(self):
+                calls.append(("begin_generate",))
+
+            def generate_codes(self, text, key, path):
+                calls.append(("codes", text, key))
+                Path(path).parent.mkdir(parents=True, exist_ok=True)
+                Path(path).write_text(text)
+
+            def begin_decode(self):
+                calls.append(("begin_decode",))
+
+            def decode_codes(self, path, out):
+                calls.append(("decode", Path(path).read_text()))
+                sh.write_wav(out, [0.0] * 2400, 24000)
+
+        lines, skipped = self.lines()
+        b = self.builder()
+        b.two_pass = TwoPass()
+        b.engine = lambda: {"name": "fake2", "clips": {"iroha": "abc"}}
+        m = b.build(lines, skipped)
+        self.assertEqual([c[0] for c in calls],
+                         ["prepare", "begin_generate", "codes", "codes", "begin_decode", "decode", "decode"])
+        self.assertEqual(calls[0], ("prepare", ("af_sarah", "am_adam")))
+        self.assertEqual(self.synthesised, [], "the one-line path is not used")
+        self.assertEqual(m["engine"], {"name": "fake2", "clips": {"iroha": "abc"}}, "recorded after the passes")
+        self.assertEqual(list((self.dir / "cache" / "fake2-codes").glob("*.pt")), [], "codes are removed once decoded")
+        self.assertEqual(list((self.dir / "cache").glob("*.tmp.wav")), [])
+        # everything cached now: a rebuild runs neither pass
+        calls.clear()
+        b.build(lines, skipped, force=True)
+        self.assertEqual(calls, [])
+
+    def test_two_pass_resumes_in_the_decode_pass(self):
+        lines, skipped = self.lines()
+        b = self.builder()
+        rows = b.plan(lines)
+        codes_dir = self.dir / "cache" / "fake2-codes"
+        codes_dir.mkdir(parents=True)
+        for r in rows:   # pass one finished before an interruption
+            (codes_dir / f"{b.wav_path(r).stem}.pt").write_text(r["spoken"])
+        calls = []
+
+        class TwoPass:
+            name = "fake2"
+            prepare = staticmethod(lambda keys: calls.append("prepare"))
+            begin_generate = staticmethod(lambda: calls.append("begin_generate"))
+            generate_codes = staticmethod(lambda *a: calls.append("codes"))
+            begin_decode = staticmethod(lambda: calls.append("begin_decode"))
+            decode_codes = staticmethod(lambda path, out: (calls.append("decode"),
+                                                           sh.write_wav(out, [0.0] * 2400, 24000)))
+
+        b.two_pass = TwoPass()
+        b.build(lines, skipped)
+        self.assertEqual(calls, ["prepare", "begin_decode", "decode", "decode"])
+
+    def test_engine_info_prefers_the_backends_record(self):
+        class Rec:
+            def engine_record(self):
+                return {"name": "moss", "clips": {}}
+        self.assertEqual(bp.engine_info(Rec()), {"name": "moss", "clips": {}})
+
     def test_archive_index_and_notes(self):
         lines, skipped = self.lines()
         m = self.builder().build(lines, skipped)

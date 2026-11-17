@@ -157,7 +157,7 @@ class Builder:
 
     def __init__(self, out_root, pack, version, synth, encode, lexicon, voice_for, cache_dir,
                  player_word=PLAYER_WORD, phonemes=True, game_text=None, log=print, bitrate=BITRATE, engine=None,
-                 source=None):
+                 source=None, two_pass=None):
         self.root = Path(out_root) / pack
         self.pack, self.version = pack, version
         self.synth, self.encode, self.lexicon, self.voice_for = synth, encode, lexicon, voice_for
@@ -166,6 +166,10 @@ class Builder:
         self.bitrate, self.engine, self.source = bitrate, engine or {"name": "?"}, source or provenance()
         self.part = self.root / f"{version}.part"
         self.final = self.root / version
+        # a backend whose model and codec take turns on the GPU (the moss
+        # backend): every missing line goes through generate_codes first,
+        # then decode_codes, before the usual loop finds the WAVs cached
+        self.two_pass = two_pass
 
     def spoken(self, text):
         """What the engine is given: the player's slot filled, then the lexicon."""
@@ -182,8 +186,46 @@ class Builder:
                                      for s in line["sources"]]})
         return rows
 
+    def wav_path(self, row):
+        return self.cache / f"{sh.cache_key(row['speaker'], row['spoken'], row['voice'])}.wav"
+
+    def passes(self, rows):
+        """The two-pass backend's turn: codes for every line missing from the
+        WAV cache with only the model loaded, then audio with only the codec.
+        Codes are kept under cache/<backend>-codes/ until decoded, and both
+        kinds of file are written whole, so an interrupted build picks up in
+        whichever pass it stopped."""
+        b = self.two_pass
+        todo, seen = [], set()
+        for row in rows:
+            wav = self.wav_path(row)
+            if not wav.exists() and wav not in seen:
+                seen.add(wav)
+                todo.append((row, wav, self.cache / f"{b.name}-codes" / f"{wav.stem}.pt"))
+        if not todo:
+            return
+        self.log(f"  {len(todo)} lines to render in two passes")
+        b.prepare(sorted({row["voice"] for row, _, _ in todo}))
+        started, pending = time.time(), [t for t in todo if not t[2].exists()]
+        if pending:
+            b.begin_generate()
+            for n, (row, _, codes) in enumerate(pending, 1):
+                b.generate_codes(row["spoken"], row["voice"], codes)
+                if n % 25 == 0 or n == len(pending):
+                    self.log(f"  codes {n}/{len(pending)}, {time.time() - started:.0f}s")
+        started = time.time()
+        b.begin_decode()
+        for n, (row, wav, codes) in enumerate(todo, 1):
+            wav.parent.mkdir(parents=True, exist_ok=True)
+            tmp = wav.with_name(wav.stem + ".tmp.wav")
+            b.decode_codes(codes, tmp)
+            tmp.replace(wav)
+            codes.unlink()
+            if n % 25 == 0 or n == len(todo):
+                self.log(f"  audio {n}/{len(todo)}, {time.time() - started:.0f}s")
+
     def render(self, row):
-        wav = self.cache / f"{sh.cache_key(row['speaker'], row['spoken'], row['voice'])}.wav"
+        wav = self.wav_path(row)
         if not wav.exists():
             wav.parent.mkdir(parents=True, exist_ok=True)
             self.synth(row["spoken"], row["voice"], wav)
@@ -201,6 +243,8 @@ class Builder:
             shutil.rmtree(self.part)
         self.part.mkdir(parents=True)
         rows = self.plan(lines[:limit] if limit else lines)
+        if self.two_pass:
+            self.passes(rows)
         started = time.time()
         for n, row in enumerate(rows, 1):
             self.render(row)
@@ -210,7 +254,8 @@ class Builder:
             "pack": self.pack, "version": self.version,
             "built": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "format": {"codec": "opus", "bitrate_kbps": self.bitrate, "channels": 1},
-            "engine": self.engine, "source": self.source, "player_word": self.player_word,
+            "engine": self.engine() if callable(self.engine) else self.engine,
+            "source": self.source, "player_word": self.player_word,
             "lexicon_sha256": self.lexicon_sha256(),
             "lines": rows, "skipped": skipped,
             "duration": round(sum(r["duration"] for r in rows), 1),
@@ -243,7 +288,12 @@ def provenance(repo=None):
 
 def engine_info(backend):
     """Which engine, on what, with the hashes of its model files, so the
-    same pack can be rebuilt from the same weights."""
+    same pack can be rebuilt from the same weights. A backend with its own
+    `engine_record` (moss: model revisions, settings, reference clips) says
+    so itself."""
+    record = getattr(backend, "engine_record", None)
+    if record:
+        return record()
     info = {"name": backend.name, "device": getattr(backend, "device", None), "models": {}}
     for attr in ("model_file", "voices_file"):
         name = getattr(backend, attr, None)
@@ -375,9 +425,12 @@ def main(argv=None):
                           fallback=sh.census_fallback(args.census, backend_cls.name))
     lexicon = sh.Lexicon.load(args.lexicon)
     lexicon.path = args.lexicon
+    two_pass = backend if getattr(backend, "two_pass", False) else None
     builder = Builder(args.out, args.pack, args.version, backend.synthesise, Encoder(args.bitrate), lexicon,
                       backend.voice_for, args.cache, player_word=args.player_word, phonemes=backend.phonemes,
-                      game_text=game_text_hasher(client), bitrate=args.bitrate, engine=engine_info(backend))
+                      game_text=game_text_hasher(client), bitrate=args.bitrate,
+                      engine=(lambda: engine_info(backend)) if two_pass else engine_info(backend),
+                      two_pass=two_pass)
     if args.dry_run:
         plan = builder.plan(lines[:args.limit] if args.limit else lines)
         summarise(plan, skipped)
@@ -387,9 +440,9 @@ def main(argv=None):
     if backend_cls.name == "none":
         sys.exit("no engine available (make venv, make voices); --dry-run lists the lines without one")
     warm = getattr(backend, "warm_up", None)
-    if warm:
+    if warm and not two_pass:   # a two-pass backend loads each model in its own pass
         warm()
-    builder.engine = engine_info(backend)  # the device is known once the model is loaded
+        builder.engine = engine_info(backend)  # the device is known once the model is loaded
     manifest = builder.build(lines, skipped, limit=args.limit, force=args.force)
     summarise(manifest["lines"], skipped)
     print(f"wrote {builder.final}: {len(manifest['lines'])} files, {manifest['duration'] / 60:.1f} min, "

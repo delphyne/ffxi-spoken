@@ -12,6 +12,10 @@ in the order `auto` tries them:
   piper   Piper, one .onnx per voice; fast, clear, flat
   espeak  espeak-ng, robotic but installed almost everywhere; for testing
   none    print what would be spoken and pretend it took a moment
+Not tried by `auto`, because it runs at about 2.4 times real time:
+  moss    MOSS-TTS-Local continuing a designed reference clip per voice, for
+          audio packs (docs/MOSS-Backend-Handoff.md); needs .venv-moss and
+          the clips `make design-voices` makes
 
     .venv/bin/python -I helper/spoken_helper.py --data ./data [--backend piper]
 
@@ -412,7 +416,145 @@ class KokoroBackend(Backend):
         return out_path
 
 
-BACKENDS = {"none": NoneBackend, "espeak": EspeakBackend, "piper": PiperBackend, "kokoro": KokoroBackend}
+class MossBackend(Backend):
+    """MOSS-TTS-Local continuing a designed reference clip (helper/moss.py).
+
+    voices.json's moss section names a designed voice per speaker; the clip
+    for voice V is voices/moss/refs/V.wav, and refs/index.json gives its
+    sha256, its seed, and the sentence it says. `voice_for` returns a key
+    that carries the clip's hash and the settings (moss.voice_key), so the
+    cache re-renders a line when either changes.
+
+    One line at a time (`synthesise`, for make say) loads the model on the
+    GPU and the codec on the CPU together. A pack build uses the two-pass
+    interface instead: `generate_codes` for every line with only the model
+    loaded, then `decode_codes` for every line with only the codec, so each
+    pass has the card to itself."""
+
+    name = "moss"
+    phonemes = True
+    two_pass = True
+
+    def __init__(self, voices_dir, voice_map, fallback=None, settings=None, engine=None):
+        super().__init__(voices_dir, voice_map, fallback)
+        import moss  # beside this file; standard library until something loads
+        self.moss = moss
+        self.settings = settings or moss.Settings.from_env()
+        self._engine = engine
+        self._index = None
+        self._ref_codes = {}
+        self.used = {}      # voice -> clip sha256, for the pack's engine record
+        self.device = None
+
+    @property
+    def refs_dir(self):
+        return self.model_dir / "refs"
+
+    @classmethod
+    def available(cls, voices_dir):
+        if not (Path(voices_dir) / cls.name / "refs" / "index.json").exists():
+            return False
+        import importlib.util
+        return importlib.util.find_spec("transformers") is not None
+
+    def index(self):
+        if self._index is None:
+            path = self.refs_dir / "index.json"
+            if not path.exists():
+                raise FileNotFoundError(f"no {path}; run make design-voices")
+            self._index = json.loads(path.read_text(encoding="utf-8"))
+        return self._index
+
+    def clip(self, voice):
+        rec = self.index()["voices"].get(voice)
+        if rec is None or not (self.refs_dir / f"{voice}.wav").exists():
+            raise FileNotFoundError(f"no designed clip for voice {voice!r}; run make design-voices")
+        return rec
+
+    def voice_for(self, speaker):
+        voice = super().voice_for(speaker)
+        if voice == "default":
+            raise ValueError("voices.json needs a moss default voice; run python3 helper/cast.py")
+        return self.moss.voice_key(voice, self.clip(voice)["sha256"], self.settings)
+
+    def engine(self):
+        if self._engine is None:
+            self._engine = self.moss.Engine(self.settings)
+        self.device = self._engine.device
+        return self._engine
+
+    def text(self, text):
+        return self.moss.ipa_spans(text, PHONEME_BLOCK)
+
+    def reference(self, voice):
+        """The clip's codes, encoded once and kept beside the clip as
+        refs/V.<sha8>.codes.pt so later runs skip the codec."""
+        if voice not in self._ref_codes:
+            rec = self.clip(voice)
+            path = self.refs_dir / f"{voice}.{rec['sha256'][:8]}.codes.pt"
+            if path.exists():
+                codes = self.engine().load_codes(path)
+            else:
+                codes = self.engine().encode(self.refs_dir / f"{voice}.wav")
+                self.engine().save_codes(codes, path)
+            self._ref_codes[voice] = codes
+            self.used[voice] = rec["sha256"]
+        return self._ref_codes[voice]
+
+    def prepare(self, keys):
+        """Encode every clip the given voice keys need, so the codec can be
+        freed before the model loads."""
+        for key in keys:
+            self.reference(self.moss.parse_voice_key(key))
+
+    def generate_codes(self, text, key, codes_path):
+        voice = self.moss.parse_voice_key(key)
+        rec = self.clip(voice)
+        generated = self.engine().generate(self.text(text), self.reference(voice),
+                                           self.index()["calibration"], rec["seed"])
+        Path(codes_path).parent.mkdir(parents=True, exist_ok=True)
+        self.engine().save_codes(generated, codes_path)
+        return codes_path
+
+    def decode_codes(self, codes_path, out_path):
+        engine = self.engine()
+        write_wav(out_path, engine.decode(engine.load_codes(codes_path)), engine.rate)
+        return out_path
+
+    def begin_generate(self):
+        """Pass one: free the codec so the model has the card."""
+        self.engine().free_codec()
+
+    def begin_decode(self):
+        """Pass two: free the model so the codec can load."""
+        self.engine().free_model()
+
+    def warm_up(self):
+        self.engine().load_model()
+
+    def synthesise(self, text, voice, out_path):
+        if self.settings.codec != "cpu32":
+            raise ValueError("one-off lines decode on the CPU; unset MOSS_CODEC or use a pack build")
+        codes = Path(out_path).with_suffix(".codes.pt")
+        self.generate_codes(text, voice, codes)
+        try:
+            return self.decode_codes(codes, out_path)
+        finally:
+            codes.unlink(missing_ok=True)
+
+    def engine_record(self):
+        """What the pack manifest records about the engine: both models'
+        snapshot revisions, the settings, and every clip used."""
+        return {"name": self.name, "device": self.device,
+                "models": {self.moss.MODEL_REPO: self.moss.snapshot_revision(self.moss.MODEL_REPO),
+                           self.moss.CODEC_REPO: self.moss.snapshot_revision(self.moss.CODEC_REPO)},
+                "settings": self.settings.record(),
+                "calibration": self.index().get("calibration"),
+                "clips": dict(sorted(self.used.items()))}
+
+
+BACKENDS = {"none": NoneBackend, "espeak": EspeakBackend, "piper": PiperBackend, "kokoro": KokoroBackend,
+            "moss": MossBackend}
 AUTO_ORDER = (KokoroBackend, PiperBackend, EspeakBackend, NoneBackend)
 
 
