@@ -40,6 +40,27 @@ def available():
     return True
 
 
+AGE_ORDER = {age: i for i, age in enumerate(__import__("designs").AGES)}
+
+
+def sort_key(col, r, ses):
+    """How a column sorts: lines by number, age from youngest, stories by
+    how many, the rest as text without regard to case; blanks last."""
+    if col == "#0":
+        return (0, r["label"].lower())
+    if col == "lines":
+        return (0, r["lines"])
+    if col == "age":
+        return (0 if r["age"] else 1, AGE_ORDER.get(r["age"], len(AGE_ORDER)), r["age"])
+    if col == "stories":
+        return (0, len(r["stories"]), " ".join(sorted(r["stories"])))
+    if col == "state":
+        value = "take" if r["voice"] in ses.drafts else ("" if ses.clip(r["voice"]) else "no clip")
+        return (0 if value else 1, value)
+    value = str(r.get(col) or "")
+    return (0 if value else 1, value.lower())
+
+
 class Window:
     def __init__(self, session, player=None):
         import tkinter as tk
@@ -110,10 +131,12 @@ class Window:
         left.columnconfigure(0, weight=1)
         cols = ("voice", "race", "gender", "age", "lines", "stories", "state")
         tree = self.tree = ttk.Treeview(left, columns=cols, selectmode="browse")
-        tree.heading("#0", text="speaker")
+        self.sort = None          # (column, descending), or None for the session's order
+        self.columns = ("#0",) + cols
+        tree.heading("#0", text="speaker", command=lambda: self.sort_by("#0"))
         tree.column("#0", width=px(200))
         for col, width in zip(cols, (120, 80, 70, 90, 60, 180, 80)):
-            tree.heading(col, text=col)
+            tree.heading(col, text=col, command=lambda c=col: self.sort_by(c))
             tree.column(col, width=px(width), anchor="e" if col == "lines" else "w")
         scroll = ttk.Scrollbar(left, orient="vertical", command=tree.yview)
         tree.configure(yscrollcommand=scroll.set)
@@ -191,6 +214,9 @@ class Window:
 
     def refresh(self, keep=None):
         rows = self.ses.filter(self.query.get(), **{n: self.chosen(n) for n in self.filters})
+        if self.sort:
+            col, descending = self.sort
+            rows = sorted(rows, key=lambda r: sort_key(col, r, self.ses), reverse=descending)
         self.tree.delete(*self.tree.get_children())
         for r in rows:
             st = "take" if r["voice"] in self.ses.drafts else ("" if self.ses.clip(r["voice"]) else "no clip")
@@ -201,6 +227,19 @@ class Window:
         if keep and self.tree.exists(keep):
             self.tree.selection_set(keep)
             self.tree.see(keep)
+
+    def sort_by(self, col):
+        """A header click: sort by that column, again to reverse. Lines start
+        most first, everything else A to Z."""
+        if self.sort and self.sort[0] == col:
+            self.sort = (col, not self.sort[1])
+        else:
+            self.sort = (col, col == "lines")
+        for c in self.columns:
+            name = "speaker" if c == "#0" else c
+            mark = (" ▼" if self.sort[1] else " ▲") if c == col else ""
+            self.tree.heading(c, text=name + mark)
+        self.refresh(keep=self.row["key"] if self.row else None)
 
     def select(self):
         sel = self.tree.selection()

@@ -274,6 +274,22 @@ class GuiTest(unittest.TestCase):
             self.skipTest(f"Tk could not open a window: {e}")
         self.addCleanup(w.root.destroy)
         self.assertEqual(len(w.tree.get_children()), len(t.ses.rows))
+        def order():
+            return [w.tree.item(i, "text") for i in w.tree.get_children()]
+        w.sort_by("#0")
+        self.assertEqual(order(), sorted(order(), key=str.lower), "speaker sorts A to Z")
+        self.assertTrue(w.tree.heading("#0", "text").endswith("▲"))
+        w.sort_by("#0")
+        self.assertEqual(order(), sorted(order(), key=str.lower, reverse=True), "a second click reverses")
+        w.sort_by("lines")
+        lines = [int(w.tree.set(i, "lines") or 0) for i in w.tree.get_children()]
+        self.assertEqual(lines, sorted(lines, reverse=True), "lines sort as numbers, most first")
+        self.assertEqual(w.tree.heading("#0", "text"), "speaker", "only the sorted column is marked")
+        w.sort_by("age")
+        ages = [w.tree.set(i, "age") for i in w.tree.get_children()]
+        known = [a for a in ages if a]
+        self.assertEqual(known, sorted(known, key=voice_review_gui.AGE_ORDER.get), "ages run youngest first")
+        self.assertEqual(ages[len(known):], [""] * (len(ages) - len(known)), "no age sorts last")
         w.query.set("numi")
         self.assertEqual(w.tree.get_children(), ("speaker:Numi Adaligo",))
         w.tree.selection_set("speaker:Numi Adaligo")
