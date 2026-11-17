@@ -5,6 +5,8 @@ __pycache__/
 helper/cache/
 helper/voices/
 .venv/
+.venv-qwen/
+.venv-moss/
 .*.kate-swp
 audio/
 native/deps/

@@ -33,6 +33,10 @@
 #   make spike-qwen [LIMIT=N] [RAW=1] [FRESH=1]
 #                    render a fixed set of Rhapsodies lines through Kokoro and Qwen3-TTS into
 #                    data/spike/listen.html, to judge a Qwen3 backend by ear (tools/spike_qwen3.py)
+#   make venv-moss   build .venv-moss with MOSS-TTS from a checkout (MOSS_DIR=~/scm/github/OpenMOSS/MOSS-TTS)
+#   make spike-moss [LIMIT=N] [FRESH=1] [INT8=1]
+#                    the same lines through MOSS-TTS-Local, cloned from the Qwen-designed clips, with
+#                    the lexicon's IPA; adds columns to the same page (tools/spike_moss.py)
 #
 # The Windower folder is found automatically: the Lumoria flatpak prefix on
 # Linux, else a plain Wine prefix. Set WINDOWER to point somewhere else:
@@ -59,6 +63,8 @@ LINK := $(ADDONS)/$(NAME)
 UV ?= $(firstword $(wildcard $(HOME)/.local/bin/uv) $(shell command -v uv 2>/dev/null))
 VENV := $(REPO)/.venv
 VENV_QWEN := $(REPO)/.venv-qwen
+VENV_MOSS := $(REPO)/.venv-moss
+MOSS_DIR ?= $(HOME)/scm/github/OpenMOSS/MOSS-TTS
 PY := $(if $(wildcard $(VENV)/bin/python),$(VENV)/bin/python,python3)
 VOICES := $(REPO)/helper/voices
 PIPER_VOICES ?= en_US-lessac-medium en_US-amy-medium en_GB-alan-medium
@@ -89,7 +95,7 @@ NATIVE_CFLAGS := -O2 -Wall -Wextra -D_WIN32_WINNT=0x0600 -I$(DEPS)/include -I$(D
 # the Wine prefix two levels above drive_c/Windower4, for running the test exe
 WINEPREFIX := $(abspath $(WINDOWER)/../..)
 
-.PHONY: install uninstall where test lint check helper say venv venv-cuda venv-qwen spike-qwen voices census nouns review pack release deps native native-test
+.PHONY: install uninstall where test lint check helper say venv venv-cuda venv-qwen spike-qwen venv-moss spike-moss voices census nouns review pack release deps native native-test
 
 # Each recipe below is one shell command, so an exit inside it ends the target.
 
@@ -216,6 +222,25 @@ spike-qwen:
 	HF_HOME="$(VOICES)/qwen3/hf" PYTORCH_ALLOC_CONF=expandable_segments:True \
 		"$(VENV_QWEN)/bin/python" -I tools/spike_qwen3.py \
 		$(if $(LIMIT),--limit $(LIMIT)) $(if $(RAW),--also-raw) $(if $(FRESH),--fresh)
+
+# MOSS-TTS is installed from its checkout (pip -e) because it is not on PyPI;
+# it pins torch 2.9.1+cu128, so it cannot share .venv-qwen. The model
+# (OpenMOSS-Team/MOSS-TTS-Local-Transformer, about 6 GB) downloads into
+# helper/voices/moss/hf on the first run.
+venv-moss:
+	@if [ -z "$(UV)" ]; then \
+		echo "uv not found; install it with: python3 -m pip install --user uv" >&2; exit 1; \
+	fi; \
+	[ -d "$(MOSS_DIR)" ] || git clone --depth 1 https://github.com/OpenMOSS/MOSS-TTS.git "$(MOSS_DIR)"; \
+	[ -x "$(VENV_MOSS)/bin/python" ] || "$(UV)" venv "$(VENV_MOSS)" --python 3.12; \
+	"$(UV)" pip install --python "$(VENV_MOSS)/bin/python" --torch-backend cu128 -e "$(MOSS_DIR)[torch-runtime]" soundfile pyyaml bitsandbytes && \
+	"$(VENV_MOSS)/bin/python" -c "import torch, transformers; print('torch', torch.__version__, 'transformers', transformers.__version__, 'cuda', torch.cuda.is_available())"
+
+spike-moss:
+	@test -x "$(VENV_MOSS)/bin/python" || { echo ".venv-moss is missing; run make venv-moss" >&2; exit 1; }; \
+	HF_HOME="$(VOICES)/moss/hf" PYTORCH_ALLOC_CONF=expandable_segments:True \
+		"$(VENV_MOSS)/bin/python" -I tools/spike_moss.py \
+		$(if $(LIMIT),--limit $(LIMIT)) $(if $(FRESH),--fresh) $(if $(INT8),--int8)
 
 voices: venv
 	mkdir -p "$(VOICES)/piper" "$(VOICES)/kokoro"
