@@ -69,6 +69,7 @@ cannot stop a sound.
 | Queue file protocol | drafted; helper mode only (`//spoken mode helper`) |
 | Host helper: watch, synthesise, play, stop | works in game with espeak, Piper, and Kokoro |
 | Local TTS engines (Kokoro, Piper) | installed by `make venv` and `make voices`; Kokoro on CUDA with `make venv-cuda` |
+| Designed voices for packs (MOSS-TTS) | in progress: each character's voice is designed from a one-line description by Qwen3-TTS (`helper/voice_designs.yaml`, `make design-voices`) and every line rendered by MOSS-TTS continuing that clip, with the lexicon's IPA (`BACKEND=moss`, `docs/MOSS-Backend-Handoff.md`); no pack built with it yet |
 | Auto-advance via Windower `setkey` | unverified under Wine; parked until the rest is stable |
 | Voice casting per NPC | `helper/cast.py` casts Balloon's 230 portrait NPCs by hand; everyone else is cast by race from `helper/census.json` (13,845 names from LandSandBoat and the client) |
 | Pronunciation lexicon | `helper/lexicon.yaml` with IPA; `make nouns` and `make review` build it from the game's text; every proper noun Rhapsodies of Vana'diel speaks is reviewed (64 entries) |

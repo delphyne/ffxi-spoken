@@ -191,7 +191,8 @@ release:
 	@if [ -z "$(VERSION)" ]; then echo 'usage: make release VERSION=0.1 [PACK=rhapsodies] [GH_REPO=owner/name]' >&2; exit 1; fi; \
 	test -f audio/$(PACK)-$(VERSION).zip || { echo "audio/$(PACK)-$(VERSION).zip is missing; run make pack first" >&2; exit 1; }; \
 	$(PY) -I tools/build_pack.py $(PACK) $(VERSION) --notes > audio/$(PACK)-$(VERSION).notes && \
-	gh release create $(PACK)-$(VERSION) audio/$(PACK)-$(VERSION).zip --repo $(GH_REPO) \
+	gh release create $(PACK)-$(VERSION) audio/$(PACK)-$(VERSION).zip \
+		$(wildcard audio/$(PACK)-$(VERSION)-voices.zip) --repo $(GH_REPO) \
 		--title "$(PACK) $(VERSION)" --notes-file audio/$(PACK)-$(VERSION).notes
 
 # Interactive: a accept, r repeat, j reject and type IPA, s skip, e example, q quit;

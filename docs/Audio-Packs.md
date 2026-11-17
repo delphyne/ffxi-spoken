@@ -147,6 +147,14 @@ committed is the record of each build:
   given, and a hash of the game's bytes per source, and the manifest
   carries the engine's model-file hashes, the repo commit it was built
   from (and whether the tree was dirty), and the lexicon's hash.
+  A pack rendered with the moss backend records instead, under `engine`:
+  the model and codec repositories with their snapshot revisions
+  (`models`), the sampling `settings`, the `calibration` sentence the
+  reference clips say, and `clips`, the sha256 of every designed voice's
+  reference clip the pack used. Each row's `voice` is then a key like
+  `moss:iroha:1f3a9c2e:t1:q32:fp16:cpu32` (voice, clip hash, settings).
+  The clips are audio and not committed either; `make release` uploads
+  them beside the pack so the voices can be reused for a rebuild.
 - `packs/index.json`, the current version of each pack with its archive's
   download URL, sha256, and size. This is the update channel: the addon or
   helper reads it to offer updates.

@@ -179,6 +179,26 @@ class Build(unittest.TestCase):
         b.build(lines, skipped)
         self.assertEqual(calls, ["prepare", "begin_decode", "decode", "decode"])
 
+    def test_voices_archive_holds_exactly_the_clips_used(self):
+        refs = self.dir / "refs"
+        refs.mkdir()
+        sh.write_wav(refs / "iroha.wav", [0.1] * 2400, 24000)
+        sh.write_wav(refs / "tenzen.wav", [0.2] * 2400, 24000)
+        (refs / "index.json").write_text(json.dumps({"calibration": "Wait here.", "model": "Q",
+                                                     "voices": {"iroha": {"seed": 1}, "tenzen": {"seed": 2}}}))
+        engine = {"clips": {"iroha": bp.sha256_file(refs / "iroha.wav")}}
+        out = self.dir / "voices.zip"
+        sha, size = bp.write_voices_archive(engine, refs, out)
+        import zipfile
+        with zipfile.ZipFile(out) as z:
+            self.assertEqual(sorted(z.namelist()), ["voices/index.json", "voices/iroha.wav"])
+            index = json.loads(z.read("voices/index.json"))
+        self.assertEqual(index, {"calibration": "Wait here.", "model": "Q", "voices": {"iroha": {"seed": 1}}})
+        self.assertIsNone(bp.write_voices_archive({"name": "kokoro"}, refs, self.dir / "none.zip"))
+        sh.write_wav(refs / "iroha.wav", [0.3] * 2400, 24000)   # redesigned after the build
+        with self.assertRaises(RuntimeError):
+            bp.write_voices_archive(engine, refs, out)
+
     def test_engine_info_prefers_the_backends_record(self):
         class Rec:
             def engine_record(self):

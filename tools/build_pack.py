@@ -313,6 +313,30 @@ def write_archive(final, zip_path):
     return sha256_file(zip_path), zip_path.stat().st_size
 
 
+def write_voices_archive(engine, refs_dir, zip_path):
+    """The reference clips a moss pack used, with their index entries, as
+    voices/<voice>.wav plus voices/index.json; None when the engine used no
+    clips. Each clip's sha256 is checked against the manifest's record so
+    the archive holds exactly the voices the pack was rendered with."""
+    clips = (engine or {}).get("clips") or {}
+    if not clips:
+        return None
+    refs_dir = Path(refs_dir)
+    index = json.loads((refs_dir / "index.json").read_text(encoding="utf-8"))
+    entries = {}
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_STORED) as z:
+        for voice, sha in sorted(clips.items()):
+            clip = refs_dir / f"{voice}.wav"
+            if sha256_file(clip) != sha:
+                raise RuntimeError(f"{clip} changed since the pack was rendered; redesigning it needs a rebuild")
+            z.write(clip, f"voices/{voice}.wav")
+            entries[voice] = index["voices"].get(voice, {})
+        z.writestr("voices/index.json", json.dumps({"calibration": index.get("calibration"),
+                                                    "model": index.get("model"), "voices": entries},
+                                                   indent=1, ensure_ascii=False) + "\n")
+    return sha256_file(zip_path), Path(zip_path).stat().st_size
+
+
 def download_url(repo, pack, version):
     return f"https://github.com/{repo}/releases/download/{pack}-{version}/{pack}-{version}.zip" if repo else None
 
@@ -453,6 +477,11 @@ def main(argv=None):
     archive = Path(args.out) / f"{args.pack}-{args.version}.zip"
     sha, size = write_archive(builder.final, archive)
     print(f"wrote {archive}: {size / 1e6:.1f} MB, sha256 {sha[:12]}")
+    voices = write_voices_archive(manifest["engine"], Path(args.voices) / "moss" / "refs",
+                                  Path(args.out) / f"{args.pack}-{args.version}-voices.zip")
+    if voices:
+        print(f"wrote {Path(args.out) / f'{args.pack}-{args.version}-voices.zip'}: the reference clips, "
+              f"{voices[1] / 1e6:.1f} MB; make release uploads it too")
     keep = Path(args.packs) / args.pack / args.version / "manifest.json"
     keep.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(builder.final / "manifest.json", keep)
