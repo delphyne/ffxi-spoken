@@ -34,9 +34,9 @@ calibration: >-
 
 races:
   hume: ""
-  elvaan: "A tall, proud, long-eared elf."
+  elvaan: "A tall, proud, long-eared elf, with a faint french accent."
   tarutaru: "A tiny, child-sized person with a small, high voice, though not a child."
-  mithra: "A lithe cat-woman."
+  mithra: "A lithe cat-woman who speaks with a gentle purrs."
   galka: "A huge, heavyset beast-man with a deep, barrel chest."
   zilart: "An ancient, ageless elf of a vanished empire."
   deity: "A god or great summoned spirit."
@@ -74,11 +74,11 @@ cast:
   Lilisette:
     gender: female
     age: late teens
-    race: hume
+    race: elvaan
     description: >-
-      A bright, lively, energetic voice with a light French accent; quick,
-      expressive, easily excited.
-    seed: 2177
+      An elegant dancer; bright, lively, energetic, quick, expressive, easily
+      excited
+    seed: 1929602238
   Cait Sith:
     gender: female
     race: cait sith
