@@ -36,6 +36,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 sys.path.insert(0, str(REPO / "helper"))
+sys.path.insert(0, str(HERE))  # python -I leaves the script's own directory off the path
 import casting  # noqa: E402
 import designs as designs_module  # noqa: E402
 import spoken_helper as sh  # noqa: E402
