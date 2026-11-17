@@ -33,6 +33,10 @@
 #   make spike-qwen [LIMIT=N] [RAW=1] [FRESH=1]
 #                    render a fixed set of Rhapsodies lines through Kokoro and Qwen3-TTS into
 #                    data/spike/listen.html, to judge a Qwen3 backend by ear (tools/spike_qwen3.py)
+#   make design-voices [ONLY=Name] [FRESH=1] [ADOPT=dir]
+#                    turn helper/voice_designs.yaml into reference clips with Qwen3 VoiceDesign
+#                    (helper/voices/moss/refs/); only missing or changed ones unless FRESH
+#   make review-voices   a page with every designed voice and its description, to listen to
 #   make venv-moss   build .venv-moss with MOSS-TTS from a checkout (MOSS_DIR=~/scm/github/OpenMOSS/MOSS-TTS)
 #   make spike-moss [LIMIT=N] [FRESH=1] [INT8=1]
 #                    the same lines through MOSS-TTS-Local, cloned from the Qwen-designed clips, with
@@ -95,7 +99,7 @@ NATIVE_CFLAGS := -O2 -Wall -Wextra -D_WIN32_WINNT=0x0600 -I$(DEPS)/include -I$(D
 # the Wine prefix two levels above drive_c/Windower4, for running the test exe
 WINEPREFIX := $(abspath $(WINDOWER)/../..)
 
-.PHONY: install uninstall where test lint check helper say venv venv-cuda venv-qwen spike-qwen venv-moss spike-moss voices census nouns review pack release deps native native-test
+.PHONY: install uninstall where test lint check helper say venv venv-cuda venv-qwen spike-qwen design-voices review-voices venv-moss spike-moss voices census nouns review pack release deps native native-test
 
 # Each recipe below is one shell command, so an exit inside it ends the target.
 
@@ -222,6 +226,17 @@ spike-qwen:
 	HF_HOME="$(VOICES)/qwen3/hf" PYTORCH_ALLOC_CONF=expandable_segments:True \
 		"$(VENV_QWEN)/bin/python" -I tools/spike_qwen3.py \
 		$(if $(LIMIT),--limit $(LIMIT)) $(if $(RAW),--also-raw) $(if $(FRESH),--fresh)
+
+# Reference clips for the MOSS backend (docs/MOSS-Backend-Handoff.md), designed
+# by Qwen3 in .venv-qwen. ADOPT=data/spike/ref keeps clips already heard.
+design-voices:
+	@test -x "$(VENV_QWEN)/bin/python" || { echo ".venv-qwen is missing; run make venv-qwen" >&2; exit 1; }; \
+	HF_HOME="$(VOICES)/qwen3/hf" PYTORCH_ALLOC_CONF=expandable_segments:True \
+		"$(VENV_QWEN)/bin/python" -I tools/design_voices.py \
+		$(if $(ONLY),--only "$(ONLY)") $(if $(FRESH),--fresh) $(if $(ADOPT),--adopt "$(ADOPT)")
+
+review-voices:
+	$(PY) -I tools/design_voices.py --review
 
 # MOSS-TTS is installed from its checkout (pip -e) because it is not on PyPI;
 # it pins torch 2.9.1+cu128, so it cannot share .venv-qwen. The model

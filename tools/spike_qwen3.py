@@ -49,6 +49,7 @@ REPO = HERE.parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(REPO / "helper"))
 import spoken_helper as sh  # noqa: E402
+from design_voices import BASE_REPO, DESIGN_REPO, Qwen  # noqa: E402,F401
 
 MANIFEST = REPO / "packs" / "rhapsodies" / "0.1" / "manifest.json"
 PLAYER = "<player>"
@@ -116,8 +117,6 @@ CALIBRATION = ("Wait here while I speak with the guards. If anything goes wrong,
 
 # the columns listen.html shows, when their files exist; the moss ones come from tools/spike_moss.py
 VARIANTS = ("kokoro", "qwen-design", "qwen-clone", "qwen-clone-raw", "moss-ipa", "moss-ipa-plain", "moss-raw")
-DESIGN_REPO = "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
-BASE_REPO = "Qwen/Qwen3-TTS-12Hz-1.7B-Base"
 
 
 def log(*args):
@@ -245,81 +244,7 @@ def kokoro_backend(voices_dir, voice_map, census):
 # ---------------------------------------------------------------------------
 # qwen
 
-class Qwen:
-    """Qwen3-TTS through the qwen_tts package. One model at a time; `load`
-    swaps. Imports torch lazily so the rest of the script runs without it."""
-
-    def __init__(self, device="cuda:0", seed=1234, codec_cpu=True):
-        self.device = device
-        self.seed = seed
-        self.codec_cpu = codec_cpu and device.startswith("cuda")
-        self.model = None
-        self.repo = None
-
-    def _torch(self):
-        import torch
-        return torch
-
-    def load(self, repo):
-        if self.repo == repo:
-            return
-        self.free()
-        torch = self._torch()
-        from qwen_tts import Qwen3TTSModel
-        log(f"qwen    loading {repo} on {self.device}")
-        t0 = time.perf_counter()
-        # Turing has no bfloat16 and no FlashAttention 2: float16 and SDPA.
-        dtype = torch.float16 if self.device.startswith("cuda") else torch.float32
-        self.model = Qwen3TTSModel.from_pretrained(repo, device_map=self.device, dtype=dtype,
-                                                   attn_implementation="sdpa")
-        if self.codec_cpu:
-            # The talker (1.7B) stays on the card; the speech codec that turns
-            # its codes into audio moves to the CPU in float32. With other
-            # processes on an 8 GB card the two together ran out of memory on
-            # lines over about five seconds. The wrapper moves its inputs to
-            # `device`, so changing that is all it takes.
-            codec = self.model.model.speech_tokenizer
-            codec.model.float().to("cpu")
-            codec.device = torch.device("cpu")
-            torch.cuda.empty_cache()
-        self.repo = repo
-        log(f"qwen    loaded in {time.perf_counter() - t0:.0f}s"
-            + (" (codec on cpu)" if self.codec_cpu else ""))
-
-    def free(self):
-        if self.model is not None:
-            self.model = None
-            self.repo = None
-            torch = self._torch()
-            if self.device.startswith("cuda"):
-                torch.cuda.empty_cache()
-
-    def reseed(self, speaker):
-        torch = self._torch()
-        torch.manual_seed(self.seed + sum(map(ord, speaker)))
-
-    def peak_vram_mb(self):
-        torch = self._torch()
-        if not self.device.startswith("cuda"):
-            return None
-        mb = torch.cuda.max_memory_allocated() / 2**20
-        torch.cuda.reset_peak_memory_stats()
-        return round(mb)
-
-    def design(self, text, instruct):
-        self.load(DESIGN_REPO)
-        wavs, sr = self.model.generate_voice_design(text=text, language="English", instruct=instruct)
-        return wavs[0], sr
-
-    def clone_prompt(self, ref_audio, ref_text):
-        self.load(BASE_REPO)
-        return self.model.create_voice_clone_prompt(ref_audio=str(ref_audio), ref_text=ref_text,
-                                                    x_vector_only_mode=False)
-
-    def clone(self, text, prompt):
-        self.load(BASE_REPO)
-        wavs, sr = self.model.generate_voice_clone(text=text, language="English", voice_clone_prompt=prompt)
-        return wavs[0], sr
+# The Qwen engine lives in design_voices.py; imported at the top.
 
 
 def render_qwen(rows, texts, engine, out_dir, timings, also_raw=False, fresh=False):
