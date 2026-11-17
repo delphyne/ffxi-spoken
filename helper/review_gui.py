@@ -20,7 +20,8 @@ to the previous one.
 Keys outside the IPA field and the search: a accept, r repeat, e example,
 s skip, b back, d delete, q quit, j jump to the IPA field. In the field:
 Enter tries what is typed, Escape goes back to the keys. Clicking a glyph
-inserts it at the cursor.
+inserts it at the cursor. The field shows ᵻ as a blue ɨ (IpaField): no font
+the venv's Tk can see draws ᵻ at that size.
 """
 
 import json
@@ -157,6 +158,129 @@ def sort_rows(rows, col, descending=False):
     return [r for _, r in filled + blank]
 
 
+STAND_IN = {"ᵻ": "ɨ"}   # glyphs no font Tk can see draws at size -> what the field shows instead
+
+
+class IpaField:
+    """A one-line IPA edit field that draws every glyph the palette has.
+
+    The venv's Tk sees only the X server's core fonts (fixed and the
+    Liberation families). A shared font that lacks one glyph caches the
+    fallback it found and then draws other glyphs blank (ᵻ blanked ŋ after
+    it), so, like the palette buttons, every character gets a font object
+    of its own. ᵻ has no scalable font at all, so it is shown as a blue ɨ,
+    which Liberation draws and which looks nearly the same; a black ɨ is a
+    real ɨ, which Kokoro also knows. `var` holds the IPA as it really is.
+    """
+
+    def __init__(self, parent, var, family, size, colour="#1a5fb4"):
+        import tkinter as tk
+        from tkinter import font
+        self.tk, self.font, self.var = tk, font, var
+        self.family, self.size, self.colour = family, size, colour
+        self.text = tk.Text(parent, height=1, width=24, wrap="none", undo=True,
+                            font=font.Font(family=family, size=size), padx=4, pady=2)
+        self.fonts = {}
+        self.syncing = False
+        self.text.bind("<KeyPress>", self.on_key)
+        self.text.bind("<<Modified>>", self.on_modified)
+        self.text.bind("<<Paste>>", self.on_paste)
+        var.trace_add("write", lambda *_: self.render())
+
+    # -- the widget, for the window ----------------------------------
+
+    def pack(self, **kw):
+        self.text.pack(**kw)
+
+    def bind(self, sequence, fn):
+        self.text.bind(sequence, lambda e: (fn(e), "break")[1])
+
+    def focus_set(self):
+        self.text.focus_set()
+
+    def has_focus(self):
+        return self.text.focus_get() is self.text
+
+    def icursor(self, where):
+        self.text.mark_set("insert", "end-1c" if where == "end" else where)
+
+    def insert(self, index, chars):
+        """Insert real IPA at `index` (tk.INSERT), shown as the field shows it."""
+        for ch in chars:
+            self.text.insert(index, STAND_IN.get(ch, ch), self.tags_for(ch))
+        self.sync()
+
+    # -- display ------------------------------------------------------
+
+    def tags_for(self, ch):
+        """The tags a real character is shown with: a font object of its
+        own, and for a stand-in also the stand-in tag that colours it."""
+        shown = STAND_IN.get(ch, ch)
+        key = f"g{ord(shown)}" + ("s" if ch in STAND_IN else "")
+        if key not in self.fonts:
+            self.fonts[key] = self.font.Font(family=self.family, size=self.size)
+            self.text.tag_configure(key, font=self.fonts[key],
+                                    foreground=self.colour if ch in STAND_IN else "")
+        return (key, "standin") if ch in STAND_IN else (key,)
+
+    def value(self):
+        """The IPA as it is: stand-ins read back as what they stand for."""
+        back = {v: k for k, v in STAND_IN.items()}
+        out, index = [], "1.0"
+        for ch in self.text.get("1.0", "end-1c"):
+            out.append(back[ch] if ch in back and "standin" in self.text.tag_names(index) else ch)
+            index = self.text.index(f"{index}+1c")
+        return "".join(out)
+
+    def render(self):
+        """Redraw from `var` (set by code), keeping the cursor's offset."""
+        if self.syncing:
+            return
+        cursor = len(self.text.get("1.0", "insert"))
+        self.text.delete("1.0", "end")
+        for ch in self.var.get():
+            self.text.insert("end-1c", STAND_IN.get(ch, ch), self.tags_for(ch))
+        self.text.mark_set("insert", f"1.0+{min(cursor, len(self.var.get()))}c")
+        self.text.edit_modified(False)
+
+    def sync(self):
+        """Push the field's value into `var` without redrawing it."""
+        self.syncing = True
+        try:
+            if self.var.get() != self.value():
+                self.var.set(self.value())
+        finally:
+            self.syncing = False
+
+    # -- typing -------------------------------------------------------
+
+    def on_key(self, event):
+        """Printable keys go in with their own tags, never a neighbour's,
+        so a real ɨ typed beside a stand-in stays a real ɨ."""
+        if event.char and event.char.isprintable() and not (event.state & 0x4):   # not with Ctrl
+            if self.text.tag_ranges("sel"):
+                self.text.delete("sel.first", "sel.last")
+            self.insert("insert", event.char)
+            self.text.see("insert")
+            return "break"
+        return None
+
+    def on_paste(self, event):
+        try:
+            chars = self.text.clipboard_get()
+        except self.tk.TclError:
+            return "break"
+        if self.text.tag_ranges("sel"):
+            self.text.delete("sel.first", "sel.last")
+        self.insert("insert", " ".join(chars.split()))   # one line
+        return "break"
+
+    def on_modified(self, event=None):
+        if self.text.edit_modified():
+            self.text.edit_modified(False)
+            self.sync()
+
+
 class Window:
     def __init__(self, session, word_stories=None):
         import tkinter as tk
@@ -266,7 +390,7 @@ class Window:
         row = ttk.Frame(main)
         row.pack(fill="x", pady=(px(8), px(2)))
         ttk.Label(row, text="yours:").pack(side="left")
-        self.entry = ttk.Entry(row, textvariable=self.v_ipa, font=self.f_ipa, width=24)
+        self.entry = IpaField(row, self.v_ipa, family, size + 4)
         self.entry.pack(side="left", padx=px(6), fill="x", expand=True)
         ttk.Button(row, text="Try  ⏎", command=self.try_ipa).pack(side="left")
         ttk.Button(row, text="Reset", command=self.reset_ipa, takefocus=0).pack(side="left", padx=(px(6), 0))
@@ -515,7 +639,7 @@ class Window:
 
     def insert(self, glyph):
         """At the cursor when the field is being edited, else at the end."""
-        if self.root.focus_get() is not self.entry:
+        if not self.entry.has_focus():
             self.entry.icursor("end")
             self.entry.focus_set()
         self.entry.insert(self.tk.INSERT, glyph)
@@ -525,7 +649,7 @@ class Window:
 
     def on_key(self, event):
         focus = self.root.focus_get()
-        if focus is self.entry or focus is self.search or any(focus is box for _, box, _ in self.filters.values()):
+        if self.entry.has_focus() or focus is self.search or any(focus is box for _, box, _ in self.filters.values()):
             return None
         cmd = KEYS.get(event.char.lower()) if event.char else None
         if cmd == "field":

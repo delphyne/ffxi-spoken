@@ -614,6 +614,39 @@ class ReviewTableTest(unittest.TestCase):
         self.assertEqual(w.tree.get_children()[0], "Vana'diel")
 
 
+class IpaFieldTest(unittest.TestCase):
+    """The IPA field under Tk: a font object per glyph, and ᵻ shown as a blue
+    ɨ that reads back as ᵻ while a real ɨ stays ɨ."""
+
+    def test_stand_in_round_trips(self):
+        import review_gui
+        if not review_gui.available():
+            self.skipTest("no display or Tk")
+        import tkinter as tk
+        try:
+            root = tk.Tk()
+        except tk.TclError as e:
+            self.skipTest(f"Tk could not open a window: {e}")
+        self.addCleanup(root.destroy)
+        var = tk.StringVar()
+        f = review_gui.IpaField(root, var, "Liberation Sans", 14)
+        var.set("ɹˈoʊzᵻz θð")
+        self.assertEqual(f.text.get("1.0", "end-1c"), "ɹˈoʊzɨz θð", "ᵻ is drawn as ɨ")
+        self.assertIn("standin", f.text.tag_names("1.5"))
+        self.assertEqual(f.value(), "ɹˈoʊzᵻz θð")
+        f.icursor("end")
+        f.insert("insert", "ɨᵻ")
+        self.assertEqual(var.get(), "ɹˈoʊzᵻz θðɨᵻ", "a real ɨ stays ɨ, a palette ᵻ is ᵻ")
+        self.assertNotIn("standin", f.text.tag_names("1.10"))
+        fonts = {f.text.tag_cget(t, "font") for t in f.text.tag_names() if t.startswith("g")}
+        self.assertEqual(len(fonts), len({t for t in f.text.tag_names() if t.startswith("g")}),
+                         "every glyph has a font object of its own")
+        f.text.delete("1.0", "1.1")
+        f.text.edit_modified(True)
+        f.on_modified()
+        self.assertEqual(var.get(), "ˈoʊzᵻz θðɨᵻ", "deleting in the field updates the IPA")
+
+
 class ReviewGuiTest(unittest.TestCase):
     """The window's tables, checked without Tk (the system python3 lacks it)."""
 
