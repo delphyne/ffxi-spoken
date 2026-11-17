@@ -372,6 +372,164 @@ class ReviewTest(unittest.TestCase):
             self.assertEqual(entries["Cait Sith"]["ipa"], "kˈeɪt sˈɪθ")
 
 
+class ReviewEntriesTest(unittest.TestCase):
+    """Reviewing the lexicon's existing entries: in-place edits, delete, and
+    the way back to the incoming words."""
+
+    LEXICON = ("# header\n\nVana'diel:\n    ipa: vɑː.nɑː.djɛl\nJeuno:\n    ipa: \"dʒjˈuːnoʊ\"   # 1739 uses\n"
+               "\"Cait Sith\":\n    ipa: \"kˈɛt ʃˈiː\"\n    spell: KET shee\nNorg: Nawg\n")
+
+    def setUp(self):
+        import review
+        self.review = review
+        self.dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.dir.cleanup)
+        self.lex = Path(self.dir.name) / "lexicon.yaml"
+        self.lex.write_text(self.LEXICON, encoding="utf-8")
+        self.prog = Path(self.dir.name) / "progress.json"
+
+    def session(self, cands=None, ipa_for=lambda w: f"eng-{w}".replace("'", "").replace(" ", "")):
+        self.speaker = ReviewTest.FakeSpeaker()
+        return self.review.Session(cands if cands is not None else ReviewTest().cands(), {}, self.lex, self.speaker,
+                                   self.prog, ipa_for=ipa_for)
+
+    def test_replace_entry_keeps_place_comment_and_spell(self):
+        r = self.review
+        self.assertTrue(r.replace_entry(self.lex, "Jeuno", "ʒˈuːnoʊ"))
+        self.assertTrue(r.replace_entry(self.lex, "Cait Sith", "kˈaɪt sˈɪθ"))
+        self.assertTrue(r.replace_entry(self.lex, "Norg", "nˈɔːɡ"))
+        self.assertFalse(r.replace_entry(self.lex, "Nobody", "x"))
+        text = self.lex.read_text(encoding="utf-8")
+        self.assertEqual(text, "# header\n\nVana'diel:\n    ipa: vɑː.nɑː.djɛl\n"
+                               "Jeuno:\n    ipa: \"ʒˈuːnoʊ\"   # 1739 uses\n"
+                               "\"Cait Sith\":\n    ipa: \"kˈaɪt sˈɪθ\"\n    spell: KET shee\n"
+                               "Norg:\n    ipa: \"nˈɔːɡ\"\n    spell: Nawg\n")
+        entries = sh.Lexicon.load(self.lex).entries
+        self.assertEqual(entries["Norg"]["spell"], "Nawg", "a respelling-only entry keeps its respelling")
+
+    def test_remove_entry_matches_however_the_key_is_quoted(self):
+        self.assertTrue(self.review.remove_entry(self.lex, "Cait Sith"))
+        self.assertTrue(self.review.remove_entry(self.lex, "Vana'diel"))
+        self.assertFalse(self.review.remove_entry(self.lex, "Cait Sith"))
+        self.assertEqual(list(sh.Lexicon.load(self.lex).entries), ["Jeuno", "Norg"])
+        self.assertTrue(self.lex.read_text().startswith("# header\n\nJeuno:"))
+
+    def test_step_through_entries_and_back_to_the_queue(self):
+        ses = self.session()
+        ses.advance()
+        self.assertEqual((ses.mode, ses.word), ("queue", "Altana"))
+        ses.open_entries()
+        self.assertEqual(ses.entries(), ["Vana'diel", "Jeuno", "Cait Sith", "Norg"])
+        self.assertEqual((ses.mode, ses.word, ses.position()), ("entries", "Vana'diel", (1, 4)))
+        self.assertEqual(ses.saved_ipa, "vɑː.nɑː.djɛl", "shown with its syllable dots")
+        self.assertEqual(ses.current, "vɑː.nɑː.djɛl")
+        self.assertEqual(ses.engine_ipa, "eng-Vanadiel")
+        ses.play()
+        self.assertEqual(self.speaker.said[-1], ("word", "vɑː.nɑː.djɛl"), "the speaker strips the dots itself")
+        self.assertTrue(ses.accept(), "accept unchanged keeps it and moves on")
+        self.assertEqual(ses.word, "Jeuno")
+        self.assertEqual(ses.detail(), "1739 uses, 22 in the storyline, 60 zones", "counts from the incoming words")
+        ses.set_ipa("ʒˈuː.noʊ")
+        self.assertEqual(ses.current, "ʒˈuː.noʊ", "dots kept when editing an entry")
+        ses.accept()
+        self.assertEqual(sh.Lexicon.load(self.lex).entries["Jeuno"]["ipa_marked"], "ʒˈuː.noʊ")
+        self.assertEqual(ses.word, "Cait Sith")
+        self.assertIn("not among the incoming words", ses.detail())
+        self.assertTrue(ses.back())
+        self.assertEqual((ses.word, ses.current), ("Jeuno", "ʒˈuː.noʊ"), "back shows the saved edit")
+        ses.skip()
+        ses.skip()
+        self.assertEqual(ses.word, "Norg")
+        self.assertEqual(ses.saved_ipa, None, "a respelling-only entry has no IPA")
+        self.assertEqual(ses.current, "nˈɔːɹɡ", "so it starts from the engine's reading")
+        self.assertEqual(ses.saved_spelling(), "Nawg")
+        self.assertFalse(ses.skip(), "running off the end closes the entries")
+        self.assertEqual((ses.mode, ses.word), ("queue", "Altana"), "back where the queue was left")
+        self.assertEqual(ses.position(), (1, 1), "Jeuno and Norg are in the lexicon, so only Altana is new")
+
+    def test_open_at_a_word_delete_and_done(self):
+        ses = self.session()
+        ses.advance()
+        ses.open_entries("Cait Sith")
+        self.assertEqual(ses.position(), (3, 4))
+        self.assertTrue(ses.delete())
+        self.assertNotIn("Cait Sith", sh.Lexicon.load(self.lex).entries)
+        self.assertEqual(ses.word, "Norg", "delete moves to the next entry")
+        self.assertEqual(json.loads(self.prog.read_text())["Cait Sith"]["deleted"], True)
+        self.assertTrue(ses.close_entries())
+        self.assertEqual((ses.mode, ses.word), ("queue", "Altana"))
+        self.assertFalse(ses.close_entries())
+        self.assertFalse(ses.delete(), "delete is for existing entries only")
+
+    def test_first_entry_has_no_back(self):
+        ses = self.session()
+        ses.open_entries()
+        self.assertFalse(ses.back())
+        self.assertEqual(ses.word, "Vana'diel")
+
+    def test_terminal_loop_over_entries(self):
+        keys = iter(["a", "j", "ʒˈuːnoʊ", "a", "d", "s"])
+        out = []
+        speaker = ReviewTest.FakeSpeaker()
+        covered = self.review.review(ReviewTest().cands(), {}, self.lex, speaker, read=lambda p: next(keys, "q"),
+                                     out=out.append, progress_path=self.prog, entries=True)
+        text = "\n".join(out)
+        self.assertIn("4 entries in the lexicon", text)
+        self.assertIn("kept Vana'diel", text)
+        self.assertIn("updated Jeuno: ʒˈuːnoʊ", text)
+        self.assertIn("deleted Cait Sith", text)
+        self.assertIn("end of the lexicon's entries", text)
+        self.assertEqual(covered, 2)
+        self.assertEqual(list(sh.Lexicon.load(self.lex).entries), ["Vana'diel", "Jeuno", "Norg"])
+        out.clear()
+        self.review.review(ReviewTest().cands(), {}, self.lex, speaker, read=lambda p: "q", out=out.append,
+                           entries="Norg")
+        self.assertIn("[3/3] Norg", "\n".join(out), "--entry starts at the word")
+
+
+class ReviewEntriesGuiTest(unittest.TestCase):
+    """The window's lexicon bar, under a display with Tk (the venv)."""
+
+    def test_open_edit_delete_and_done(self):
+        import review_gui
+        if not review_gui.available():
+            self.skipTest("no display or Tk")
+        t = ReviewEntriesTest()
+        t.setUp()
+        ses = t.session()
+        try:
+            w = review_gui.Window(ses)
+        except Exception as e:  # noqa: BLE001 - a display that refuses connections
+            self.skipTest(f"Tk could not open a window: {e}")
+        self.addCleanup(w.root.destroy)
+        ses.advance()
+        w.show()
+        self.assertFalse(w.delete_button.winfo_ismapped() and w.done_button.winfo_ismapped())
+        w.v_find.set("cait")
+        w.filter_entries()
+        self.assertEqual(list(w.find.cget("values")), ["Cait Sith"])
+        w.open_entry()
+        w.root.update()
+        self.assertEqual((ses.mode, ses.word), ("entries", "Cait Sith"))
+        self.assertTrue(w.delete_button.winfo_ismapped() and w.done_button.winfo_ismapped())
+        self.assertEqual(w.v_count.get(), "entry 3 / 4")
+        self.assertIn("kˈɛt ʃˈiː", w.v_saved.get())
+        w.v_ipa.set("x")
+        w.reset_ipa()
+        self.assertEqual(w.v_ipa.get(), "kˈɛt ʃˈiː", "reset on an entry goes back to the lexicon's IPA")
+        w.delete()
+        self.assertEqual(ses.word, "Norg")
+        self.assertIn("respelling 'Nawg'", w.v_saved.get())
+        w.close_entries()
+        w.root.update()
+        self.assertEqual((ses.mode, ses.word), ("queue", "Altana"))
+        self.assertFalse(w.delete_button.winfo_ismapped())
+        self.assertEqual(w.v_saved.get(), "")
+        w.v_find.set("zzz")
+        w.open_entry()
+        self.assertIn("no lexicon entry matches", w.v_status.get())
+
+
 class ReviewGuiTest(unittest.TestCase):
     """The window's tables, checked without Tk (the system python3 lacks it)."""
 

@@ -9,6 +9,12 @@ Keys outside the IPA field: a accept, r repeat, e example, s skip, b back
 to the previous word (undoing its accept or skip), q quit, j jump to the
 IPA field. In the field: Enter tries what is typed, Escape
 goes back to the keys. Clicking a glyph inserts it at the cursor.
+
+The bar at the top opens the lexicon's existing entries: type part of a
+word and pick it, or Step through from the first. An entry is reviewed with
+the same keys (accept rewrites it in place, skip leaves it, back goes to the
+previous entry) plus d to delete it; Done returns to the incoming words
+where you left off.
 """
 
 import sys
@@ -49,7 +55,8 @@ PALETTE = [
 SHOWN = {respell.PRIMARY: "ˈa", respell.SECONDARY: "ˌa", respell.LENGTH: "aː", respell.SYLLABLE: "a.a", " ": "_"}
 COLUMNS = 14
 
-KEYS = {"a": "accept", "r": "repeat", "e": "example", "s": "skip", "b": "back", "q": "quit", "j": "field"}
+KEYS = {"a": "accept", "r": "repeat", "e": "example", "s": "skip", "b": "back", "q": "quit", "j": "field",
+        "d": "delete"}
 
 
 def available():
@@ -101,6 +108,23 @@ class Window:
 
         main = ttk.Frame(root, padding=px(12))
         main.pack(fill="both", expand=True)
+
+        lex = ttk.Frame(main)
+        lex.pack(fill="x", pady=(0, px(8)))
+        ttk.Label(lex, text="Lexicon entry:").pack(side="left")
+        self.v_find = tk.StringVar()
+        self.find = ttk.Combobox(lex, textvariable=self.v_find, width=24, font=self.f_ipa)
+        self.find.pack(side="left", padx=px(6))
+        self.find.bind("<KeyRelease>", self.filter_entries)
+        self.find.bind("<<ComboboxSelected>>", lambda e: self.open_entry())
+        self.find.bind("<Return>", lambda e: self.open_entry())
+        self.find.bind("<Escape>", lambda e: root.focus_set())
+        ttk.Button(lex, text="Open", command=self.open_entry, takefocus=0).pack(side="left")
+        ttk.Button(lex, text="Step through", command=lambda: self.open_entry(first=True),
+                   takefocus=0).pack(side="left", padx=(px(6), 0))
+        self.done_button = ttk.Button(lex, text="Done: back to new words", command=self.close_entries, takefocus=0)
+        self.v_mode = tk.StringVar()
+        ttk.Label(lex, textvariable=self.v_mode, foreground="#a33").pack(side="left", padx=px(12))
         self.v_count = tk.StringVar()
         self.v_word = tk.StringVar()
         self.v_detail = tk.StringVar()
@@ -117,6 +141,8 @@ class Window:
         ttk.Label(main, textvariable=self.v_detail).pack(anchor="w")
         ttk.Label(main, textvariable=self.v_example, wraplength=px(680), foreground="#555").pack(anchor="w", pady=(px(4), px(8)))
         ttk.Label(main, textvariable=self.v_engine, font=self.f_ipa).pack(anchor="w")
+        self.v_saved = tk.StringVar()
+        ttk.Label(main, textvariable=self.v_saved, font=self.f_ipa).pack(anchor="w")
 
         row = ttk.Frame(main)
         row.pack(fill="x", pady=(px(8), px(2)))
@@ -133,6 +159,7 @@ class Window:
         for text, cmd in [("Accept  a", self.accept), ("Repeat  r", self.repeat), ("Example  e", self.example),
                           ("Skip  s", self.skip), ("Back  b", self.back), ("Quit  q", self.quit)]:
             ttk.Button(buttons, text=text, command=cmd, takefocus=0).pack(side="left", padx=(0, px(6)))
+        self.delete_button = ttk.Button(buttons, text="Delete  d", command=self.delete, takefocus=0)
 
         pal = ttk.Frame(main)
         pal.pack(fill="both", expand=True)
@@ -162,6 +189,19 @@ class Window:
 
     def show(self):
         ses = self.ses
+        entries = ses.mode == "entries"
+        self.v_mode.set("reviewing existing entries" if entries else "")
+        for widget, side in ((self.done_button, "left"), (self.delete_button, "left")):
+            if entries and not widget.winfo_ismapped():
+                widget.pack(side=side, padx=(self.px(6), 0))
+            elif not entries and widget.winfo_ismapped():
+                widget.pack_forget()
+        if entries and ses.saved_ipa:
+            self.v_saved.set(f"in the lexicon: {ses.saved_ipa}   ({respell.respell(ses.saved_ipa)})")
+        elif entries and not ses.done:
+            self.v_saved.set(f"in the lexicon: the respelling {ses.saved_spelling()!r}; accept turns it into IPA")
+        else:
+            self.v_saved.set("")
         if ses.done:
             self.v_word.set("done")
             self.v_count.set("")
@@ -172,7 +212,8 @@ class Window:
             self.entry.state(["disabled"])
             return
         self.entry.state(["!disabled"])
-        self.v_count.set(f"{ses.pos + 1} / {len(ses.todo)}")
+        n, of = ses.position()
+        self.v_count.set(f"{'entry ' if entries else ''}{n} / {of}")
         self.v_word.set(ses.word)
         self.v_detail.set(ses.detail())
         self.v_example.set(f"“{ses.example}”" if ses.example else "(no example line)")
@@ -198,24 +239,74 @@ class Window:
         if self.ses.done:
             return
         word, ipa = self.ses.word, self.ses.current
-        self.ses.accept()
-        self.status(f"added {word}: {ipa}")
+        if self.ses.mode == "entries":
+            changed = ipa != self.ses.saved_ipa
+            more = self.ses.accept()
+            self.status(f"{'updated' if changed else 'kept'} {word}: {ipa}"
+                        + ("" if more else "; that was the last entry, back to new words"))
+        else:
+            self.ses.accept()
+            self.status(f"added {word}: {ipa}")
         self.show()
 
     def skip(self):
         if self.ses.done:
             return
         word = self.ses.word
-        self.ses.skip()
-        self.status(f"skipped {word}; the engine's reading stands")
+        if self.ses.mode == "entries":
+            more = self.ses.skip()
+            self.status(f"left {word} as it is" + ("" if more else "; that was the last entry, back to new words"))
+        else:
+            self.ses.skip()
+            self.status(f"skipped {word}; the engine's reading stands")
         self.show()
 
     def back(self):
+        entries = self.ses.mode == "entries"
         if not self.ses.back():
-            self.status("nothing before this word")
+            self.status("this is the first entry" if entries else "nothing before this word")
             return
-        self.status(f"back to {self.ses.word}; its earlier choice is undone")
+        self.status(f"back to {self.ses.word}" if entries else f"back to {self.ses.word}; its earlier choice is undone")
         self.show()
+
+    def delete(self):
+        if self.ses.mode != "entries":
+            return
+        word = self.ses.word
+        more = self.ses.delete()
+        self.status(f"deleted {word}; the engine's reading stands" if more is not False else f"deleted {word}")
+        self.show()
+
+    # --- existing entries ---
+
+    def filter_entries(self, event=None):
+        """The drop-down shows the entries containing what is typed."""
+        typed = self.v_find.get().strip().lower()
+        words = self.ses.entries()
+        self.find.configure(values=[w for w in words if typed in w.lower()] if typed else words)
+
+    def open_entry(self, first=False):
+        words = self.ses.entries()
+        typed = self.v_find.get().strip()
+        if first:
+            word = words[0] if words else None
+        else:
+            exact = [w for w in words if w.lower() == typed.lower()]
+            partial = [w for w in words if typed.lower() in w.lower()]
+            word = (exact or partial or [None])[0] if typed else None
+        if word is None:
+            self.status(f"no lexicon entry matches {typed!r}" if typed else "type part of a word to open its entry")
+            return
+        self.ses.open_entries(word)
+        self.v_find.set("")
+        self.root.focus_set()
+        self.status(f"{word}: accept to save, skip to leave it, d to delete, Done to go back to new words")
+        self.show()
+
+    def close_entries(self):
+        if self.ses.close_entries():
+            self.status("back to the new words")
+            self.show()
 
     def repeat(self):
         if not self.ses.done:
@@ -245,8 +336,11 @@ class Window:
         self.play(self.ses.play)
 
     def reset_ipa(self):
+        """Back to the engine's reading; for an existing entry, to what the
+        lexicon has."""
         if not self.ses.done:
-            self.v_ipa.set(self.ses.engine_ipa)
+            saved = self.ses.saved_ipa if self.ses.mode == "entries" else None
+            self.v_ipa.set(saved or self.ses.engine_ipa)
             self.entry.icursor("end")
             self.entry.focus_set()
 
@@ -261,7 +355,7 @@ class Window:
         self.root.destroy()
 
     def on_key(self, event):
-        if self.root.focus_get() is self.entry:
+        if self.root.focus_get() in (self.entry, self.find):
             return None
         cmd = KEYS.get(event.char.lower()) if event.char else None
         if cmd == "field":
@@ -285,13 +379,15 @@ class Window:
                     self.root.after(0, self.status, "")
         threading.Thread(target=work, daemon=True).start()
 
-    def run(self):
+    def run(self, entries=None):
         self.ses.advance()
+        if entries:
+            self.ses.open_entries(entries if isinstance(entries, str) else None)
         self.show()
         self.root.mainloop()
         print(self.ses.farewell())
         return self.ses.covered
 
 
-def run(session):
-    return Window(session).run()
+def run(session, entries=None):
+    return Window(session).run(entries)

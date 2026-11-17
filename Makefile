@@ -20,7 +20,8 @@
 #                    a storyline's words first; ONLY=1 keeps just the words its cutscenes speak
 #                    (ROV=1 is the old spelling of MISSIONS=rov ONLY=1)
 #   make review      go through them one by one, listening, and build helper/lexicon.yaml
-#                    (a window when there is a display; make review CLI=1 for the terminal)
+#                    (a window when there is a display; make review CLI=1 for the terminal);
+#                    ENTRIES=1 reviews the existing entries, ENTRY=Word starts at one
 #   make pack VERSION=0.1 [PACK=rhapsodies] [MISSIONS=rov] [LIMIT=N] [DRY=1] [FORCE=1] [BACKEND=moss]
 #                    (BACKEND=moss runs under .venv-moss; MOSS_TEMPERATURE, MOSS_N_VQ, MOSS_INT8,
 #                    MOSS_CODEC=cpu32|gpu16 tune it, see helper/moss.py)
@@ -202,7 +203,7 @@ release:
 # a Tk window with buttons and an IPA palette when a display is there, else the
 # terminal. Resumes where it left off (data/review_progress.json).
 review: data/proper_nouns.tsv
-	$(PY) -I helper/review.py --backend $(BACKEND) $(if $(CLI),--cli)
+	$(PY) -I helper/review.py --backend $(BACKEND) $(if $(CLI),--cli) $(if $(ENTRIES),--entries) $(if $(ENTRY),--entry "$(ENTRY)")
 
 venv-cuda: venv
 	"$(UV)" pip uninstall --python "$(VENV)/bin/python" onnxruntime onnxruntime-gpu
