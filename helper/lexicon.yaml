@@ -12,6 +12,13 @@
 #   spell: <respelling>            optional with ipa; for engines that cannot
 #                                  take phonemes, else one is derived from
 #                                  the IPA (helper/respell.py)
+#   backends: [kokoro, piper]      optional; the entry is only for these
+#                                  engines (kokoro, piper, espeak, moss,
+#                                  qwen, none). Without it an entry applies
+#                                  to every engine. MOSS and Qwen say
+#                                  interjections, laughs, and grunts right
+#                                  unaided, so those are limited to the
+#                                  engines that read them as words.
 #
 # To get IPA for a word: .venv/bin/python -c "from kokoro_onnx.tokenizer
 # import Tokenizer; print(Tokenizer().phonemize('Altana'))" shows what the
@@ -115,6 +122,7 @@ Urk:
     ipa: "ˈɜːk"   # 75 uses
 Bwahaha:
     ipa: "bwˈɑːhˌɑːhɑː"   # 37 uses
+    backends: [kokoro, piper, espeak]
 Atomos's:
     ipa: "ˈætomoʊzɪz"   # 4 uses
 Figurin:
@@ -139,14 +147,17 @@ Ulmia:
     ipa: "ˈʌlmiə"   # 166 uses
 Shhh:
     ipa: "ʃɐː"   # 61 uses
+    backends: [kokoro, piper, espeak]
 Pso'Xja:
     ipa: "sˈoʊdʒɑː"   # 41 uses
 Eeep:
     ipa: "iːiːp"   # 10 uses
+    backends: [kokoro, piper, espeak]
 Abelard:
     ipa: "ˈeɪbəlˌɑːɹd"   # 7 uses
 Ooof:
     ipa: "uːf"   # 6 uses
+    backends: [kokoro, piper, espeak]
 Flandiace:
     ipa: "flˈɑːndɪˌeɪs"   # 5 uses
 Pikini-Mikini:
@@ -255,3 +266,262 @@ Kayeel-Payeel:
     ipa: "kˈeɪiːlpˈeɪiːl"   # 42 uses
 Robel-Akbel:
     ipa: "ɹˈoʊbəl ˈækbəl"   # 38 uses
+Bartholomaus:
+    ipa: "bɑːɹθˈɑːlˌɛməʊs"   # 38 uses
+Rhazowa:
+    ipa: "ɹɑːzˈoʊə"   # 38 uses
+Rongelouts:
+    ipa: "ɹˈɔndʒɪlˌuː"   # 33 uses
+Gwajboj:
+    ipa: "ɡwˈædʒbɑːdʒ"   # 32 uses
+Amaura:
+    ipa: "æmˈɔːɹə"   # 28 uses
+Maximilian:
+    ipa: "mˌæksɪmˈɪliən"   # 28 uses
+Iraku:
+    ipa: "ɪɹˈɑːkuː"   # 27 uses
+Jakumetsu:
+    ipa: "dʒˌɑːkuːmˈɛtsuː"   # 27 uses
+Meppo:
+    ipa: "mˈɛpoʊ"   # 27 uses
+Metsui:
+    ipa: "mɛtsˈuːi"   # 27 uses
+Mujo:
+    ipa: "mˈuːdʒoʊ"   # 27 uses
+Shogyo:
+    ipa: "ʃˈoʊɡjoʊ"   # 27 uses
+Shometsu:
+    ipa: "ʃoʊmˈɛtsuː"   # 27 uses
+Zesho:
+    ipa: "zˈɛʃoʊ"   # 27 uses
+Cohors:
+    ipa: "kˈoʊhɔːɹz"   # 26 uses
+Aradjiah:
+    ipa: "ˌæɹɐdʒˈaɪə"   # 26 uses
+Brilioth:
+    ipa: "bɹˈɪlɪəθ"   # 26 uses
+Borel:
+    ipa: "bˈɔːɹəl"   # 23 uses
+Naoi:
+    ipa: "nˈaʊi"   # 22 uses
+Habhoka:
+    ipa: "hæbhˈoʊkə"   # 22 uses
+Galka's:
+    ipa: "ɡˈælkəz"   # 22 uses
+Ironcrest:
+    ipa: "ˈaɪɚŋkɹɛst"   # 21 uses
+Lehko's:
+    ipa: "lˈɛkoʊz"   # 21 uses
+Flit:
+    ipa: "flˈɪt"   # 20 uses
+Lilithette:
+    ipa: "ˌlɪl.ɪ.ˈθɛt"   # 18 uses   # Mayakov's lisp of Lilisette
+Prien:
+    ipa: "pɹˈiːn"   # 18 uses
+Ragelithe:
+    ipa: "ɹˈɑdʒɐliːθ"   # 16 uses
+Ragelise's:
+    ipa: "ɹˈɑdʒɐliːsɛz"   # 14 uses
+Cousseraux:
+    ipa: "kˌuːsɛɹˈoʊ"   # 14 uses
+Ceithir:
+    ipa: "kˈehɪɾ"   # 13 uses
+Baloumat:
+    ipa: "bˈɑːlaʊmˌɑːt"   # 12 uses
+Olzhirya:
+    ipa: "ˈɑːlʒɚɹɪə"   # 12 uses
+Haudrale:
+    ipa: "hˈɔːdɹeɪl"   # 11 uses
+Vestillet:
+    ipa: "vˈɛstɪlˌɪt"   # 10 uses
+Mayakov's:
+    ipa: "mˈɑːjɐkˌɑːvz"   # 8 uses
+Mayakov'th:
+    ipa: "mˈɑːjɐkˌɑːvθ"   # 1 uses
+Larzos:
+    ipa: "lˈɑːɹzɛs"   # 7 uses
+Davilles:
+    ipa: "dˈɑːvɪlɛs"   # 7 uses
+Firaga:
+    ipa: "fiɹˈɑːɡʌ"   # 7 uses
+Leonian:
+    ipa: "leɪˈoʊniʌn"   # 7 uses
+Galarhigg:
+    ipa: "ɡˈælɑːɹhˌɪɡ"   # 6 uses
+Porthia:
+    ipa: "pˈɔːɹðiə"   # 6 uses
+Ringaling:
+    ipa: "ɹˈɪŋɡʌlɪŋ"   # 6 uses
+Brandolf:
+    ipa: "bɹˈændɑːlf"   # 6 uses
+Valdeaunian:
+    ipa: "vældˈoʊniən"   # 6 uses
+Kriegstanz:
+    ipa: "kɹˈiːɡstænts"   # 6 uses
+Tri:
+    ipa: "tɹˈi"   # 6 uses
+Aquila:
+    ipa: "ˈækwɪlə"   # 5 uses
+Aon:
+    ipa: "ɑːn"   # 5 uses
+Barnabas:
+    ipa: "bˈɑːɹnɑbəz"   # 5 uses
+Goddeth:
+    ipa: "ɡˈɑːdəð"   # 4 uses
+Mindartian:
+    ipa: "mɪndˈɑːɹʃən"   # 4 uses
+Gindaff:
+    ipa: "dʒˈɪndæf"   # 3 uses
+Ragelithe'th:
+    ipa: "ɹˈɑdʒɐliːðɛð"   # 3 uses
+Velda-Galda:
+    ipa: "vˈɛldəɡˈældə"   # 3 uses
+Coig:
+    ipa: "kˈoʊk"   # 3 uses
+Seachd:
+    ipa: "ʃˈɛxk"   # 3 uses
+What'th:
+    ipa: "wˈʌtθ"   # 3 uses
+Cancerian:
+    ipa: "kænsˈeɪɹiən"   # 3 uses
+Radford:
+    ipa: "ɹˈædfɚd"   # 2 uses
+Alekthei:
+    ipa: "ɐlˈɛkðeɪ"   # 2 uses
+Ironcretht:
+    ipa: "ˈaɪɚŋkɹɛðt"   # 2 uses
+Tanja:
+    ipa: "tˈænjə"   # 2 uses
+Zvahl-bound:
+    ipa: "zvˈɑːl bˈaʊnd"   # 2 uses
+Let'th:
+    ipa: "lˈɛtð"   # 2 uses
+Ragie:
+    ipa: "ɹˈeɪdʒi"   # 2 uses
+Allies've:
+    ipa: "ˈælaɪzɛv"   # 1 uses
+Ankleth:
+    ipa: "ˈæŋkələð"   # 1 uses
+Bathtokan:
+    ipa: "bˈæθtʊkən"   # 1 uses
+Cohorth:
+    ipa: "kˈoʊhɔːɹθ"   # 1 uses
+Conthider:
+    ipa: "kənθˈɪdɚ"   # 1 uses
+Coutheraux:
+    ipa: "kˌuːθɛɹˈoʊ"   # 1 uses
+Ethelbert:
+    ipa: "ˈɛθɛlbɚt"   # 1 uses
+Fantabulous:
+    ipa: "fæntˈæbjʊləs"   # 1 uses
+Faurezelle:
+    ipa: "fˌɔːɹɪzˈɛl"   # 1 uses
+Federathion:
+    ipa: "fˌɛdɚɹˈeɪθɛn"   # 1 uses
+Gardenth:
+    ipa: "ɡˈɑːɹdənθ"   # 1 uses
+Goddeth'th:
+    ipa: "ɡˈɑːdɛθɛθ"   # 1 uses
+Halv:
+    ipa: "hælv"   # 1 uses
+Henrinaud:
+    ipa: "hˌɛnɹɪnˈoʊ"   # 1 uses
+Huthah:
+    ipa: "hˈʌθɛ"   # 1 uses
+Lithen:
+    ipa: "lˈɪðɪn"   # 1 uses
+Marchin:
+    ipa: "mˈɑːɹtʃɪn"   # 1 uses
+Marvelouth:
+    ipa: "mˈɑːɹvɪlˌuːθ"   # 1 uses
+Merthenarieth:
+    ipa: "mˈɜːθənˌɑːɹɹiθ"   # 1 uses
+Moonthade:
+    ipa: "mˈuːnθeɪd"   # 1 uses
+Noillurie's:
+    ipa: "nˈɔɪlʊɹɹiz"   # 1 uses
+Numerouth:
+    ipa: "nˈuːmɚɹˌʊθ"   # 1 uses
+Ochd's:
+    ipa: "ˈɑːtʃdz"   # 1 uses
+Over-exerted:
+    ipa: "ˌoʊvɚɹɛɡzˈɜːɾᵻd"   # 1 uses
+Pluth:
+    ipa: "plˈʌθ"   # 1 uses
+Putori-Tutori:
+    ipa: "pjuːtˈɔːɹiɾuːtˈɔːɹi"   # 1 uses
+Raina:
+    ipa: "ɹˈeɪnə"   # 1 uses
+Ramth:
+    ipa: "ɹˈæmθ"   # 1 uses
+Ringaling's:
+    ipa: "ɹˈɪŋɡɛlɪŋz"   # 1 uses
+Rothe:
+    ipa: "ɹˈoʊθ"   # 1 uses
+Sia:
+    ipa: "ʃˈiə"   # 1 uses
+Thadow:
+    ipa: "θˈædoʊ"   # 1 uses
+Tharcabard:
+    ipa: "θˈɑːɹkɐbˌɑːɹd"   # 1 uses
+Thateau:
+    ipa: "θæɾˈoʊ"   # 1 uses
+Thoe-polithing:
+    ipa: "θˈoʊpˈɑːlɪθɪŋ"   # 1 uses
+Thouldn't:
+    ipa: "θˈʊdənt"   # 1 uses
+Tothing:
+    ipa: "tˈɑːθɪŋ"   # 1 uses
+Underthtood:
+    ipa: "ˌʌndɚθtˈuːd"   # 1 uses
+Undrething:
+    ipa: "ʌndɹˈɛθɪŋ"   # 1 uses
+Whothe:
+    ipa: "hˈuːθ"   # 1 uses
+Windurthtian:
+    ipa: "wɪndˈɜːθtiən"   # 1 uses
+Hmmm:
+    ipa: "mːm"   # 1280 uses
+    backends: [kokoro, piper, espeak]
+Awww:
+    ipa: "ˈɑːw"   # 883 uses
+    backends: [kokoro, piper, espeak]
+Nooo:
+    ipa: "noʊ"   # 605 uses
+    backends: [kokoro, piper, espeak]
+Grrr:
+    ipa: "ɡɚ"   # 354 uses
+    backends: [kokoro, piper, espeak]
+Oooh:
+    ipa: "ˈoʊ"   # 167 uses
+    backends: [kokoro, piper, espeak]
+Ahhh:
+    ipa: "ɑː"   # 162 uses
+    backends: [kokoro, piper, espeak]
+Hahaha:
+    ipa: "hɑː hɑː hɑː"   # 154 uses
+    backends: [kokoro, piper, espeak]
+Ahahaha:
+    ipa: "ɑː hɑː hɑː hɑː"   # 128 uses
+    backends: [kokoro, piper, espeak]
+Ahahahahaha:
+    ipa: "ɑː hɑː hɑː hɑː hɑː hɑː"   # 119 uses
+    backends: [kokoro, piper, espeak]
+Hehehe:
+    ipa: "hɛ hɛ hɛ"   # 118 uses
+    backends: [kokoro, piper, espeak]
+Hrmmm:
+    ipa: "hɚm"   # 92 uses
+    backends: [kokoro, piper, espeak]
+Hrm:
+    ipa: "hɚm"   # 70 uses
+    backends: [kokoro, piper, espeak]
+Ohohoho:
+    ipa: "oʊ hoʊ hoʊ hoʊ"   # 69 uses
+    backends: [kokoro, piper, espeak]
+Ohoho:
+    ipa: "oʊhˈoʊhoʊ"   # 64 uses
+    backends: [kokoro, piper, espeak]
+Gahahaha:
+    ipa: "ɡɑː hɑː hɑː hɑː"   # 54 uses
+    backends: [kokoro, piper, espeak]

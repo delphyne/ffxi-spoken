@@ -215,7 +215,7 @@ def main(argv=None):
     with open(args.manifest, encoding="utf-8") as f:
         manifest = json.load(f)
     rows = sp.select_lines(manifest, limit=args.limit)
-    lexicon = sh.Lexicon.load(args.lexicon)
+    lexicon = sh.Lexicon.load(args.lexicon, backend="moss")
     player_word = manifest.get("player_word", "adventurer")
     moss = {r["stem"]: moss_texts(r, lexicon, player_word) for r in rows}
     out = Path(args.out)

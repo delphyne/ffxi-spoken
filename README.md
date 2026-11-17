@@ -133,7 +133,9 @@ either a respelling, or `ipa:` in espeak-style IPA with an optional hand
 `[[ipa]]` natively; for Kokoro the helper phonemises the rest of the line
 and splices the IPA in); engines that cannot take phonemes get the
 respelling, derived from the IPA by `helper/respell.py` when no `spell:` is
-given. It is applied before synthesis and before the cache key, so editing
+given. An entry applies to every engine unless it names the ones it is for
+(`backends: [kokoro, piper, espeak]`): MOSS and Qwen say laughs and grunts
+right on their own, so those entries are kept from them. It is applied before synthesis and before the cache key, so editing
 an entry regenerates only the lines it touches, and the running helper
 reloads the file within a second of a save. The lexicon is built from the game's own text rather than by waiting to be
 surprised in play:

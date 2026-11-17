@@ -447,7 +447,7 @@ def main(argv=None):
     backend_cls = sh.pick_backend(args.backend, args.voices)
     backend = backend_cls(args.voices, sh.load_voice_map(args.voice_map, backend_cls.name),
                           fallback=sh.census_fallback(args.census, backend_cls.name))
-    lexicon = sh.Lexicon.load(args.lexicon)
+    lexicon = sh.Lexicon.load(args.lexicon, backend=backend_cls.name)
     lexicon.path = args.lexicon
     two_pass = backend if getattr(backend, "two_pass", False) else None
     builder = Builder(args.out, args.pack, args.version, backend.synthesise, Encoder(args.bitrate), lexicon,

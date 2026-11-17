@@ -360,6 +360,20 @@ class ReviewTest(unittest.TestCase):
         with unittest.mock.patch("sys.stdin", io.StringIO("")), unittest.mock.patch("sys.stdout", io.StringIO()):
             self.assertRaises(EOFError, review.read_key, "> ")
 
+    def test_append_entry_writes_a_backends_line(self):
+        with tempfile.TemporaryDirectory() as d:
+            import review
+            lex = Path(d) / "lexicon.yaml"
+            review.append_entry(lex, "Hrm", "hɚm", note="70 uses", backends=["kokoro", "piper"])
+            review.append_entry(lex, "Norg", "nˈɔːɹɡ")
+            self.assertEqual(lex.read_text(encoding="utf-8"),
+                             'Hrm:\n    ipa: "hɚm"   # 70 uses\n    backends: [kokoro, piper]\n'
+                             'Norg:\n    ipa: "nˈɔːɹɡ"\n')
+            self.assertEqual(sh.Lexicon.load(lex, backend="moss").apply("Hrm, Norg"), "Hrm, NAWRG")
+            self.assertTrue(review.replace_entry(lex, "Hrm", "hɜːm"))
+            self.assertEqual(sh.Lexicon.load(lex).entries["Hrm"]["backends"], frozenset({"kokoro", "piper"}),
+                             "replacing the IPA keeps the limit")
+
     def test_append_entry_quotes_awkward_keys(self):
         import review
         with tempfile.TemporaryDirectory() as d:
@@ -774,6 +788,55 @@ class LexiconTest(unittest.TestCase):
         self.assertEqual(lex.apply("Vana'diel's winds"), "Vana'diel's winds")  # possessive is a different token, left alone
         self.assertEqual(lex.apply("Orias and Oriana"), "Orias and Oriana")
         self.assertEqual(lex.apply("Oria!"), "wrong!")
+
+    def test_entries_can_be_limited_to_backends(self):
+        entries = {"Hmmm": {"ipa": "mːm", "backends": ["kokoro", "piper"]},
+                   "Grrr": {"ipa": "ɡɚ", "backends": "espeak"},
+                   "Jeuno": {"ipa": "ʒˈuːnoʊ"}}
+        line = "Hmmm. Grrr. Jeuno."
+        self.assertEqual(sh.Lexicon(entries).apply(line, phonemes=True), "[[mːm]]. [[ɡɚ]]. [[ʒˈuːnoʊ]].",
+                         "no backend given: everything applies")
+        self.assertEqual(sh.Lexicon(entries, backend="kokoro").apply(line, phonemes=True),
+                         "[[mːm]]. Grrr. [[ʒˈuːnoʊ]].")
+        self.assertEqual(sh.Lexicon(entries, backend="espeak").apply(line), "Hmmm. gur. ZHOO-noh.")
+        moss = sh.Lexicon(entries, backend="moss")
+        self.assertEqual(moss.apply(line, phonemes=True), "Hmmm. Grrr. [[ʒˈuːnoʊ]].")
+        self.assertEqual(set(moss.entries), set(entries), "the review tool still sees every entry")
+        self.assertEqual(moss.entries["Hmmm"]["backends"], frozenset({"kokoro", "piper"}))
+        self.assertIsNone(moss.entries["Jeuno"]["backends"])
+        self.assertFalse(moss.applies("Hmmm"))
+        self.assertTrue(moss.applies("Jeuno"))
+        self.assertEqual(sh.Lexicon({"Hmmm": {"ipa": "mːm", "backends": ["moss"]}}, backend="kokoro").apply("Hmmm"),
+                         "Hmmm", "a lexicon of nothing applicable is the identity")
+        with self.assertRaises(ValueError) as cm:
+            sh.Lexicon({"Hmmm": {"ipa": "mːm", "backends": ["kokoro", "kokro"]}})
+        self.assertIn("kokro", str(cm.exception))
+        with self.assertRaises(ValueError):
+            sh.Lexicon({"Hmmm": {"ipa": "mːm", "backends": []}})
+        self.assertIn("qwen", sh.LEXICON_BACKENDS)
+
+    def test_limited_entries_load_for_the_running_backend(self):
+        with tempfile.TemporaryDirectory() as d:
+            lex = Path(d) / "lex.yaml"
+            lex.write_text("Hmmm:\n    ipa: \"mːm\"   # 1280 uses\n    backends: [kokoro, piper, espeak]\n"
+                           "Jeuno: Juno\n", encoding="utf-8")
+            self.assertEqual(sh.Lexicon.load(lex, backend="moss").apply("Hmmm, Jeuno."), "Hmmm, Juno.")
+            self.assertEqual(sh.Lexicon.load(lex, backend="kokoro").apply("Hmmm, Jeuno."), "mm, Juno.")
+            self.assertEqual(sh.Lexicon.load(lex).apply("Hmmm, Jeuno."), "mm, Juno.")
+            self.assertEqual(sh.Lexicon.load(Path(d) / "missing.yaml", backend="moss").backend, "moss")
+            # the helper reloads for its own backend
+            data = Path(d) / "data"; data.mkdir()
+            backend = sh.NoneBackend(Path(d) / "voices", {"default": "n"})
+            spoken = []
+            backend.synthesise = lambda text, voice, out: spoken.append(text)
+            helper = sh.Helper(data, backend, Path(d) / "cache", player=None,
+                               lexicon=sh.Lexicon.load(lex, backend="none"), lexicon_path=lex)
+            lex.write_text("Hmmm:\n    ipa: \"mːm\"\n    backends: [none]\nJeuno: Juno\n", encoding="utf-8")
+            os.utime(lex, (time.time() + 5, time.time() + 5))
+            helper.lexicon_checked = 0.0
+            self.assertTrue(helper.reload_lexicon())
+            self.assertEqual(helper.lexicon.backend, "none")
+            self.assertEqual(helper.lexicon.apply("Hmmm, Jeuno."), "mm, Juno.")
 
     def test_empty_lexicon_is_identity(self):
         self.assertEqual(sh.Lexicon().apply("Hail, soldier."), "Hail, soldier.")

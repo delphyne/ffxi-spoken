@@ -70,15 +70,18 @@ def save_progress(path, progress):
     tmp.replace(p)
 
 
-def append_entry(lexicon_path, word, ipa, note=""):
+def append_entry(lexicon_path, word, ipa, note="", backends=None):
     """Append one stanza to lexicon.yaml, quoting the IPA so stress marks
-    and commas are safe. The running helper hot-reloads the file."""
+    and commas are safe; `backends` (names) limits the entry to those
+    engines. The running helper hot-reloads the file."""
     p = Path(lexicon_path)
     text = p.read_text(encoding="utf-8") if p.exists() else ""
     if text and not text.endswith("\n"):
         text += "\n"
     comment = f"   # {note}" if note else ""
     text += f"{lexicon_key(word)}:\n    ipa: {json.dumps(ipa, ensure_ascii=False)}{comment}\n"
+    if backends:
+        text += f"    backends: [{', '.join(backends)}]\n"
     p.write_text(text, encoding="utf-8")
 
 

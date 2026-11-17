@@ -428,7 +428,7 @@ def main(argv=None):
     with open(args.manifest, encoding="utf-8") as f:
         manifest = json.load(f)
     rows = select_lines(manifest, limit=args.limit)
-    lexicon = sh.Lexicon.load(args.lexicon)
+    lexicon = sh.Lexicon.load(args.lexicon, backend="qwen")
     texts = {r["stem"]: texts_for(r, lexicon, manifest.get("player_word", "adventurer")) for r in rows}
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)

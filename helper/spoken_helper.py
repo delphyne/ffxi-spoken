@@ -101,12 +101,19 @@ class Lexicon:
     derived from the IPA by respell.py. `apply(text, phonemes=True)` emits
     `[[ipa]]` for engines that take phonemes, `phonemes=False` the respelling.
 
+    An entry applies to every backend unless its mapping names the ones it
+    is for: `backends: [kokoro, piper]` (a list or one name, from
+    LEXICON_BACKENDS). `Lexicon(entries, backend="moss")` then leaves the
+    others out of `apply` while `entries` still lists them all, which is
+    what the review tool shows; with no backend given everything applies.
+
     Longest key first so a phrase beats a word inside it; keys starting with
     `_` are notes. Matches are case-sensitive and bounded by non-word
     characters, apostrophes and hyphens counting as word characters."""
 
-    def __init__(self, entries=None):
+    def __init__(self, entries=None, backend=None):
         self.entries = {}
+        self.backend = backend
         for key, value in (entries or {}).items():
             if key.startswith("_"):
                 continue
@@ -119,21 +126,31 @@ class Lexicon:
                 # engines get the IPA without syllable dots (Kokoro pauses at them);
                 # the respeller keeps them as explicit syllable breaks
                 self.entries[key] = {"ipa": marked.replace(".", "") if marked else None,
-                                     "ipa_marked": marked, "spell": spell}
+                                     "ipa_marked": marked, "spell": spell,
+                                     "backends": lexicon_backends(key, value.get("backends"))}
             else:
-                self.entries[key] = {"ipa": None, "ipa_marked": None, "spell": str(value)}
-        if self.entries:
-            words = sorted(self.entries, key=len, reverse=True)
+                self.entries[key] = {"ipa": None, "ipa_marked": None, "spell": str(value), "backends": None}
+        active = [k for k in self.entries if self.applies(k)]
+        if active:
+            words = sorted(active, key=len, reverse=True)
             alts = "|".join(re.escape(w) for w in words)
             self.pattern = re.compile(r"(?<![\w'\-])(?:" + alts + r")(?![\w'\-])")
         else:
             self.pattern = None
 
+    def applies(self, key):
+        """Whether `key` is for this lexicon's backend: always when the entry
+        names no backends or the lexicon was built for none in particular."""
+        limit = self.entries[key]["backends"]
+        return limit is None or self.backend is None or self.backend in limit
+
     @classmethod
-    def load(cls, path):
+    def load(cls, path, backend=None):
+        """The file's entries, for `backend` (a name from LEXICON_BACKENDS)
+        or for all of them."""
         p = Path(path)
         if not p.exists():
-            return cls()
+            return cls(backend=backend)
         with p.open(encoding="utf-8") as f:
             if p.suffix in (".yaml", ".yml"):
                 try:
@@ -152,7 +169,7 @@ class Lexicon:
                 data = json.load(f)
         if not isinstance(data, dict):
             raise ValueError(f"{p}: expected a mapping of word to pronunciation")
-        return cls({str(k): v for k, v in data.items()})
+        return cls({str(k): v for k, v in data.items()}, backend=backend)
 
     def spelling(self, key):
         """The respelling for an entry: the hand one, else derived from IPA."""
@@ -172,6 +189,22 @@ class Lexicon:
         if not self.pattern:
             return text
         return self.pattern.sub(lambda m: self.replacement(m.group(0), phonemes), text)
+
+
+def lexicon_backends(key, value):
+    """An entry's `backends` as a frozenset of known names, or None for
+    all. A single name may be given bare; an unknown one is an error, so a
+    typo does not silently drop the entry from every engine."""
+    if value is None:
+        return None
+    names = [value] if isinstance(value, str) else list(value or [])
+    if not names:
+        raise ValueError(f"lexicon entry {key!r}: backends must name at least one backend or be left out")
+    bad = [str(n) for n in names if n not in LEXICON_BACKENDS]
+    if bad:
+        raise ValueError(f"lexicon entry {key!r}: unknown backends {', '.join(bad)}; "
+                         f"known: {', '.join(sorted(LEXICON_BACKENDS))}")
+    return frozenset(names)
 
 
 def normalise_ipa(key, ipa):
@@ -556,6 +589,9 @@ class MossBackend(Backend):
 BACKENDS = {"none": NoneBackend, "espeak": EspeakBackend, "piper": PiperBackend, "kokoro": KokoroBackend,
             "moss": MossBackend}
 AUTO_ORDER = (KokoroBackend, PiperBackend, EspeakBackend, NoneBackend)
+# names a lexicon entry's `backends:` may use: the helper's, and the Qwen3
+# path tools/spike_qwen3.py gives the lexicon's respellings to
+LEXICON_BACKENDS = frozenset(BACKENDS) | {"qwen"}
 
 
 def pick_backend(name, voices_dir):
@@ -619,7 +655,7 @@ class Helper:
             return False
         self.lexicon_mtime = mtime
         try:
-            self.lexicon = Lexicon.load(self.lexicon_path)
+            self.lexicon = Lexicon.load(self.lexicon_path, backend=self.backend.name)
         except (ValueError, RuntimeError) as e:
             self.lexicon_error = str(e)
             print(f"lexicon not reloaded: {e}", file=sys.stderr)
@@ -785,7 +821,7 @@ def main(argv=None):
     backend_cls = pick_backend(args.backend, args.voices)
     backend = backend_cls(args.voices, load_voice_map(args.voice_map, backend_cls.name),
                           fallback=census_fallback(args.census, backend_cls.name))
-    lexicon = Lexicon() if args.no_lexicon else Lexicon.load(args.lexicon)
+    lexicon = Lexicon() if args.no_lexicon else Lexicon.load(args.lexicon, backend=backend_cls.name)
     if args.say is not None:
         return say(backend, lexicon, pick_player(), args.say, args.speaker, args.cache, fresh=args.fresh)
     Path(args.data).mkdir(parents=True, exist_ok=True)
