@@ -249,6 +249,20 @@ class StoriesTest(unittest.TestCase):
         self.assertEqual(data["stories"], {"rov": "R", "cop": "C"}, "a storyline with no lines is left out")
         self.assertEqual(data["speakers"], {"": {"rov": 1}, "Iroha": {"cop": 1, "rov": 2}, "Prishe": {"cop": 1}})
 
+    def test_word_index_counts_storylines_and_speakers(self):
+        lines = {"rov": [{"kind": "say", "speaker": "Iroha", "text": "Master, Vana'diel needs you.",
+                          "variants": ["Master, Vana'diel needs you.", "Master, Vana'diel needs you!"]},
+                         {"kind": "say", "speaker": "Tenzen", "text": "What on Vana'diel..."},
+                         {"kind": "menu", "speaker": "Iroha", "text": "Vana'diel"}],
+                 "cop": [{"kind": "say", "speaker": "", "text": "Prishe and Vana'diel."}]}
+        words = voice_stories.build_words(lambda code: lines[code], {"rov": "R", "cop": "C"})
+        self.assertEqual(words["Vana'diel"], {"stories": {"cop": 1, "rov": 2},
+                                              "speakers": {"Iroha": 1, "Tenzen": 1, "": 1}},
+                         "a line's variants count once; only spoken lines count")
+        self.assertEqual(words["Prishe"]["speakers"], {"": 1})
+        self.assertIn("Master", words, "every capitalised word; the review decides what is a name")
+        self.assertNotIn("needs", words)
+
     def test_committed_index_has_the_rhapsodies_cast(self):
         data = json.loads((Path(voice_stories.OUT)).read_text(encoding="utf-8"))
         self.assertIn("rov", data["stories"])
