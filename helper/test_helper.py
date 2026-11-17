@@ -661,6 +661,54 @@ class IpaFieldTest(unittest.TestCase):
         self.assertEqual(var.get(), "ˈoʊzᵻz θðɨᵻ", "deleting in the field updates the IPA")
 
 
+class KeyGateTest(unittest.TestCase):
+    def setUp(self):
+        import review_gui
+        self.now = 100.0
+        self.gate = review_gui.KeyGate(clock=lambda: self.now)
+
+    def tick(self, seconds):
+        self.now += seconds
+
+    def test_a_press_acts_once_until_released(self):
+        self.assertTrue(self.gate.press("a"))
+        self.tick(1.0)
+        self.assertFalse(self.gate.press("a"), "held down: no second action however long")
+        self.gate.release("a")
+        self.tick(0.2)
+        self.assertTrue(self.gate.press("a"))
+
+    def test_autorepeat_pairs_are_too_quick(self):
+        # X autorepeat: release and press ~35 ms apart, and the window may
+        # have applied the release before the press arrives
+        self.assertTrue(self.gate.press("a"))
+        acted = 0
+        for _ in range(30):
+            self.tick(0.035)
+            self.gate.release("a")
+            acted += self.gate.press("a")
+        self.assertEqual(acted, 0)
+        self.gate.release("a")
+        self.tick(0.3)
+        self.assertTrue(self.gate.press("a"), "a deliberate press after a pause")
+
+    def test_keys_are_independent(self):
+        self.assertTrue(self.gate.press("a"))
+        self.assertTrue(self.gate.press("s"))
+        self.gate.release("s")
+        self.tick(0.1)
+        self.assertTrue(self.gate.press("s"))
+        self.assertFalse(self.gate.press("a"))
+
+    def test_arming_ignores_the_first_second(self):
+        self.gate.arm()
+        self.tick(0.5)
+        self.assertFalse(self.gate.press("a"), "a key held while the window appeared")
+        self.gate.release("a")
+        self.tick(0.6)
+        self.assertTrue(self.gate.press("a"))
+
+
 class ReviewGuiTest(unittest.TestCase):
     """The window's tables, checked without Tk (the system python3 lacks it)."""
 

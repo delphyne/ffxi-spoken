@@ -22,11 +22,18 @@ s skip, b back, d delete, q quit, j jump to the IPA field. In the field:
 Enter tries what is typed, Escape goes back to the keys. Clicking a glyph
 inserts it at the cursor. The field shows ᵻ as a blue ɨ (IpaField): no font
 the venv's Tk can see draws ᵻ at that size.
+
+A key acts once per press (KeyGate): X autorepeat turns a held key into
+tens of presses a second, and since accept moves to the next row, a key
+held for 25 seconds once accepted 423 rows. Keys are also ignored for the
+first second after the window appears, which is when it takes the focus
+from whatever was being typed into while the engine warmed up.
 """
 
 import json
 import sys
 import threading
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -65,6 +72,40 @@ COLUMNS = 12
 
 KEYS = {"a": "accept", "r": "repeat", "e": "example", "s": "skip", "b": "back", "q": "quit", "j": "field",
         "d": "delete"}
+
+
+class KeyGate:
+    """Which presses of a command key to act on. A press acts only when the
+    key has been released since its last press and `GAP` seconds have gone
+    by, which lets through anything a hand does and stops autorepeat (a
+    press every 30–40 ms, each after a release): the window defers the
+    release, so a repeat already queued still sees the key as held, and one
+    that is not comes too soon. `arm` ignores presses for `SETTLE` seconds,
+    for the window's arrival. `clock` is injectable for the tests."""
+
+    GAP = 0.08
+    SETTLE = 1.0
+
+    def __init__(self, clock=time.monotonic):
+        self.clock = clock
+        self.held = set()
+        self.last = {}
+        self.until = float("-inf")
+
+    def arm(self):
+        self.until = self.clock() + self.SETTLE
+
+    def press(self, key):
+        now = self.clock()
+        since = now - self.last.get(key, float("-inf"))
+        self.last[key] = now   # from the last press seen, so a steady stream never gets through
+        if now < self.until or key in self.held or since < self.GAP:
+            return False
+        self.held.add(key)
+        return True
+
+    def release(self, key):
+        self.held.discard(key)
 
 
 def available():
@@ -428,7 +469,10 @@ class Window:
         width = min(px(1500), int(root.winfo_screenwidth() * 0.95))
         height = min(px(820), int(root.winfo_screenheight() * 0.9))
         root.geometry(f"{width}x{height}")
+        self.gate = KeyGate()
         root.bind("<Key>", self.on_key)
+        root.bind("<KeyRelease>", lambda e: root.after_idle(self.gate.release, e.keysym))
+        root.bind("<Map>", lambda e: self.gate.arm() if e.widget is root else None)
         self.entry.bind("<Return>", lambda e: self.try_ipa())
         self.entry.bind("<Escape>", lambda e: root.focus_set())
         self.search.bind("<Escape>", lambda e: root.focus_set())
@@ -652,6 +696,8 @@ class Window:
         if self.entry.has_focus() or focus is self.search or any(focus is box for _, box, _ in self.filters.values()):
             return None
         cmd = KEYS.get(event.char.lower()) if event.char else None
+        if cmd and not self.gate.press(event.keysym):
+            return "break"   # autorepeat, or the window has just appeared
         if cmd == "field":
             self.entry.focus_set()
             self.entry.icursor("end")
