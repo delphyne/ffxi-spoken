@@ -72,7 +72,7 @@ cannot stop a sound.
 | Designed voices for packs (MOSS-TTS) | in progress: each character's voice is designed from a one-line description by Qwen3-TTS (`helper/voice_designs.yaml`, `make design-voices`) and every line rendered by MOSS-TTS continuing that clip, with the lexicon's IPA (`BACKEND=moss`, `docs/MOSS-Backend-Handoff.md`); no pack built with it yet |
 | Auto-advance via Windower `setkey` | unverified under Wine; parked until the rest is stable |
 | Voice casting per NPC | `helper/cast.py` casts Balloon's 230 portrait NPCs by hand; everyone else is cast by race from `helper/census.json` (13,845 names from LandSandBoat and the client) |
-| Pronunciation lexicon | `helper/lexicon.yaml` with IPA; `make nouns` and `make review` build it from the game's text; every proper noun Rhapsodies of Vana'diel speaks is reviewed (64 entries) |
+| Pronunciation lexicon | `helper/lexicon.yaml` with IPA; `make nouns` and `make review-lexicon` build and edit it from the game's text; every proper noun Rhapsodies of Vana'diel speaks is reviewed (64 entries) |
 | Dialogue extraction from the client | dialogue tables and NPC lists decode; `tools/xievent.py` disassembles event bytecode for every zone (4 events of 84,914 still fail, all in an unused zone) and attributes each line to its speaker; `tools/ffxitext.py` cleans the text the way the addon does and expands the client's parameter codes; Rhapsodies resolves to 1,416 pack texts from 31 speakers, 25 lines live-only; Wings of the Goddess (`MISSIONS=wotg`) to 3,588 from 118 speakers, 63 live-only (`docs/Event-Decoding-Handoff.md`) |
 | Pre-generated voice packs | `make pack VERSION=x` builds one from the decoder's corpus (Opus files, manifest, zip) and `make release` publishes it; the manifests and index under `packs/` are committed, the audio is not (`docs/Audio-Packs.md`); Rhapsodies 0.1 is built and installs by unzipping into `audio/` |
 | Native playback module | `libs/spokenplay.dll`: winmm playback of Ogg Opus from a worker thread, with stop, state, and volume (`native/`, `make deps && make native`); plays, stops, and reports errors under the game's Wine prefix from a console (`make native-test`); first in-game run still to do |
@@ -146,18 +146,25 @@ surprised in play:
    ONLY=1` keeps only the words that storyline's cutscenes actually speak,
    as decoded from the client's event files, so the review covers that
    pack's vocabulary and nothing else.
-2. `make review` walks that list in a window, one word at a time: the
-   name, the count, an example line, and the engine's IPA, which it speaks.
-   `a` accepts the pronunciation into the lexicon, `r` repeats it, `s`
-   skips a word the engine already says right, `e` plays the example line,
-   `b` goes back to the previous word and undoes its accept or skip (it
-   reaches into earlier runs too), `q` quits; each has a button too. To replace a reading, type IPA in the
+2. `make review-lexicon` opens a window with a table of every word: that
+   list and every lexicon entry, with its status (new, lexicon, skipped,
+   deleted, or covered by a longer entry), uses, storylines, speakers, and
+   IPA. A search box finds a word by any part of it, filters narrow the
+   table by status, storyline, and speaker (`data/word_stories.json`, which
+   `make voice-stories` builds and the target builds when missing), and a
+   column header sorts by that column. Picking a row shows the word, its
+   counts, an example line, the engine's IPA and the lexicon's, and speaks
+   it. `a` accepts the pronunciation (a new entry, or the existing one in
+   place, its comment kept), `r` repeats it, `s` skips a word the engine
+   already says right, `d` deletes an entry, `e` plays the example line;
+   each then moves to the next row of the table, `b` back to the previous
+   one, and `q` quits. Each has a button too. To replace a reading, type IPA in the
    field (`j` jumps there) or click glyphs from the palette below it, which
    shows every symbol the lexicon accepts with a word that has that sound;
    Enter plays what you built, and `a` then accepts it. Without a display,
-   or with `make review CLI=1`, the same keys work in the terminal.
-   Progress is kept in `data/review_progress.json`, so the next run resumes
-   where you stopped; words already in the lexicon are not asked again.
+   or with `make review-lexicon CLI=1`, the same keys work in the terminal,
+   one word at a time (`ENTRIES=1` walks the existing entries instead).
+   Progress is kept in `data/review_progress.json`.
 3. The running helper reloads the lexicon within a second of each accept,
    and `make say TEXT="..."` checks any line on demand. To hear an entry, `make say TEXT="..."` speaks one line
 through the same lexicon, casting, and engine as live playback and prints

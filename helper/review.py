@@ -22,15 +22,16 @@ is not a terminal (a pipe, the tests) every read is a line.
 Progress is kept in data/review_progress.json, so quitting and starting
 again resumes at the first word not yet covered; `b` from there steps back
 into the words covered in earlier runs. Words already in the lexicon are
-skipped. Runs with the venv: `make review`.
+skipped. Runs with the venv: `make review-lexicon`.
 
 Existing entries can be reviewed too, with the same keys: accept writes the
 IPA into the entry where it is (its comment kept) and moves on, skip leaves
 it, back goes to the previous entry, and d deletes it (the engine already
-says it right). The window has a search over every entry and a Done button
-back to the incoming words; in the terminal, `--entries` (make review
+says it right). The window shows every word, incoming and in the lexicon,
+in a table with a search and filters for status, storyline, and speaker
+(review_gui.py); in the terminal, `--entries` (make review-lexicon
 ENTRIES=1) steps through the entries instead of the incoming words, and
-`--entry WORD` starts at one.
+`--entry WORD` starts at one (in the window, opens it).
 """
 
 import argparse
@@ -240,6 +241,7 @@ class Session:
         self.progress_path, self.ipa_for, self.out = progress_path, ipa_for, out
         self.by_word = {c["word"]: c for c in candidates}
         self.mode, self.queue_state, self.entry_words, self.entry_pos, self.saved_ipa = "queue", None, [], -1, None
+        self.in_entry = False
         entries = sh.Lexicon.load(lexicon_path).entries
         existing = covered_words(entries)
         self.todo = [c for c in candidates if c["word"] in progress or c["word"] not in existing]
@@ -310,6 +312,40 @@ class Session:
         self.mine = self.current != self.engine_ipa
         return True
 
+    # -- any word, opened from the window's table ------------------------
+
+    def open_word(self, word):
+        """Put any word in hand, in the lexicon or not (mode "word"). Accept
+        writes or updates its entry, skip records it as skipped, delete
+        removes its entry; none of them moves on, the window does that."""
+        if self.mode == "queue" and self.queue_state is None:
+            self.queue_state = (self.pos, self.cand, self.engine_ipa, self.current, self.mine)
+        self.mode = "word"
+        e = sh.Lexicon.load(self.lexicon_path).entries.get(word)
+        self.cand = dict(self.by_word.get(word, {}), word=word)
+        engine = self.candidate_ipa(self.cand) if self.cand.get("kokoro_ipa") or self.ipa_for else ""
+        self.saved_ipa = e["ipa_marked"] if e else None
+        self.in_entry = e is not None
+        self.engine_ipa = engine or self.saved_ipa or ""
+        self.current = self.saved_ipa or self.engine_ipa
+        self.mine = self.current != self.engine_ipa
+        return True
+
+    def status_of(self, word, entries=None, covered=None):
+        """new, lexicon, skipped, deleted, or covered (part of a longer
+        entry such as Cait in Cait Sith), for the table."""
+        entries = entries if entries is not None else sh.Lexicon.load(self.lexicon_path).entries
+        if word in entries:
+            return "lexicon"
+        rec = self.progress.get(word) or {}
+        if rec.get("deleted"):
+            return "deleted"
+        if rec.get("status") == "skipped":
+            return "skipped"
+        if word in (covered if covered is not None else covered_words(entries)):
+            return "covered"
+        return "new"
+
     def saved_spelling(self):
         """The entry's respelling: its hand `spell`, else derived from its IPA."""
         return sh.Lexicon.load(self.lexicon_path).spelling(self.word)
@@ -335,9 +371,22 @@ class Session:
         self.close_entries()
         return False
 
+    def _save(self):
+        if self.progress_path:
+            save_progress(self.progress_path, self.progress)
+
     def delete(self):
         """Remove the entry in hand. Its word counts as skipped for the
         incoming queue, so it is not asked again."""
+        if self.mode == "word":
+            if not self.in_entry:
+                return False
+            remove_entry(self.lexicon_path, self.word)
+            self.progress[self.word] = {"status": "skipped", "deleted": True, "engine_ipa": self.engine_ipa,
+                                        "t": int(time.time())}
+            self.in_lexicon -= 1
+            self._save()
+            return self.open_word(self.word)
         if self.mode != "entries":
             return False
         word = self.word
@@ -378,7 +427,8 @@ class Session:
     def set_ipa(self, typed):
         """Validate hand-typed IPA and make it current. Raises ValueError
         with the lexicon's explanation when it is not IPA."""
-        self.current = validate_ipa(self.word, typed, keep_dots=self.mode == "entries")
+        keep = self.mode == "entries" or (self.mode == "word" and self.in_entry)
+        self.current = validate_ipa(self.word, typed, keep_dots=keep)
         self.mine = True
         return self.current
 
@@ -389,6 +439,18 @@ class Session:
         return self.current
 
     def accept(self):
+        if self.mode == "word":
+            if self.in_entry:
+                if self.current != self.saved_ipa:
+                    replace_entry(self.lexicon_path, self.word, self.current)
+            else:
+                append_entry(self.lexicon_path, self.word, self.current, note=f"{self.cand.get('uses', '?')} uses")
+                self.progress[self.word] = {"status": "accepted", "ipa": self.current,
+                                            "engine_ipa": self.engine_ipa, "t": int(time.time())}
+                self.in_lexicon += 1
+            self.covered += 1
+            self._save()
+            return self.open_word(self.word)
         if self.mode == "entries":
             if self.current != self.saved_ipa:
                 replace_entry(self.lexicon_path, self.word, self.current)
@@ -400,6 +462,13 @@ class Session:
         self._covered()
 
     def skip(self):
+        if self.mode == "word":
+            if not self.in_entry:
+                self.progress[self.word] = {"status": "skipped", "engine_ipa": self.engine_ipa,
+                                            "t": int(time.time())}
+                self.covered += 1
+                self._save()
+            return True
         if self.mode == "entries":
             return self.next_entry()
         self.progress[self.word] = {"status": "skipped", "engine_ipa": self.engine_ipa, "t": int(time.time())}
@@ -445,7 +514,7 @@ class Session:
     def farewell(self):
         if self.done:
             return f"all {len(self.todo) - self.start} reviewed."
-        return f"stopped; {self.covered} covered this run. `make review` resumes here."
+        return f"stopped; {self.covered} covered this run. `make review-lexicon` resumes here."
 
 
 def review(candidates, progress, lexicon_path, speaker, read=input, out=print, progress_path=None, ipa_for=None,
@@ -554,6 +623,8 @@ def main(argv=None):
     ap.add_argument("--backend", default="auto", choices=["auto", *sh.BACKENDS])
     ap.add_argument("--top", type=int, default=0, help="review only the first N candidates (0 = all)")
     ap.add_argument("--cli", action="store_true", help="the terminal loop even when a window is possible")
+    ap.add_argument("--word-stories", default=str(DATA / "word_stories.json"),
+                    help="storylines and speakers per word, for the window's filters (make voice-stories)")
     ap.add_argument("--entries", action="store_true", help="review the lexicon's existing entries")
     ap.add_argument("--entry", metavar="WORD", help="review existing entries starting at WORD")
     args = ap.parse_args(argv)
@@ -583,7 +654,7 @@ def main(argv=None):
     try:
         if gui:
             review_gui.run(Session(candidates, progress, args.lexicon, speaker, args.progress, ipa_for),
-                           entries=entries)
+                           entries=entries, word_stories=review_gui.load_word_stories(args.word_stories))
         else:
             review(candidates, progress, args.lexicon, speaker, progress_path=args.progress, ipa_for=ipa_for,
                    key=read_key, entries=entries)

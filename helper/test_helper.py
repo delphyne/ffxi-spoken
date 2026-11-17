@@ -487,47 +487,131 @@ class ReviewEntriesTest(unittest.TestCase):
         self.assertIn("[3/3] Norg", "\n".join(out), "--entry starts at the word")
 
 
-class ReviewEntriesGuiTest(unittest.TestCase):
-    """The window's lexicon bar, under a display with Tk (the venv)."""
+class ReviewTableTest(unittest.TestCase):
+    """The window's table: any word opened in word mode, the rows, their
+    status, filters, and sorting; and, under a display with Tk, the window."""
 
-    def test_open_edit_delete_and_done(self):
-        import review_gui
-        if not review_gui.available():
-            self.skipTest("no display or Tk")
+    STORIES = {"Altana": {"stories": {"rov": 2, "cop": 5}, "speakers": {"Iroha": 3, "": 4}},
+               "Norg": {"stories": {"cop": 9}, "speakers": {"Gilgamesh": 9}},
+               "Cait": {"stories": {"wotg": 7, "rov": 1}, "speakers": {"Lilisette": 8}},
+               "Sith": {"stories": {"wotg": 30}, "speakers": {"Lilisette": 30}},
+               "Jeuno": {"stories": {"rov": 1}, "speakers": {"Lion": 1}}}
+
+    def setUp(self):
         t = ReviewEntriesTest()
         t.setUp()
-        ses = t.session()
+        self.addCleanup(t.dir.cleanup)
+        self.t = t
+        self.ses = t.session()
+        import review_gui
+        self.gui = review_gui
+
+    def test_open_word_then_accept_skip_delete(self):
+        ses, lex = self.ses, self.t.lex
+        ses.open_word("Altana")    # incoming, not in the lexicon
+        self.assertEqual((ses.mode, ses.in_entry, ses.current, ses.saved_ipa), ("word", False, "ɔːltˈɑːnə", None))
+        ses.set_ipa("ɔl.tˈɑː.nə")
+        self.assertEqual(ses.current, "ɔltˈɑːnə", "a new entry drops syllable dots")
+        ses.accept()
+        self.assertEqual(sh.Lexicon.load(lex).entries["Altana"]["ipa"], "ɔltˈɑːnə")
+        self.assertTrue(ses.in_entry, "after accept it is an entry")
+        self.assertEqual(json.loads(self.t.prog.read_text())["Altana"]["status"], "accepted")
+        ses.open_word("Jeuno")     # an entry
+        self.assertEqual((ses.in_entry, ses.saved_ipa), (True, "dʒjˈuːnoʊ"))
+        ses.set_ipa("ʒˈuː.noʊ")
+        self.assertEqual(ses.current, "ʒˈuː.noʊ", "editing an entry keeps dots")
+        ses.accept()
+        self.assertIn('Jeuno:\n    ipa: "ʒˈuː.noʊ"   # 1739 uses', lex.read_text())
+        ses.skip()
+        self.assertNotIn("Jeuno", ses.progress, "skipping an entry leaves it be")
+        self.assertTrue(ses.delete())
+        self.assertNotIn("Jeuno", sh.Lexicon.load(lex).entries)
+        self.assertEqual(ses.progress["Jeuno"]["deleted"], True)
+        self.assertFalse(ses.delete(), "nothing left to delete")
+        ses.open_word("Norg")
+        self.assertEqual(ses.saved_spelling(), "Nawg")
+        ses.open_word("Gustaberg")  # neither incoming nor an entry
+        ses.skip()
+        self.assertEqual(ses.progress["Gustaberg"]["status"], "skipped")
+
+    def test_status_of(self):
+        ses = self.ses
+        ses.progress.update({"Altana": {"status": "skipped"}, "Bastok": {"status": "skipped", "deleted": True}})
+        self.assertEqual([ses.status_of(w) for w in ("Jeuno", "Altana", "Bastok", "Cait", "Selbina")],
+                         ["lexicon", "skipped", "deleted", "covered", "new"])
+
+    def test_catalogue_rows(self):
+        rows = {r["word"]: r for r in self.gui.catalogue(self.ses, self.STORIES)}
+        self.assertEqual(list(rows)[:3], ["Altana", "Jeuno", "Norg"], "incoming words first, in rank order")
+        self.assertIn("Vana'diel", rows, "then lexicon entries not among them")
+        self.assertEqual(rows["Altana"]["status"], "new")
+        self.assertEqual((rows["Altana"]["uses"], rows["Altana"]["ipa"]), (1048, "ɔːltˈɑːnə"))
+        self.assertEqual(rows["Jeuno"]["status"], "lexicon")
+        self.assertEqual(rows["Vana'diel"]["ipa"], "vɑː.nɑː.djɛl", "an entry shows its own IPA")
+        self.assertIsNone(rows["Vana'diel"]["uses"])
+        self.assertEqual(rows["Cait Sith"]["stories"], {"wotg": 7, "rov": 1}, "a phrase takes its rarest word's")
+
+    def test_filters_search_and_sort(self):
+        g = self.gui
+        rows = g.catalogue(self.ses, self.STORIES)
+        words = lambda rs: [r["word"] for r in rs]  # noqa: E731
+        self.assertEqual(words(g.filter_rows(rows, status="new")), ["Altana"])
+        self.assertEqual(words(g.filter_rows(rows, status="lexicon")), ["Jeuno", "Norg", "Vana'diel", "Cait Sith"])
+        self.assertEqual(words(g.filter_rows(rows, story="cop")), ["Altana", "Norg"])
+        self.assertEqual(words(g.filter_rows(rows, speaker="Lilisette")), ["Cait Sith"])
+        self.assertEqual(words(g.filter_rows(rows, speaker="")), ["Altana"], "narration is a speaker too")
+        self.assertEqual(words(g.filter_rows(rows, query="DIEL")), ["Vana'diel"])
+        self.assertEqual(words(g.filter_rows(rows, query="a", story="rov", status="lexicon")), ["Jeuno", "Cait Sith"][1:])
+        self.assertEqual(words(g.sort_rows(rows, "uses", True)), ["Jeuno", "Altana", "Norg", "Vana'diel", "Cait Sith"],
+                         "most uses first, no count last")
+        self.assertEqual(words(g.sort_rows(rows, "uses")), ["Norg", "Altana", "Jeuno", "Vana'diel", "Cait Sith"],
+                         "no count last the other way too")
+        self.assertEqual(g.sort_rows(rows, "status")[0]["status"], "new")
+
+    def test_window_table_and_navigation(self):
+        g = self.gui
+        if not g.available():
+            self.skipTest("no display or Tk")
         try:
-            w = review_gui.Window(ses)
+            w = g.Window(self.ses, self.STORIES)
         except Exception as e:  # noqa: BLE001 - a display that refuses connections
             self.skipTest(f"Tk could not open a window: {e}")
         self.addCleanup(w.root.destroy)
-        ses.advance()
-        w.show()
-        self.assertFalse(w.delete_button.winfo_ismapped() and w.done_button.winfo_ismapped())
-        w.v_find.set("cait")
-        w.filter_entries()
-        self.assertEqual(list(w.find.cget("values")), ["Cait Sith"])
-        w.open_entry()
-        w.root.update()
-        self.assertEqual((ses.mode, ses.word), ("entries", "Cait Sith"))
-        self.assertTrue(w.delete_button.winfo_ismapped() and w.done_button.winfo_ismapped())
-        self.assertEqual(w.v_count.get(), "entry 3 / 4")
-        self.assertIn("kˈɛt ʃˈiː", w.v_saved.get())
-        w.v_ipa.set("x")
-        w.reset_ipa()
-        self.assertEqual(w.v_ipa.get(), "kˈɛt ʃˈiː", "reset on an entry goes back to the lexicon's IPA")
+        self.assertEqual(w.tree.get_children(), ("Altana", "Jeuno", "Norg", "Vana'diel", "Cait Sith"))
+        self.assertEqual(w.v_count.get(), "5 of 5")
+        w.filters["status"][0].set("lexicon")
+        w.refresh()
+        self.assertEqual(w.tree.get_children(), ("Jeuno", "Norg", "Vana'diel", "Cait Sith"))
+        w.filters["story"][0].set("Rhapsodies of Vana'diel")
+        w.refresh()
+        self.assertEqual(w.tree.get_children(), ("Jeuno", "Cait Sith"))
+        w.filters["story"][0].set("all storylines")
+        w.filters["status"][0].set("all statuses")
+        w.filters["speaker"][0].set("Gilgamesh")
+        w.refresh()
+        self.assertEqual(w.tree.get_children(), ("Norg",))
+        w.filters["speaker"][0].set("all speakers")
+        w.v_query.set("jeu")
+        self.assertEqual(w.tree.get_children(), ("Jeuno",))
+        w.v_query.set("")
+        w.open("Jeuno")
+        self.assertEqual(w.v_saved.get().split("   ")[0], "in the lexicon: dʒjˈuːnoʊ")
+        self.assertIn("Storylines: Rhapsodies of Vana'diel 1", w.v_detail.get())
+        w.v_ipa.set("ʒˈuːnoʊ")
+        w.try_ipa()
+        w.accept()
+        self.assertEqual(self.ses.word, "Norg", "accept moves to the next row")
+        self.assertEqual(w.tree.set("Jeuno", "ipa"), "ʒˈuːnoʊ", "the row shows the new IPA")
+        w.back()
+        self.assertEqual(self.ses.word, "Jeuno")
         w.delete()
-        self.assertEqual(ses.word, "Norg")
-        self.assertIn("respelling 'Nawg'", w.v_saved.get())
-        w.close_entries()
-        w.root.update()
-        self.assertEqual((ses.mode, ses.word), ("queue", "Altana"))
-        self.assertFalse(w.delete_button.winfo_ismapped())
-        self.assertEqual(w.v_saved.get(), "")
-        w.v_find.set("zzz")
-        w.open_entry()
-        self.assertIn("no lexicon entry matches", w.v_status.get())
+        self.assertEqual(w.tree.set("Jeuno", "status"), "deleted")
+        self.assertEqual(self.ses.word, "Norg")
+        w.sort_by("#0")
+        self.assertEqual(w.tree.get_children()[0], "Altana")
+        self.assertTrue(w.tree.heading("#0", "text").endswith("▲"))
+        w.sort_by("#0")
+        self.assertEqual(w.tree.get_children()[0], "Vana'diel")
 
 
 class ReviewGuiTest(unittest.TestCase):
