@@ -1,0 +1,437 @@
+{
+ "source": "quests/sandoria",
+ "scripts": 59,
+ "scenes": {
+  "named": 231,
+  "with_lines": 225,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 1566,
+   "chars": 138990
+  },
+  "narration": {
+   "lines": 3,
+   "chars": 119
+  },
+  "unattributed": {
+   "lines": 1,
+   "chars": 21
+  },
+  "system": {
+   "lines": 22,
+   "chars": 722
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 67,
+   "chars": 3267
+  },
+  "unvoiceable": {
+   "lines": 151,
+   "chars": 48
+  }
+ },
+ "voiced": {
+  "lines": 1569,
+  "chars": 139109
+ },
+ "reasons": {
+  "unattributed": {
+   "no speaker": 1
+  },
+  "system": {
+   "a labelled readout": 2,
+   "emote or a sentence missing its subject": 18,
+   "text the cleaner left damaged": 1,
+   "told to the player about the player": 1
+  },
+  "menu": {
+   "menu": 67
+  },
+  "unvoiceable": {
+   "live-only: 7f80, item": 6,
+   "live-only: item": 124,
+   "live-only: item, number": 3,
+   "live-only: number": 4,
+   "punctuation only": 14
+  }
+ },
+ "speakers": {
+  "Kuu Mohzolhi": {
+   "lines": 133,
+   "chars": 7106
+  },
+  "Vijartal": {
+   "lines": 101,
+   "chars": 9031
+  },
+  "Curilla": {
+   "lines": 83,
+   "chars": 10466
+  },
+  "Roido": {
+   "lines": 63,
+   "chars": 4869
+  },
+  "Balasiel": {
+   "lines": 59,
+   "chars": 7069
+  },
+  "Novalmauge": {
+   "lines": 54,
+   "chars": 5870
+  },
+  "Sobane": {
+   "lines": 54,
+   "chars": 4717
+  },
+  "Phillone": {
+   "lines": 45,
+   "chars": 3364
+  },
+  "Brugaire": {
+   "lines": 44,
+   "chars": 4158
+  },
+  "Deraquien": {
+   "lines": 42,
+   "chars": 3998
+  },
+  "Elmemague": {
+   "lines": 41,
+   "chars": 3779
+  },
+  "Halver": {
+   "lines": 41,
+   "chars": 5575
+  },
+  "Atelloune": {
+   "lines": 33,
+   "chars": 3280
+  },
+  "Sharzalion": {
+   "lines": 30,
+   "chars": 2291
+  },
+  "Vilatroire": {
+   "lines": 29,
+   "chars": 2700
+  },
+  "Ondieumais": {
+   "lines": 28,
+   "chars": 2676
+  },
+  "Abeaule": {
+   "lines": 26,
+   "chars": 1705
+  },
+  "Abelard": {
+   "lines": 26,
+   "chars": 2227
+  },
+  "Narcheral": {
+   "lines": 26,
+   "chars": 2298
+  },
+  "Hanaa Punaa": {
+   "lines": 24,
+   "chars": 1866
+  },
+  "Rosel": {
+   "lines": 24,
+   "chars": 1797
+  },
+  "Dauperiat": {
+   "lines": 22,
+   "chars": 2143
+  },
+  "Portaure": {
+   "lines": 22,
+   "chars": 2148
+  },
+  "Ailbeche": {
+   "lines": 19,
+   "chars": 1152
+  },
+  "Millechairale": {
+   "lines": 19,
+   "chars": 1163
+  },
+  "Pieuje": {
+   "lines": 19,
+   "chars": 1509
+  },
+  "Valderotaux": {
+   "lines": 19,
+   "chars": 1398
+  },
+  "Anguenet": {
+   "lines": 18,
+   "chars": 2202
+  },
+  "Rouva": {
+   "lines": 18,
+   "chars": 2316
+  },
+  "Andecia": {
+   "lines": 17,
+   "chars": 1576
+  },
+  "Ceraulian": {
+   "lines": 17,
+   "chars": 1092
+  },
+  "Chalvatot": {
+   "lines": 17,
+   "chars": 1564
+  },
+  "Arnau": {
+   "lines": 15,
+   "chars": 1205
+  },
+  "Esca": {
+   "lines": 13,
+   "chars": 1410
+  },
+  "Fontoumant": {
+   "lines": 13,
+   "chars": 1146
+  },
+  "Gulemont": {
+   "lines": 12,
+   "chars": 1149
+  },
+  "Antreneau": {
+   "lines": 11,
+   "chars": 825
+  },
+  "Femitte": {
+   "lines": 11,
+   "chars": 779
+  },
+  "Guilerme": {
+   "lines": 10,
+   "chars": 831
+  },
+  "Rojaireaut": {
+   "lines": 10,
+   "chars": 991
+  },
+  "Glenne": {
+   "lines": 9,
+   "chars": 716
+  },
+  "Raimbroy": {
+   "lines": 9,
+   "chars": 674
+  },
+  "Trion": {
+   "lines": 9,
+   "chars": 899
+  },
+  "Amutiyaal": {
+   "lines": 8,
+   "chars": 1016
+  },
+  "Arminibit": {
+   "lines": 8,
+   "chars": 356
+  },
+  "Exoroche": {
+   "lines": 8,
+   "chars": 546
+  },
+  "Miene": {
+   "lines": 8,
+   "chars": 550
+  },
+  "Norejaie": {
+   "lines": 8,
+   "chars": 829
+  },
+  "Abioleget": {
+   "lines": 7,
+   "chars": 370
+  },
+  "Amaura": {
+   "lines": 7,
+   "chars": 626
+  },
+  "Gallijaux": {
+   "lines": 7,
+   "chars": 948
+  },
+  "Helbort": {
+   "lines": 7,
+   "chars": 693
+  },
+  "Jeronne": {
+   "lines": 7,
+   "chars": 318
+  },
+  "Joulet": {
+   "lines": 7,
+   "chars": 867
+  },
+  "Miaux": {
+   "lines": 7,
+   "chars": 647
+  },
+  "Michea": {
+   "lines": 7,
+   "chars": 781
+  },
+  "Narvecaint": {
+   "lines": 7,
+   "chars": 368
+  },
+  "Nogelle": {
+   "lines": 7,
+   "chars": 367
+  },
+  "Pagisalis": {
+   "lines": 7,
+   "chars": 484
+  },
+  "Shamonde": {
+   "lines": 7,
+   "chars": 403
+  },
+  "Aaveleon": {
+   "lines": 6,
+   "chars": 472
+  },
+  "Belgidiveau": {
+   "lines": 6,
+   "chars": 626
+  },
+  "Felippe": {
+   "lines": 6,
+   "chars": 596
+  },
+  "Michilca": {
+   "lines": 6,
+   "chars": 488
+  },
+  "Taumila": {
+   "lines": 6,
+   "chars": 581
+  },
+  "Maloquedil": {
+   "lines": 5,
+   "chars": 496
+  },
+  "Maugie": {
+   "lines": 5,
+   "chars": 608
+  },
+  "Thierride": {
+   "lines": 5,
+   "chars": 311
+  },
+  "Aurege": {
+   "lines": 4,
+   "chars": 380
+  },
+  "Chanpau": {
+   "lines": 4,
+   "chars": 467
+  },
+  "Haubijoux": {
+   "lines": 4,
+   "chars": 324
+  },
+  "Miageau": {
+   "lines": 4,
+   "chars": 275
+  },
+  "Phairet": {
+   "lines": 4,
+   "chars": 252
+  },
+  "Rahal": {
+   "lines": 4,
+   "chars": 662
+  },
+  "Riche": {
+   "lines": 4,
+   "chars": 43
+  },
+  "Altiret": {
+   "lines": 3,
+   "chars": 164
+  },
+  "Ardea": {
+   "lines": 3,
+   "chars": 373
+  },
+  "Paouala": {
+   "lines": 3,
+   "chars": 302
+  },
+  "Regine": {
+   "lines": 3,
+   "chars": 263
+  },
+  "Secodiand": {
+   "lines": 3,
+   "chars": 280
+  },
+  "Apstaule": {
+   "lines": 2,
+   "chars": 180
+  },
+  "Bacherume": {
+   "lines": 2,
+   "chars": 58
+  },
+  "Guilberdrier": {
+   "lines": 2,
+   "chars": 177
+  },
+  "Ilgusin": {
+   "lines": 2,
+   "chars": 113
+  },
+  "Legata": {
+   "lines": 2,
+   "chars": 85
+  },
+  "Parvipon": {
+   "lines": 2,
+   "chars": 112
+  },
+  "Phaviane": {
+   "lines": 2,
+   "chars": 113
+  },
+  "Yin Pocanakhu": {
+   "lines": 2,
+   "chars": 176
+  },
+  "Katharina": {
+   "lines": 1,
+   "chars": 12
+  },
+  "Nouveil": {
+   "lines": 1,
+   "chars": 35
+  },
+  "Roupatour": {
+   "lines": 1,
+   "chars": 67
+  }
+ },
+ "unattributed": [
+  {
+   "zone": 231,
+   "event": 37,
+   "lines": 1
+  }
+ ]
+}
