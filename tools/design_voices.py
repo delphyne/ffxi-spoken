@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Design the MOSS backend's voices: each design in helper/voice_designs.yaml
 becomes a reference clip, Qwen3-TTS VoiceDesign speaking the calibration
-sentence with the design's composed instruction (designs.compose: gender,
-age, the race's phrase, the description).
+sentence with the design's composed prompt (designs.compose: accent, gender,
+age, the run's quality level, persona, emotion, the description). The same
+prompt is what goes into ElevenLabs' voice design by hand; --prompts prints
+it.
 
+    make voice-prompts [ONLY=Name] [QUALITY=high]         the prompts, to paste into ElevenLabs
     make design-voices [ONLY=Name] [CHANGED=1] [FRESH=1]
     make audit-voices [ONLY=Name] [CHANGED=1] [FRESH=1]   what that run would design, and why
     make listen-voices                           a page with every clip to listen to
@@ -276,7 +279,7 @@ def print_audit(d, index, refs, rows):
 
 def record(d, voice, clip, how):
     v = d.voices[voice]
-    rec = {k: v[k] for k in ("kind", "gender", "age", "race", "description", "seed") if k in v}
+    rec = {k: v[k] for k in ("kind", *designs_module.META, "description", "seed") if k in v}
     rec.update({k: v[k] for k in ("group", "names") if k in v})
     rec.update(instruct=d.compose(voice), calibration=d.calibration, sha256=sha256_file(clip), how=how)
     return rec
@@ -331,6 +334,12 @@ def write_review(d, refs, index):
     return page
 
 
+def print_prompts(d, voices):
+    """Each voice's prompt under who it is for, ready to paste."""
+    for voice in voices:
+        print(f"== {who_is(d, voice)} ({voice}; {d.voices[voice]['race']})\n{d.compose(voice)}\n")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--designs", default=str(designs_module.DEFAULT_PATH))
@@ -344,11 +353,19 @@ def main(argv=None):
     ap.add_argument("--audit", action="store_true",
                     help="report which voices lack a clip, which a run with these flags would design and why, "
                          "and which are stale or current; designs nothing")
+    ap.add_argument("--prompts", action="store_true",
+                    help="print the selected voices' prompts (every own voice without --only); designs nothing")
+    ap.add_argument("--quality", default=designs_module.DEFAULT_QUALITY,
+                    help="the quality level the prompts ask for (default: %(default)s)")
     ap.add_argument("--cpu", action="store_true")
     ap.add_argument("--codec-gpu", action="store_true", help="keep Qwen's speech codec on the GPU")
     args = ap.parse_args(argv)
 
-    d = designs_module.Designs.load(args.designs, groups=set(casting.POOLS))
+    d = designs_module.Designs.load(args.designs, groups=set(casting.POOLS), quality=args.quality)
+    if args.prompts:
+        print_prompts(d, selected(d, args.only) if args.only
+                      else [v for v, design in d.voices.items() if design["kind"] == "cast"])
+        return 0
     index = load_index(args.refs)
     if args.audit:
         chosen = selected(d, args.only)

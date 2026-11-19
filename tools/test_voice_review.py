@@ -24,9 +24,6 @@ YAML = """# header comment that must survive
 
 calibration: Wait here.
 
-races:
-""" + "".join(f"  {r}: \"{'A cat-woman.' if r == 'mithra' else ''}\"\n"
-              for r in sorted({designs.race_gender(g)[0] for g in casting.POOLS})) + """
 cast:
   Iroha:
     gender: female
@@ -146,8 +143,9 @@ class SessionTest(unittest.TestCase):
         self.assertEqual(self.ses.row(f"voice:{prishe['voice']}")["lines"], 400, "a pool counts its speakers' lines")
         self.assertEqual(self.ses.row("speaker:Volto Oscuro")["via"], "shares")
         mithra = self.ses.row("race:mithra")        # a race counts everything under it
-        self.assertEqual((mithra["kind"], mithra["parent"], mithra["phrase"], mithra["lines"]),
-                         ("race", "", "A cat-woman.", 19))
+        self.assertEqual((mithra["kind"], mithra["parent"], mithra["lines"]), ("race", "", 19))
+        self.assertNotIn("phrase", mithra, "a race is a heading; it has no prompt of its own")
+        self.assertEqual(len(self.ses.race_voices("mithra")), 5, "every mithra pool voice, one per band")
         self.assertEqual(self.ses.row("race:hume")["lines"], 300 + 3 + 2,
                          "Iroha's own voice and Tonasav on a hume pool; narration is its own race")
         shown = self.ses.with_parents([numi])
@@ -188,19 +186,19 @@ class SessionTest(unittest.TestCase):
     def test_state_composes_the_instruction(self):
         st = self.ses.state("iroha")
         self.assertEqual((st["gender"], st["age"], st["race"]), ("female", "young adult", "hume"))
-        self.assertEqual(st["instruct"], "Gender: female. Age: young adult. Warm.")
+        self.assertEqual(st["instruct"], "Female, young adult. High quality.\nWarm.")
         self.assertEqual(st["saved_instruct"], st["instruct"])
         self.assertEqual(self.ses.compose("iroha", "Brisk.", gender="female", age="", race="mithra"),
-                         "Gender: female. A cat-woman. Brisk.", "what the prompt popout shows as you type")
+                         "Female. High quality.\nBrisk.", "what the prompt popout shows as you type")
         self.assertEqual(self.ses.compose("mithra_f_adult-0", "Sly.", gender="male", age="forties", race="hume"),
-                         "Gender: female. Age: forties. A cat-woman. Sly.", "a pool voice keeps its group's meta")
+                         "Female, forties. High quality.\nSly.", "a pool voice keeps its group's meta")
         self.assertIsNone(st["clip_instruct"])
         self.assertFalse(st["stale"])
 
     def test_audition_then_accept_writes_clip_index_and_yaml(self):
         take = self.ses.audition("iroha", "Warmer.", age="thirties")
         self.assertEqual(self.engine.calls, [("seed", 7), ("design", "Wait here.",
-                                                            "Gender: female. Age: thirties. Warmer.")])
+                                                            "Female, thirties. High quality.\nWarmer.")])
         self.assertEqual(take, self.refs / ".candidates" / "iroha.7.wav")
         st = self.ses.state("iroha")
         self.assertEqual((st["description"], st["saved_description"], st["age"]), ("Warmer.", "Warm.", "thirties"))
@@ -218,27 +216,69 @@ class SessionTest(unittest.TestCase):
         self.assertEqual(saved.voices["ekokoko"]["race"], "tarutaru", "meta survives a save")
         rec = dv.load_index(self.refs)["iroha"]
         self.assertEqual((rec["description"], rec["instruct"], rec["how"], rec["sha256"]),
-                         ("Warmer.", "Gender: female. Age: thirties. Warmer.", "voice review", dv.sha256_file(clip)))
+                         ("Warmer.", "Female, thirties. High quality.\nWarmer.", "voice review", dv.sha256_file(clip)))
         st = self.ses.state("iroha")
         self.assertFalse(st["pending"])
-        self.assertEqual(st["clip_instruct"], "Gender: female. Age: thirties. Warmer.")
+        self.assertEqual(st["clip_instruct"], "Female, thirties. High quality.\nWarmer.")
         self.assertFalse(st["stale"])
 
     def test_a_clip_from_an_older_design_is_marked_stale(self):
         self.ses.audition("iroha", "Warm.")
         self.ses.accept("iroha")
-        text = self.yaml.read_text().replace("    race: hume\n    description: >-\n      Warm.",
-                                             "    race: mithra\n    description: >-\n      Warm.")
+        text = self.yaml.read_text().replace("    age: young adult\n    race: hume\n", "    age: thirties\n    race: hume\n")
         self.yaml.write_text(text)
         self.ses.reload()
         st = self.ses.state("iroha")
         self.assertTrue(st["stale"])
-        self.assertEqual(st["clip_instruct"], "Gender: female. Age: young adult. Warm.")
-        self.assertEqual(st["instruct"], "Gender: female. Age: young adult. A cat-woman. Warm.")
+        self.assertEqual(st["clip_instruct"], "Female, young adult. High quality.\nWarm.")
+        self.assertEqual(st["instruct"], "Female, thirties. High quality.\nWarm.")
+
+    def test_race_is_not_part_of_the_prompt(self):
+        self.ses.audition("iroha", "Warm.")
+        self.ses.accept("iroha")
+        self.yaml.write_text(self.yaml.read_text().replace("    race: hume\n    description: >-\n      Warm.",
+                                                           "    race: mithra\n    description: >-\n      Warm."))
+        self.ses.reload()
+        st = self.ses.state("iroha")
+        self.assertEqual(st["race"], "mithra", "still shown while designing")
+        self.assertFalse(st["stale"], "the clip was made with the same prompt")
+
+    def test_accent_persona_and_emotion_compose_and_save(self):
+        self.ses.edit_voice("iroha", "Measured and formal.", accent=" Japanese ", persona="a priestess.",
+                            emotion="unyielding, determined")
+        st = self.ses.state("iroha")
+        self.assertEqual((st["accent"], st["persona"], st["emotion"]),
+                         ("Japanese", "a priestess.", "unyielding, determined"))
+        prompt = ("Native Japanese. Female, young adult. High quality.\n"
+                  "Persona: a priestess. Emotion: unyielding, determined.\nMeasured and formal.")
+        self.assertEqual(st["instruct"], prompt)
+        self.ses.audition("iroha", "Measured and formal.", accent="Japanese", persona="a priestess",
+                          emotion="unyielding, determined")
+        self.assertEqual(self.engine.calls[-1][2], prompt)
+        self.ses.accept("iroha")
+        text = self.yaml.read_text(encoding="utf-8")
+        self.assertIn('    race: hume\n    accent: Japanese\n    persona: a priestess\n'
+                      '    emotion: "unyielding, determined"\n', text)
+        self.assertEqual(self.ses.state("iroha")["saved_instruct"], prompt)
+        self.assertFalse(self.ses.state("iroha")["stale"])
+        # a pool voice has none of the three, whatever is typed
+        self.assertEqual(self.ses.compose("mithra_f_adult-0", "Sly.", accent="French", persona="a thief", age="forties"),
+                         "Female, forties. High quality.\nSly.")
+        self.ses.edit_voice("mithra_f_adult-0", "mithra_f_adult voice", accent="French")
+        self.assertFalse(self.ses.state("mithra_f_adult-0")["pending"])
+
+    def test_the_quality_level_is_the_sessions(self):
+        ses = vr.Session(self.yaml, self.refs, self.voices_json, engine_factory=lambda: self.engine, quality="studio")
+        self.assertEqual(ses.state("iroha")["instruct"], "Female, young adult. Studio quality.\nWarm.")
+        ses.audition("iroha", "Warm.")
+        ses.accept("iroha")
+        self.assertFalse(ses.state("iroha")["stale"])
+        self.ses.reload()
+        self.assertTrue(self.ses.state("iroha")["stale"], "a clip made at another quality level is from another prompt")
 
     def test_a_pool_voice_keeps_its_groups_gender_and_race(self):
         self.ses.audition("mithra_f_adult-0", "Sly.", gender="male", race="hume", age="forties")
-        self.assertEqual(self.engine.calls[-1][2], "Gender: female. Age: forties. A cat-woman. Sly.")
+        self.assertEqual(self.engine.calls[-1][2], "Female, forties. High quality.\nSly.")
         self.ses.accept("mithra_f_adult-0")
         v = designs.Designs.load(self.yaml).voices["mithra_f_adult-0"]
         self.assertEqual((v["gender"], v["race"], v["age"]), ("female", "mithra", "forties"))
@@ -273,7 +313,7 @@ class SessionTest(unittest.TestCase):
         self.assertEqual((st["description"], st["gender"], st["age"], st["race"]),
                          ("mithra_f_adult voice", "female", "thirties", "mithra"), "starts from the pool's design")
         self.ses.audition(voice, "A sly merchant.", age="forties")
-        self.assertEqual(self.engine.calls[-1][2], "Gender: female. Age: forties. A cat-woman. A sly merchant.")
+        self.assertEqual(self.engine.calls[-1][2], "Female, forties. High quality.\nA sly merchant.")
         self.ses.accept(voice)
         saved = designs.Designs.load(self.yaml, groups=set(casting.POOLS))
         self.assertEqual(saved.voice_for_speaker("Numi Adaligo"), "numi-adaligo")
@@ -290,64 +330,12 @@ class SessionTest(unittest.TestCase):
         self.assertNotIn("tonasav", self.ses.designs.voices)
         self.assertNotIn("Tonasav", designs.Designs.load(self.yaml).speakers)
 
-    def test_a_race_phrase_is_saved_without_a_take(self):
-        st = self.ses.race_state("mithra")
-        self.assertEqual((st["phrase"], st["editable"]), ("A cat-woman.", True))
-        self.assertIn("mithra_f_adult-0", st["voices"])
-        self.assertEqual(len(st["voices"]), 5, "every mithra pool voice, one per band")
-        self.assertFalse(self.ses.race_state("moogle")["editable"])
-        self.ses.audition("mithra_f_adult-0", "Sly.")
-        self.ses.accept("mithra_f_adult-0")                      # a clip made with the old phrase
-        self.assertFalse(self.ses.state("mithra_f_adult-0")["stale"])
-        stale = self.ses.save_race("mithra", " A lithe  cat-woman. ")
-        self.assertEqual(stale, ["mithra_f_adult-0"], "its clip, the only one of the race, is now from an older design")
-        self.assertTrue(self.ses.state("mithra_f_adult-0")["stale"])
-        self.assertEqual(self.ses.state("mithra_f_adult-0")["instruct"], "Gender: female. Age: thirties. A lithe cat-woman. Sly.")
-        text = self.yaml.read_text(encoding="utf-8")
-        self.assertIn('mithra: "A lithe cat-woman."', text)
-        self.assertTrue(text.startswith("# header comment that must survive"))
-        self.assertEqual(self.ses.save_race("hume", ""), [], "blank stays blank; nothing of hume changed")
-        with self.assertRaises(ValueError):
-            self.ses.save_race("moogle", "Small.")
-
-    def test_a_typed_phrase_is_a_draft_until_saved(self):
-        self.ses.edit_race("hume", " Plain  folk. ")
-        st = self.ses.race_state("hume")
-        self.assertEqual((st["phrase"], st["saved_phrase"], st["pending"]), ("Plain folk.", "", True))
-        self.assertEqual(self.ses.state("iroha")["instruct"], "Gender: female. Age: young adult. Plain folk. Warm.",
-                         "a voice of the race is auditioned with the draft")
-        self.assertEqual(self.ses.state("iroha")["saved_instruct"], "Gender: female. Age: young adult. Warm.")
-        self.assertEqual(self.ses.state("mithra_f_adult-0")["instruct"], "Gender: female. Age: thirties. A cat-woman. mithra_f_adult voice")
-        self.assertNotIn("Plain folk", self.yaml.read_text(encoding="utf-8"))
-        self.ses.edit_race("hume", "")
-        self.assertFalse(self.ses.race_state("hume")["pending"], "typed back to what is saved: no draft")
-        self.ses.edit_race("hume", "Plain folk.")
-        self.ses.reset_race("hume")
-        self.assertFalse(self.ses.race_state("hume")["pending"])
-        self.ses.edit_race("hume", "Plain folk.")
-        self.ses.save_race("hume")
-        self.assertIn('hume: "Plain folk."', self.yaml.read_text(encoding="utf-8"))
-        self.assertFalse(self.ses.race_state("hume")["pending"])
-        with self.assertRaises(ValueError):
-            self.ses.edit_race("moogle", "Small.")
-
-    def test_accepting_a_take_heard_with_a_draft_phrase_saves_the_phrase(self):
-        self.ses.edit_race("mithra", "A sly cat-woman.")
-        self.ses.audition("mithra_f_adult-0", "Quick.")
-        self.assertEqual(self.engine.calls[-1][2], "Gender: female. Age: thirties. A sly cat-woman. Quick.")
-        self.ses.accept("mithra_f_adult-0")
-        text = self.yaml.read_text(encoding="utf-8")
-        self.assertIn('mithra: "A sly cat-woman."', text)
-        self.assertIn('description: "Quick."', text)
-        self.assertFalse(self.ses.race_state("mithra")["pending"])
-        self.assertFalse(self.ses.state("mithra_f_adult-0")["stale"], "the clip on record was made with the saved phrase")
-
     def test_typed_fields_are_a_draft_until_auditioned(self):
         self.ses.edit_voice("iroha", " Warm  and low. ", age="thirties")
         st = self.ses.state("iroha")
         self.assertEqual((st["description"], st["age"], st["gender"], st["pending"], st["candidate"]),
                          ("Warm and low.", "thirties", "female", True, None))
-        self.assertEqual(st["instruct"], "Gender: female. Age: thirties. Warm and low.")
+        self.assertEqual(st["instruct"], "Female, thirties. High quality.\nWarm and low.")
         with self.assertRaisesRegex(ValueError, "audition a take"):
             self.ses.accept("iroha")
         self.ses.edit_voice("iroha", "Warm.", age="young adult")
@@ -556,62 +544,52 @@ class GuiTest(unittest.TestCase):
         self.assertEqual(w.meta["age"][0].get(), "thirties")
         # the prompt popout follows the fields as they change
         w.show_prompt()
-        self.assertEqual(w.prompt_text.get("1.0", "end").strip(), "Gender: female. Age: thirties. A cat-woman. mithra_f_adult voice")
+        self.assertEqual(w.prompt_text.get("1.0", "end").strip(), "Female, thirties. High quality.\nmithra_f_adult voice")
         w.meta["age"][0].set("forties")
         w.text.delete("1.0", "end")
         w.text.insert("1.0", "Sly.")
         w.refresh(keep="speaker:Numi Adaligo")   # as after an audition or a filter change
         w.root.update()
-        self.assertEqual(w.prompt_text.get("1.0", "end").strip(), "Gender: female. Age: forties. A cat-woman. Sly.")
+        self.assertEqual(w.prompt_text.get("1.0", "end").strip(), "Female, forties. High quality.\nSly.")
         self.assertEqual(w.prompt_saved_label.cget("text"), "No saved clip yet.")
         self.assertEqual(w.meta["age"][0].get(), "forties", "edits survive the list being refreshed")
         w.query.set("")
         w.tree.selection_set("speaker:Iroha")
         w.root.update()
         self.assertEqual(str(w.meta["race"][1].cget("state")), "readonly", "an own voice's race can change")
-        self.assertEqual(w.prompt_text.get("1.0", "end").strip(), "Gender: female. Age: young adult. Warm.")
+        self.assertEqual(w.prompt_text.get("1.0", "end").strip(), "Female, young adult. High quality.\nWarm.")
         self.assertEqual(w.title.cget("text"), "Own voice iroha")
         self.assertEqual(w.line_box.cget("values"), ("Master, Vana'diel needs you.", "<Sigh> Follow me, <player>."),
                          "the speaker's own lines to hear the voice say")
         self.assertEqual(w.line_var.get(), "Master, Vana'diel needs you.")
         self.assertIn("disabled", w.buttons["hear"].state(), "nothing to continue yet: no take, no clip")
-        # a race row edits its phrase, saved without a take
+        self.assertEqual(str(w.meta["accent"][1].cget("state")), "normal", "an own voice has an accent")
+        w.meta["accent"][0].set("Japanese")
+        w.meta["persona"][0].set("a priestess")
+        w.root.update()
+        self.assertEqual(w.prompt_text.get("1.0", "end").strip(),
+                         "Native Japanese. Female, young adult. High quality.\nPersona: a priestess.\nWarm.")
+        self.assertEqual(w.tree.set("speaker:Iroha", "state"), "edited")
+        w.reset()
+        w.root.update()
+        self.assertEqual(w.meta["accent"][0].get(), "")
+        # a race row is a heading: nothing to edit, audition, or hear
         w.tree.selection_set("race:mithra")
         w.root.update()
         self.assertEqual(w.title.cget("text"), "Race mithra")
-        self.assertEqual(w.field_label.cget("text"), "Race phrase")
+        self.assertIn("not part of a prompt", w.info.cget("text"))
         self.assertEqual((w.line_box.cget("values"), w.line_var.get()), ("", ""), "a race says nothing")
-        self.assertIn("disabled", w.buttons["hear"].state())
-        self.assertEqual(w.text.get("1.0", "end").strip(), "A cat-woman.")
+        self.assertEqual(w.text.get("1.0", "end").strip(), "")
         self.assertEqual(str(w.meta["age"][1].cget("state")), "disabled")
         self.assertFalse(w.own.winfo_manager())
-        for name in ("accept", "reset", "audition", "show_prompt"):
+        for name in ("accept", "reset", "audition", "show_prompt", "hear", "play_saved"):
             self.assertIn("disabled", w.buttons[name].state(), name)
-        w.text.delete("1.0", "end")
-        w.text.insert("1.0", "A lithe cat-woman.")
-        w.root.update()
-        self.assertNotIn("disabled", w.buttons["accept"].state(), "a changed phrase can be accepted")
-        self.assertIn("disabled", w.buttons["audition"].state(), "but never auditioned alone")
-        self.assertEqual(w.tree.set("race:mithra", "state"), "edited")
-        w.tree.selection_set("speaker:Numi Adaligo")   # off to audition a voice of the race, and back
-        w.root.update()
-        self.assertIn("auditions use the unsaved mithra phrase", w.seed.cget("text"))
-        w.show_prompt()
-        self.assertEqual(w.prompt_text.get("1.0", "end").strip(),
-                         "Gender: female. Age: forties. A lithe cat-woman. Sly.",
-                         "the pool voice's edits from before are still there, under the draft phrase")
-        self.assertEqual(w.tree.set("speaker:Numi Adaligo", "state"), "edited")
-        w.tree.selection_set("race:mithra")
-        w.root.update()
-        self.assertEqual(w.text.get("1.0", "end").strip(), "A lithe cat-woman.", "the typed phrase survives the trip")
-        self.assertEqual(w.seed.cget("text"), "edited, not saved yet")
-        w.accept()
-        self.assertIn("saved the mithra phrase", w.status_line.cget("text"))
-        self.assertIn('mithra: "A lithe cat-woman."', t.yaml.read_text(encoding="utf-8"))
-        self.assertIn("disabled", w.buttons["accept"].state())
-        self.assertEqual(w.tree.selection(), ("race:mithra",), "still selected after the save")
-        self.assertEqual(w.seed.cget("text"), "")
         self.assertEqual(w.tree.set("race:mithra", "state"), "")
+        w.tree.selection_set("speaker:Numi Adaligo")   # the pool voice's edits from before are still there
+        w.root.update()
+        self.assertEqual(w.prompt_text.get("1.0", "end").strip(), "Female, forties. High quality.\nSly.")
+        self.assertEqual(w.tree.set("speaker:Numi Adaligo", "state"), "edited")
+        self.assertEqual(str(w.meta["accent"][1].cget("state")), "disabled", "a pool voice has no accent")
         # a voice's typed fields survive the trip too, and a take finishing elsewhere does not move the selection
         w.tree.selection_set("speaker:Iroha")
         w.root.update()

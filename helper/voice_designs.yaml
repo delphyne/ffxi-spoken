@@ -1,24 +1,41 @@
-# Voice designs for the MOSS backend (docs/MOSS-Backend-Handoff.md).
+# Voice designs: the casting record and the prompt each voice is made from
+# (docs/ElevenLabs-Handoff.md, docs/MOSS-Backend-Handoff.md).
 #
-# Each design becomes a reference clip: Qwen3-TTS VoiceDesign speaks the
-# calibration sentence in that voice (tools/design_voices.py, `make
-# design-voices`), and MOSS-TTS continues that clip for every line the voice
-# says. The clips live in helper/voices/moss/refs/ and are never committed.
-# Edit by hand or with `make review-voices`, which auditions as you go.
+# A named character's prompt is pasted into ElevenLabs' voice design by hand
+# (`make voice-prompts ONLY=Name` prints it). The MOSS backend's clips came
+# from the same file: Qwen3-TTS VoiceDesign speaks the calibration sentence
+# in the voice (tools/design_voices.py, `make design-voices`), and MOSS-TTS
+# continues that clip. Those clips live in helper/voices/moss/refs/ and are
+# never committed. Edit by hand or with `make review-voices`.
 #
-# A design is meta plus a description. Qwen is given them composed:
+# A design is meta plus a description, composed into the form ElevenLabs
+# asks for:
 #
-#     Gender: <gender>. Age: <age>. <the race's phrase> <description>
+#     Native <accent>. <Gender>, <age>. <Quality> quality.
+#     Persona: <persona>. Emotion: <emotion>.
+#     <description>
 #
-# so the description holds only the rest: timbre, accent, pace, manner.
+# so the description holds only the last line: one or two sentences about
+# timbre, pacing, and delivery. A blank field leaves its part out. The
+# quality level is the run's, not the file's: `make ... QUALITY=`, high by
+# default.
 #
 #   calibration  the sentence every clip says, and the text MOSS continues
 #                from, so it must stay what the clips actually say
-#   races        race -> the phrase composed in for it; Qwen does not know
-#                what a Galka sounds like, so say it. Blank for none
-#   cast         one voice per named character: gender, age, race, a
-#                description, an optional seed (1 by default), and `also`,
-#                other names that share it (Volto Oscuro is Iroha's shadow).
+#   cast         one voice per named character:
+#                  gender, age   as the prompt says them ("male",
+#                                "late-thirties")
+#                  race          never in the prompt; here for whoever is
+#                                designing the voice. One of the casting
+#                                groups' races (helper/casting.py)
+#                  accent        what follows "Native": a language or a
+#                                place's adjective ("Japanese")
+#                  persona       two to five words ("a samurai")
+#                  emotion       two or three adjectives ("grave and stoic")
+#                  description   the last line
+#                  seed          optional, 1 by default (Qwen's)
+#                  also          other names that share the voice (Volto
+#                                Oscuro is Iroha's shadow)
 #                Every speaker with twenty lines or more across the
 #                storylines gets one, so no character the player will
 #                remember shares a pool voice
@@ -27,7 +44,9 @@
 #                the special buckets) for everyone else: cast.py spreads a
 #                group round-robin over them, the census draws by a stable
 #                hash. The group gives gender and race; each voice has an
-#                age, by default its band's
+#                age, by default its band's, and a description. With
+#                ElevenLabs these are to be stock voices, so a pool voice
+#                has no accent, persona, or emotion
 #
 # Changing a design, or its seed, and running `make design-voices` redesigns
 # only that voice; the pack cache then re-renders only its lines. The nine
@@ -38,37 +57,30 @@ calibration: >-
   Wait here while I speak with the guards. If anything goes wrong, follow the
   road back to town and do not look behind you.
 
-races:
-  hume: ""
-  elvaan: "A tall, proud, long-eared elf, with a faint french accent."
-  tarutaru: "A tiny, child-sized person with a small, high voice, though not a child."
-  mithra: "A lithe cat-woman who speaks with a gentle purrs."
-  galka: "A huge, heavyset beast-man with a deep, barrel chest."
-  zilart: "An ancient, ageless elf of a vanished empire."
-  deity: "A god or great summoned spirit."
-  creature: ""
-  dark: ""
-  cait sith: ""
-  narrator: ""
-  beastman: "A beastman of the goblin, orc, quadav, yagudo, or mamool ja tribes, with a rough, inhuman voice."
-
 cast:
   Iroha:
     gender: female
     age: young adult
     race: hume
+    accent: Japanese
+    persona: a priestess
+    emotion: unyielding and determined
     description: >-
-      A clear, warm, earnest voice with a soft Japanese accent; measured pace,
-      formal and respectful, a little grave.
+      The daughter of a samurai and ninja, forced to experience her own death
+      and resurrection constantly while conveying information to her master to
+      save her timeline from collapse.
     seed: 1733
     also: [Iroha Red, Volto Oscuro]
   Tenzen:
     gender: male
-    age: middle-aged
+    age: late-thirties
     race: hume
+    accent: Japanese
+    persona: a samurai
+    emotion: grave and stoic
     description: >-
-      A calm, low, dignified samurai's voice with a slight Japanese accent;
-      unhurried, precise, formal.
+      A great warrior attempting to prevent his land from being devoured by the
+      darkness. He is honor-bound but reluctant.
     seed: 1862
   Gilgamesh:
     gender: male
@@ -203,11 +215,13 @@ cast:
       and disdainful.
   Arciela:
     gender: female
-    age: adult
+    age: mid-twenties
     race: hume
+    accent: Middle Eastern
+    persona: refined and spirited noblewoman
+    emotion: warm and earnest
     description: >-
-      A refined, spirited noblewoman's voice; quick, warm, earnest, with an
-      aristocratic polish.
+      Quick, with an aristocratic polish.
     seed: 1821545054
   Cid:
     gender: male

@@ -8,8 +8,9 @@ voices (a row shown only because a match sits under it is greyed). The
 `via` column says how a speaker got their voice: cast.py, the census,
 voices.json, or the default, else their own or a shared own voice. Right:
 what the selected row edits, named in the title (a pool voice, even when
-reached through one of its speakers; an own voice; a race's phrase), its
-meta (gender, age, race) and description, and
+reached through one of its speakers; an own voice), its meta (gender, age,
+race, and for an own voice accent, persona, and emotion) and description,
+and
 
     Play saved      the clip on file, if any
     Audition        design a take from the description as typed
@@ -18,9 +19,11 @@ meta (gender, age, race) and description, and
     Accept          keep the take: clip, index, and voice_designs.yaml
     Reset           drop the take and the edits
 
-    Show prompt     a window with the exact instruction Qwen will be given,
-                    composed from the fields as they stand, kept up to date
-                    while it is open, beside what the saved clip was made with
+    Show prompt     a window with the prompt composed from the fields as
+                    they stand, in the form ElevenLabs asks for (Copy puts
+                    it on the clipboard; it is also what Qwen is given),
+                    kept up to date while it is open, beside what the saved
+                    clip was made with
     Hear (MOSS)     the line picked or typed below, said by this voice the way
                     a pack line is: MOSS continues the take, else the saved
                     clip (helper/moss_say.py under .venv-moss). The picker
@@ -30,13 +33,11 @@ Whatever is typed is kept until it is accepted or reset: moving to another
 row and back shows it again, and the tree's state column says "edited",
 "take", or "take, edited" (the fields changed after the take was heard, so
 it must be auditioned again before Accept). A pool voice's gender and race
-are its casting group's and cannot be changed here; its age can. A speaker
-on a shared pool voice gets a "Give ... a voice of their own" button, which
-starts a new design from the pool voice's. A race row edits only the race's
-phrase. A phrase alone cannot be auditioned, so its draft is heard by
-auditioning any voice of the race; Accept on the race row saves it with no
-take, accepting a take of such a voice saves it too, and Reset on the race
-row drops it.
+are its casting group's and cannot be changed here, and it has no accent,
+persona, or emotion; its age can change. A speaker on a shared pool voice
+gets a "Give ... a voice of their own" button, which starts a new design
+from the pool voice's. A race row is a heading: race is shown while
+designing and is not part of any prompt.
 Designing and hearing run off the Tk thread; the first take loads Qwen3
 and the first line loads MOSS, each a while, and the card holds one at a
 time, so the window lets go of the other first. A finished take does not
@@ -189,6 +190,20 @@ class Window:
             box.grid(row=0, column=2 * col + 1, sticky="w")
             var.trace_add("write", lambda *_: self.meta_modified())
             self.meta[name] = (var, box, state)
+        # an own voice's prompt fields, free text, on rows of their own
+        meta.columnconfigure(5, weight=1)
+        for row, (name, hint) in enumerate((("accent", "after \"Native\": Japanese"),
+                                            ("persona", "two to five words"),
+                                            ("emotion", "two or three adjectives")), start=1):
+            ttk.Label(meta, text=name.capitalize()).grid(row=row, column=0, sticky="w", padx=(0, px(4)),
+                                                         pady=(px(4), 0))
+            var = tk.StringVar()
+            box = ttk.Entry(meta, textvariable=var, width=34)
+            box.grid(row=row, column=1, columnspan=3, sticky="ew", pady=(px(4), 0))
+            ttk.Label(meta, text=hint, foreground="#666").grid(row=row, column=4, columnspan=2, sticky="w",
+                                                               padx=(px(12), 0), pady=(px(4), 0))
+            var.trace_add("write", lambda *_: self.meta_modified())
+            self.meta[name] = (var, box, "normal")
         self.field_label.grid(row=4, column=0, sticky="w", pady=(px(8), 0))
         self.text = tk.Text(right, wrap="word", height=7, font=self.f_text, undo=True, padx=px(4), pady=px(4))
         self.text.grid(row=5, column=0, sticky="ew")
@@ -280,7 +295,7 @@ class Window:
         the voice has a clip."""
         voice = r["voice"]
         if not voice:
-            return "edited" if r["race"] in self.ses.race_drafts else ""
+            return ""
         draft = self.ses.drafts.get(voice)
         if draft and draft.get("candidate"):
             return "take, edited" if draft.get("typed") else "take"
@@ -341,8 +356,7 @@ class Window:
         pool = st["kind"] == "pool"
         for name, (var, box, state) in self.meta.items():
             var.set(st[name])
-            box.configure(state="disabled" if pool and name in ("gender", "race") else state)
-        self.field_label.configure(text="Description")
+            box.configure(state="disabled" if pool and name != "age" else state)
         self.text.delete("1.0", "end")
         self.text.insert("1.0", st["description"])
         self.text.edit_modified(False)
@@ -375,37 +389,25 @@ class Window:
                             + ("  ·  take ready" if st["candidate"] and not st["edited_since_take"] else "")
                             + ("  ·  edited since the take: audition again" if st["edited_since_take"] else "")
                             + ("  ·  edited, not auditioned" if st["pending"] and not st["candidate"]
-                               and not st["new"] else "")
-                            + (f"  ·  auditions use the unsaved {st['race']} phrase"
-                               if st["race"] in self.ses.race_drafts else ""))
+                               and not st["new"] else ""))
 
     def show_race(self):
-        """A race row: its phrase in the text field, the meta blank."""
-        st = self.ses.race_state(self.row["race"])
-        self.title.configure(text=f"Race {st['race']}")
-        voices = st["voices"]
+        """A race row: a heading, with nothing to edit."""
+        race = self.row["race"]
+        voices = self.ses.race_voices(race)
         who = ", ".join(voices[:8]) + (f" and {len(voices) - 8} more" if len(voices) > 8 else "")
-        if st["editable"]:
-            info = (f"Its phrase is composed into every voice of this race, after gender and age and before "
-                    f"the voice's own description: {len(voices)} voices: {who or 'none yet'}.\n"
-                    "Blank for none. It cannot be auditioned by itself: a take needs a gender and an age. "
-                    "What you type here is kept while you audition any voice of this race, which uses it; "
-                    "Accept saves it (as does accepting such a take), Reset drops it. Every clip of the race "
-                    "is then from an older design.")
-        else:
-            info = "Not in the races section, so no phrase: a design's race is unknown."
-        self.info.configure(text=info)
+        self.title.configure(text=f"Race {race}")
+        self.info.configure(text=f"{len(voices)} voices: {who or 'none yet'}.\nRace is here to design by; it is "
+                                 "not part of a prompt. Select a voice or a speaker to edit.")
         self.own.grid_remove()
         self.loading = True
         for name, (var, box, state) in self.meta.items():
             var.set("")
             box.configure(state="disabled")
-        self.field_label.configure(text="Race phrase")
         self.text.delete("1.0", "end")
-        self.text.insert("1.0", st["phrase"] or "")
         self.text.edit_modified(False)
         self.loading = False
-        self.seed.configure(text="edited, not saved yet" if st["pending"] else "")
+        self.seed.configure(text="")
         self.update_prompt()
         self.calibration.configure(text="")
         self.line_box.configure(values=())
@@ -434,14 +436,10 @@ class Window:
         """A field changed by hand: kept as a draft until saved or reset, so
         moving to another row does not lose it."""
         self.update_prompt()
-        if not self.row:
+        if not self.row or not self.voice:   # a race row has nothing to edit
             return
-        if self.row["kind"] == "race":
-            if self.ses.race_state(self.row["race"])["editable"]:
-                self.ses.edit_race(self.row["race"], self.description())
-        elif self.voice:
-            self.ses.edit_voice(self.voice, self.description(), **self.meta_values())
-            self.seed_line()
+        self.ses.edit_voice(self.voice, self.description(), **self.meta_values())
+        self.seed_line()
         if self.tree.exists(self.row["key"]):
             self.tree.set(self.row["key"], "state", self.state_of(self.row))
         self.enable()
@@ -455,8 +453,8 @@ class Window:
             return self.update_prompt()
         px = self.px
         win = self.prompt_window = tk.Toplevel(self.root)
-        win.title("Spoken: the instruction Qwen is given")
-        win.geometry(f"{px(720)}x{px(360)}")
+        win.title("Spoken: the voice's prompt")
+        win.geometry(f"{px(720)}x{px(420)}")
         win.columnconfigure(0, weight=1)
         win.rowconfigure(1, weight=1)
         win.rowconfigure(3, weight=1)
@@ -502,7 +500,7 @@ class Window:
     def copy_prompt(self):
         self.root.clipboard_clear()
         self.root.clipboard_append(self.prompt())
-        self.status("instruction copied")
+        self.status("prompt copied")
 
     def give_own(self):
         try:
@@ -584,28 +582,15 @@ class Window:
         self.enable()
 
     def accept(self):
-        if self.row and self.row["kind"] == "race":
-            return self.accept_race()
         try:
             clip = self.ses.accept(self.voice)
         except (ValueError, OSError) as e:
             return self.status(str(e))
         self.after_change(f"saved {clip.name} and voice_designs.yaml")
 
-    def accept_race(self):
-        race = self.row["race"]
-        try:
-            stale = self.ses.save_race(race, self.description())
-        except (ValueError, OSError) as e:
-            return self.status(str(e))
-        self.after_change(f"saved the {race} phrase to voice_designs.yaml"
-                          + (f"; {len(stale)} clips are now from an older design (make design-voices CHANGED=1)"
-                             if stale else ""))
-
     def reset(self):
-        if self.row and self.row["kind"] == "race":
-            self.ses.reset_race(self.row["race"])
-            return self.after_change(f"{self.row['race']} phrase back to what is saved")
+        if not self.voice:
+            return
         self.ses.reset(self.voice)
         self.after_change(f"{self.voice} reset to what is saved")
 
@@ -642,14 +627,6 @@ class Window:
         self.playing = None
 
     def enable(self):
-        if self.row and self.row["kind"] == "race":
-            st = self.ses.race_state(self.row["race"])
-            edited = st["editable"] and (st["pending"] or self.description() != (st["phrase"] or ""))
-            can = {"play_saved": False, "audition": False, "regenerate": False, "play_take": False,
-                   "accept": edited, "reset": edited, "show_prompt": False, "hear": False}
-            for name, b in self.buttons.items():
-                b.state(["!disabled"] if can[name] else ["disabled"])
-            return
         st = self.ses.state(self.voice) if self.voice else None
         can = {
             "play_saved": bool(st and st["clip"]),
@@ -657,7 +634,7 @@ class Window:
             "play_take": bool(st and st["candidate"]),
             "accept": bool(st and st["candidate"] and not st["edited_since_take"]) and not self.busy,
             "reset": bool(st and st["pending"]) and not self.busy,
-            "show_prompt": True,
+            "show_prompt": bool(st),
             "hear": bool(st and (st["clip"] or (st["candidate"] and not st["edited_since_take"]))) and not self.busy,
         }
         for name, b in self.buttons.items():
@@ -675,8 +652,6 @@ class Window:
         typed = [v for v, d in self.ses.drafts.items() if d.get("typed") or not d.get("candidate")]
         if typed:
             print("voices edited and not auditioned (lost): " + ", ".join(sorted(typed)))
-        if self.ses.race_drafts:
-            print("race phrases typed and not saved (lost): " + ", ".join(sorted(self.ses.race_drafts)))
         self.root.destroy()
 
     def run(self):

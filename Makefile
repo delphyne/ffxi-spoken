@@ -39,6 +39,10 @@
 #   make spike-qwen [LIMIT=N] [RAW=1] [FRESH=1]
 #                    render a fixed set of Rhapsodies lines through Kokoro and Qwen3-TTS into
 #                    data/spike/listen.html, to judge a Qwen3 backend by ear (tools/spike_qwen3.py)
+#   make voice-prompts [ONLY=Name] [QUALITY=high]
+#                    print each own voice's prompt from helper/voice_designs.yaml in the form ElevenLabs
+#                    asks for, to paste into its voice design. QUALITY is the level the prompt asks for
+#                    ("High quality."); it also goes to the four targets below, which compose the same prompt
 #   make design-voices [ONLY=Name] [CHANGED=1] [FRESH=1] [ADOPT=dir]
 #                    turn helper/voice_designs.yaml into reference clips with Qwen3 VoiceDesign
 #                    (helper/voices/moss/refs/); voices with no clip, plus changed ones with CHANGED
@@ -46,9 +50,9 @@
 #                    which voices lack a clip, which a design-voices run with those flags would
 #                    design and why, which are stale but kept, and which are current
 #   make listen-voices   a page with every designed voice and its description, to listen to
-#   make review-voices   a window to edit the voices in their three layers: each race's phrase, each pool voice
-#                    (shared by the speakers hashed onto it), and each own voice; audition, regenerate,
-#                    accept, or reset, filtered by race, gender, storyline, or a partial name, and hear a
+#   make review-voices   a window to edit the voices, grouped by race: each pool voice (shared by the
+#                    speakers hashed onto it) and each own voice (with its accent, persona, and emotion);
+#                    see and copy the prompt, audition, regenerate, accept, or reset, filtered by race, gender, storyline, or a partial name, and hear a
 #                    voice say one of its speaker's lines through MOSS (needs .venv-moss) (tools/voice_review.py)
 #   make voice-stories   rebuild helper/voice_stories.json: each speaker's lines per storyline, and a few to hear
 #   make corpus [SOURCE=missions/rov]
@@ -94,6 +98,8 @@ VOICES := $(REPO)/helper/voices
 PIPER_VOICES ?= en_US-lessac-medium en_US-amy-medium en_GB-alan-medium
 KOKORO_URL := https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0
 BACKEND ?= auto
+# the quality level a voice's prompt asks for: "<Quality> quality." (helper/designs.py)
+QUALITY ?= high
 # The moss backend lives in its own venv (torch 2.9.1, transformers 5) with its
 # models under helper/voices/moss/hf; every other backend uses .venv.
 ENGINE_PY := $(if $(filter moss,$(BACKEND)),HF_HOME="$(VOICES)/moss/hf" PYTORCH_ALLOC_CONF=expandable_segments:True $(VENV_MOSS)/bin/python,$(PY))
@@ -122,7 +128,7 @@ NATIVE_CFLAGS := -O2 -Wall -Wextra -D_WIN32_WINNT=0x0600 -I$(DEPS)/include -I$(D
 # the Wine prefix two levels above drive_c/Windower4, for running the test exe
 WINEPREFIX := $(abspath $(WINDOWER)/../..)
 
-.PHONY: install uninstall where test lint check helper say venv venv-cuda venv-qwen spike-qwen design-voices audit-voices listen-voices review-voices voice-stories corpus audit-corpus venv-moss spike-moss voices census nouns review-lexicon pack release deps native native-test
+.PHONY: install uninstall where test lint check helper say venv venv-cuda venv-qwen spike-qwen voice-prompts design-voices audit-voices listen-voices review-voices voice-stories corpus audit-corpus venv-moss spike-moss voices census nouns review-lexicon pack release deps native native-test
 
 # Each recipe below is one shell command, so an exit inside it ends the target.
 
@@ -251,24 +257,28 @@ spike-qwen:
 		"$(VENV_QWEN)/bin/python" -I tools/spike_qwen3.py \
 		$(if $(LIMIT),--limit $(LIMIT)) $(if $(RAW),--also-raw) $(if $(FRESH),--fresh)
 
+# The prompts ElevenLabs' voice design is given by hand (docs/ElevenLabs-Handoff.md).
+voice-prompts:
+	@$(PY) -I tools/design_voices.py --prompts --quality "$(QUALITY)" $(if $(ONLY),--only "$(ONLY)")
+
 # Reference clips for the MOSS backend (docs/MOSS-Backend-Handoff.md), designed
 # by Qwen3 in .venv-qwen. ADOPT=data/spike/ref keeps clips already heard.
 design-voices:
 	@test -x "$(VENV_QWEN)/bin/python" || { echo ".venv-qwen is missing; run make venv-qwen" >&2; exit 1; }; \
 	HF_HOME="$(VOICES)/qwen3/hf" PYTORCH_ALLOC_CONF=expandable_segments:True \
-		"$(VENV_QWEN)/bin/python" -I tools/design_voices.py \
+		"$(VENV_QWEN)/bin/python" -I tools/design_voices.py --quality "$(QUALITY)" \
 		$(if $(ONLY),--only "$(ONLY)") $(if $(CHANGED),--changed) $(if $(FRESH),--fresh) $(if $(ADOPT),--adopt "$(ADOPT)")
 
 audit-voices:
-	$(PY) -I tools/design_voices.py --audit $(if $(ONLY),--only "$(ONLY)") $(if $(CHANGED),--changed) $(if $(FRESH),--fresh)
+	$(PY) -I tools/design_voices.py --audit --quality "$(QUALITY)" $(if $(ONLY),--only "$(ONLY)") $(if $(CHANGED),--changed) $(if $(FRESH),--fresh)
 
 listen-voices:
-	$(PY) -I tools/design_voices.py --review
+	$(PY) -I tools/design_voices.py --review --quality "$(QUALITY)"
 
 review-voices:
 	@test -x "$(VENV_QWEN)/bin/python" || { echo ".venv-qwen is missing; run make venv-qwen" >&2; exit 1; }; \
 	HF_HOME="$(VOICES)/qwen3/hf" PYTORCH_ALLOC_CONF=expandable_segments:True \
-		"$(VENV_QWEN)/bin/python" -I tools/voice_review.py
+		"$(VENV_QWEN)/bin/python" -I tools/voice_review.py --quality "$(QUALITY)"
 
 # Needs the client and a LandSandBoat checkout, like make pack; system python3.
 # Writes helper/voice_stories.json and data/word_stories.json (for review-lexicon).

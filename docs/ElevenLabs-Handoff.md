@@ -24,7 +24,7 @@ only (`docs/Audio-Packs.md`). ElevenLabs is developer-side generation.
 | Model | `eleven_v4`, no listening spike; the model is a setting |
 | Auditions | Mostly in the ElevenLabs UI and app, not in our tools |
 | Voice matching | Voices named `ffxi/<voice key>`; a sync command resolves names into a committed lock file |
-| Voice creation | The API drafts pool voices only; named characters are made by hand in the UI |
+| Voice creation | Named characters are made by hand in the UI from `voice_designs.yaml`'s prompts; pools are stock voices |
 | Voice ceiling | Pro's 160 custom slots; Voice Library voices for pools where they work; fewer individual voices |
 | Individual voices | By importance across all storylines, not per storyline (Shantotto keeps one voice everywhere) |
 | Missing voice in a slice | The run stops before any request is sent |
@@ -33,7 +33,7 @@ only (`docs/Audio-Packs.md`). ElevenLabs is developer-side generation.
 | Re-takes | One take per line; a hand-kept file flags lines to redo |
 | API key | Desktop keyring (`secret-tool`); `ELEVENLABS_API_KEY` overrides |
 | Plan tier | Pro: $99 a month, about 1.24 M characters, 10 concurrent requests *(unverified for v4)* |
-| MOSS, Qwen, review window | Kept and frozen; `voice_designs.yaml` stays the casting record and the source of pool descriptions |
+| MOSS, Qwen, review window | Kept; `voice_designs.yaml` stays the casting record and holds each named character's prompt |
 | Scope | Storylines, quests, and constant companions only |
 | Story narration | Voiced by the narrator voice |
 | System text | Never voiced |
@@ -172,14 +172,37 @@ against the ceiling. Builds read only the lock file and never list the
 account. A voice replaced in the UI gets a new id, so the lock changes and
 only that voice's lines re-render.
 
-### Drafting pool voices
+### Voice prompts
 
-`make elevenlabs-pools [ONLY=key]`: for each pool voice with no library
-assignment and no lock entry, send `designs.compose`'s text to
-`POST /v1/text-to-voice/design`, save the previews under
-`helper/voices/elevenlabs/previews/` to listen to, and on acceptance create
-the voice as `ffxi/<key>` with `POST /v1/text-to-voice`. Dry run by default;
-previews cost credits. Uses a separate key with voice-write rights.
+Built 2026-11-19. A named character's design in `helper/voice_designs.yaml`
+composes (`designs.compose`) into the form ElevenLabs' voice design asks
+for:
+
+```
+Native <accent>. <Gender>, <age>. <Quality> quality.
+Persona: <persona>. Emotion: <emotion>.
+<description: one or two sentences about timbre, pacing, delivery>
+```
+
+`accent`, `persona` (two to five words), and `emotion` (two or three
+adjectives) are fields of a cast entry beside gender and age; a blank one
+leaves its part out. The quality level is the run's, `QUALITY=` on the
+Makefile, high by default. `make voice-prompts [ONLY=Name] [QUALITY=high]`
+prints the prompts to paste into the UI, and the review window's Show
+prompt has a Copy button.
+
+Race is not in the prompt: the per-race phrases written for Qwen are gone.
+A design keeps its race because it helps whoever is designing the voice.
+
+Most cast entries still carry their accent inside the description, as they
+were written for Qwen; moving it into `accent` and filling persona and
+emotion is done by hand, a character at a time.
+
+### Pool voices
+
+The pools are stock voices, so a pool voice has no prompt fields: its
+description stays as a note on what to pick. The earlier plan, drafting
+them through `POST /v1/text-to-voice/design`, is dropped.
 
 ## The backend
 
@@ -262,8 +285,8 @@ stays on disk, and deleting the entry reverts to it.
 - A test scans the tree and a built manifest for key-shaped strings; `make
   check` runs it.
 - Use a restricted key scoped to synthesis and reading voices, with a credit
-  cap set in the ElevenLabs dashboard, and a second key with voice-write
-  rights used only by the pool drafts *(scopes and caps unverified)*.
+  cap set in the ElevenLabs dashboard *(scopes and caps unverified)*.
+  Nothing we run creates voices, so no key needs voice-write rights.
 
 ## Cost
 
@@ -276,7 +299,7 @@ Measured from the committed Rhapsodies manifest and `voice_stories.json`:
 | Pro's monthly allowance | 1,238,000 | $99 |
 
 Quests and companions are not in these numbers and cannot be sized until
-they are decoded. Re-takes and pool previews are extra.
+they are decoded. Re-takes are extra.
 
 ## Tests
 
@@ -296,7 +319,7 @@ offline assembly's refusal; the deny-list and line classes; the key scan.
 6. The backend and `make say`.
 7. Slice render, ledger, coverage.
 8. Offline pack assembly.
-9. Pool drafts, the tag table, re-takes.
+9. The tag table, re-takes.
 
 Rhapsodies has no unattributed lines and needs no new decoding, so it can go
 through steps 5 to 8 while 2 to 4 are in progress. Along the way: update

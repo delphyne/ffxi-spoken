@@ -58,19 +58,24 @@ quick checks.
 - **`helper/voice_designs.yaml`**, hand-edited like the lexicon:
   - `calibration`: the neutral sentence every clip says, and so the
     transcript MOSS continues from.
-  - `races`: a phrase per race, because Qwen does not know what a Galka or
-    a Tarutaru sounds like unless told; blank for none.
-  - `cast`: per named character, meta (gender, age, race), a description of
-    the rest (timbre, accent, pace, manner), and a seed. It starts with the
+  - `cast`: per named character, meta (gender, age, race, accent, persona,
+    emotion), a description of the rest (timbre, pacing, delivery), and a
+    seed. It starts with the
     Rhapsodies speakers. Variant names share a voice the way `cast.py` pins
     them (Volto Oscuro is Iroha; the twelve Cait Siths are one).
   - `pools`: voices per casting group (the keys of `casting.POOLS`), for
     the thousands of NPCs cast by race; the group gives gender and race,
     each voice its age and description.
 
-  Qwen is given `designs.compose`: "Gender: …. Age: …. <race phrase>
-  <description>". `make review-voices` edits all three layers (race phrase,
-  pool voice, own voice) with auditions, and shows the composed instruction in a popout.
+  Qwen is given `designs.compose`. Since 2026-11-19 that is the prompt
+  form ElevenLabs asks for (`docs/ElevenLabs-Handoff.md`, Voice prompts):
+  accent, gender, age, and a quality level, then persona and emotion, then
+  the description. The `races` section of phrases, which told Qwen what a
+  Galka sounds like, is gone; race stays on a design as a note for the
+  designer. Every clip made before the change was made with the old
+  instruction, so `make audit-voices` lists them all as stale; they are
+  kept unless `CHANGED=1` is given. `make review-voices` edits pool voices
+  and own voices with auditions, and shows the composed prompt in a popout.
   It can also play a voice saying one of its speaker's own game lines the way
   a pack would (`helper/moss_say.py`, a worker under `.venv-moss` that keeps
   MOSS loaded between lines; the window lets Qwen go first, and ends the
