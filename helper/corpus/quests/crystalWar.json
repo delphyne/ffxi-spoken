@@ -1,0 +1,1122 @@
+{
+ "source": "quests/crystalWar",
+ "scripts": 47,
+ "scenes": {
+  "named": 334,
+  "with_lines": 321,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 5835,
+   "chars": 466996
+  },
+  "narration": {
+   "lines": 40,
+   "chars": 2207
+  },
+  "unattributed": {
+   "lines": 89,
+   "chars": 4231
+  },
+  "system": {
+   "lines": 19,
+   "chars": 947
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 47,
+   "chars": 3189
+  },
+  "unvoiceable": {
+   "lines": 301,
+   "chars": 461
+  }
+ },
+ "voiced": {
+  "lines": 5875,
+  "chars": 469203
+ },
+ "reasons": {
+  "unattributed": {
+   "no speaker": 89
+  },
+  "system": {
+   "a labelled readout": 1,
+   "an instruction or prompt": 1,
+   "told to the player about the player": 17
+  },
+  "menu": {
+   "menu": 47
+  },
+  "unvoiceable": {
+   "empty text": 36,
+   "live-only: 7f80, item": 15,
+   "live-only: item": 134,
+   "live-only: item, number": 1,
+   "live-only: number": 3,
+   "punctuation only": 110,
+   "stage direction only": 2
+  }
+ },
+ "speakers": {
+  "Excenmille": {
+   "lines": 439,
+   "chars": 26270
+  },
+  "Nicolaus": {
+   "lines": 277,
+   "chars": 28317
+  },
+  "Klara": {
+   "lines": 256,
+   "chars": 20648
+  },
+  "Rahal": {
+   "lines": 251,
+   "chars": 15366
+  },
+  "Zogbog": {
+   "lines": 251,
+   "chars": 18228
+  },
+  "Volker": {
+   "lines": 212,
+   "chars": 14041
+  },
+  "Altennia": {
+   "lines": 169,
+   "chars": 10701
+  },
+  "Five Moons": {
+   "lines": 144,
+   "chars": 11010
+  },
+  "Erlene": {
+   "lines": 135,
+   "chars": 14785
+  },
+  "Rholont": {
+   "lines": 134,
+   "chars": 9130
+  },
+  "Zeid": {
+   "lines": 132,
+   "chars": 9585
+  },
+  "Cyranuce": {
+   "lines": 104,
+   "chars": 5395
+  },
+  "Bistillot": {
+   "lines": 103,
+   "chars": 8242
+  },
+  "Prien": {
+   "lines": 96,
+   "chars": 9323
+  },
+  "Lilisette": {
+   "lines": 90,
+   "chars": 6067
+  },
+  "Jayramus": {
+   "lines": 89,
+   "chars": 7166
+  },
+  "Ulbrecht": {
+   "lines": 88,
+   "chars": 9854
+  },
+  "Vailanice": {
+   "lines": 88,
+   "chars": 5918
+  },
+  "Alphonimile": {
+   "lines": 85,
+   "chars": 7232
+  },
+  "Gentle Tiger": {
+   "lines": 83,
+   "chars": 9536
+  },
+  "Phillieulais": {
+   "lines": 80,
+   "chars": 7592
+  },
+  "Rongelouts N Distaud": {
+   "lines": 79,
+   "chars": 7075
+  },
+  "Ajido-Marujido": {
+   "lines": 61,
+   "chars": 2694
+  },
+  "Kingslayer Doggvdegg": {
+   "lines": 60,
+   "chars": 2975
+  },
+  "Mainchelite": {
+   "lines": 58,
+   "chars": 5533
+  },
+  "Bostillette": {
+   "lines": 57,
+   "chars": 5162
+  },
+  "Bartholomaus": {
+   "lines": 53,
+   "chars": 5191
+  },
+  "Marquis Amon": {
+   "lines": 52,
+   "chars": 4606
+  },
+  "Ranpi-Monpi": {
+   "lines": 52,
+   "chars": 4656
+  },
+  "Romaa Mihgo": {
+   "lines": 52,
+   "chars": 3890
+  },
+  "Engelhart": {
+   "lines": 51,
+   "chars": 4235
+  },
+  "Machegue": {
+   "lines": 49,
+   "chars": 2439
+  },
+  "Adelheid": {
+   "lines": 47,
+   "chars": 3223
+  },
+  "Maxcimille": {
+   "lines": 47,
+   "chars": 3788
+  },
+  "Dhea Prandoleh": {
+   "lines": 42,
+   "chars": 3006
+  },
+  "Allenberge": {
+   "lines": 41,
+   "chars": 3104
+  },
+  "Miah Riyuh": {
+   "lines": 38,
+   "chars": 4710
+  },
+  "Schultz": {
+   "lines": 38,
+   "chars": 3900
+  },
+  "Zazarg": {
+   "lines": 37,
+   "chars": 6131
+  },
+  "Adelbrecht": {
+   "lines": 36,
+   "chars": 3656
+  },
+  "Bertenont": {
+   "lines": 36,
+   "chars": 3699
+  },
+  "Blatherix": {
+   "lines": 36,
+   "chars": 3438
+  },
+  "Koru-Moru": {
+   "lines": 36,
+   "chars": 2716
+  },
+  "Leadavox": {
+   "lines": 34,
+   "chars": 2314
+  },
+  "Dieter": {
+   "lines": 33,
+   "chars": 2553
+  },
+  "Naiko-Paneiko": {
+   "lines": 32,
+   "chars": 3395
+  },
+  "Thierride": {
+   "lines": 32,
+   "chars": 3316
+  },
+  "Robel-Akbel": {
+   "lines": 31,
+   "chars": 2512
+  },
+  "Childerich": {
+   "lines": 30,
+   "chars": 2530
+  },
+  "Tihl Midurhi": {
+   "lines": 30,
+   "chars": 1924
+  },
+  "Yoran-Oran": {
+   "lines": 30,
+   "chars": 2675
+  },
+  "Chimene": {
+   "lines": 29,
+   "chars": 2417
+  },
+  "Diordinne": {
+   "lines": 29,
+   "chars": 2582
+  },
+  "Romualdo": {
+   "lines": 25,
+   "chars": 2218
+  },
+  "Werner": {
+   "lines": 25,
+   "chars": 2123
+  },
+  "Amaura": {
+   "lines": 24,
+   "chars": 2478
+  },
+  "Derek Karst": {
+   "lines": 24,
+   "chars": 1987
+  },
+  "Ghemp": {
+   "lines": 23,
+   "chars": 2413
+  },
+  "Werei": {
+   "lines": 23,
+   "chars": 1765
+  },
+  "Rivetpounder Mekglok": {
+   "lines": 22,
+   "chars": 1345
+  },
+  "Orcish Captive": {
+   "lines": 21,
+   "chars": 1370
+  },
+  "Driftlix": {
+   "lines": 19,
+   "chars": 2153
+  },
+  "Gebhardt": {
+   "lines": 19,
+   "chars": 2382
+  },
+  "Gissenne": {
+   "lines": 19,
+   "chars": 1798
+  },
+  "Rachemace": {
+   "lines": 19,
+   "chars": 1968
+  },
+  "Scarred Shark": {
+   "lines": 19,
+   "chars": 1986
+  },
+  "Wise Owl": {
+   "lines": 19,
+   "chars": 2116
+  },
+  "Larzos": {
+   "lines": 18,
+   "chars": 1614
+  },
+  "Pagdako": {
+   "lines": 17,
+   "chars": 726
+  },
+  "Alainasion": {
+   "lines": 16,
+   "chars": 1787
+  },
+  "Ernestine": {
+   "lines": 16,
+   "chars": 1139
+  },
+  "Louxiard": {
+   "lines": 16,
+   "chars": 1507
+  },
+  "Perih Vashai": {
+   "lines": 16,
+   "chars": 1137
+  },
+  "Rainer": {
+   "lines": 16,
+   "chars": 1771
+  },
+  "Klythios": {
+   "lines": 15,
+   "chars": 264
+  },
+  "Mihl Pakorhma": {
+   "lines": 15,
+   "chars": 979
+  },
+  "Rarcasmeault": {
+   "lines": 15,
+   "chars": 808
+  },
+  "Roderich": {
+   "lines": 15,
+   "chars": 1581
+  },
+  "Raustigne": {
+   "lines": 14,
+   "chars": 886
+  },
+  "Turbulent Storm": {
+   "lines": 14,
+   "chars": 1475
+  },
+  "Joseaneaut": {
+   "lines": 13,
+   "chars": 912
+  },
+  "Lena": {
+   "lines": 13,
+   "chars": 873
+  },
+  "Lharant": {
+   "lines": 13,
+   "chars": 1394
+  },
+  "Monberaux": {
+   "lines": 13,
+   "chars": 1453
+  },
+  "Noillurie": {
+   "lines": 13,
+   "chars": 1330
+  },
+  "Phillieulais S Dieuffon": {
+   "lines": 13,
+   "chars": 1387
+  },
+  "Tucker": {
+   "lines": 13,
+   "chars": 1026
+  },
+  "Bhoratz": {
+   "lines": 12,
+   "chars": 816
+  },
+  "Flap": {
+   "lines": 11,
+   "chars": 1216
+  },
+  "Herbert": {
+   "lines": 11,
+   "chars": 1737
+  },
+  "Iron Eater": {
+   "lines": 11,
+   "chars": 873
+  },
+  "Leuonard": {
+   "lines": 11,
+   "chars": 372
+  },
+  "Randecque": {
+   "lines": 11,
+   "chars": 954
+  },
+  "Thorben": {
+   "lines": 11,
+   "chars": 692
+  },
+  "Tosuka-Porika": {
+   "lines": 11,
+   "chars": 1125
+  },
+  "Darvylle": {
+   "lines": 10,
+   "chars": 856
+  },
+  "Halver M Borel": {
+   "lines": 10,
+   "chars": 530
+  },
+  "Pale Eagle": {
+   "lines": 10,
+   "chars": 503
+  },
+  "Bernhard": {
+   "lines": 9,
+   "chars": 1128
+  },
+  "Ghyo Molkot": {
+   "lines": 9,
+   "chars": 552
+  },
+  "Machudiaux": {
+   "lines": 9,
+   "chars": 855
+  },
+  "Portia": {
+   "lines": 9,
+   "chars": 415
+  },
+  "Ragelise": {
+   "lines": 9,
+   "chars": 531
+  },
+  "Wyatt": {
+   "lines": 9,
+   "chars": 1204
+  },
+  "Bumblix": {
+   "lines": 8,
+   "chars": 1049
+  },
+  "Fondactiont": {
+   "lines": 8,
+   "chars": 1398
+  },
+  "Ghioggo": {
+   "lines": 8,
+   "chars": 519
+  },
+  "Gumbah": {
+   "lines": 8,
+   "chars": 506
+  },
+  "Irwyn": {
+   "lines": 8,
+   "chars": 690
+  },
+  "Nalkuku": {
+   "lines": 8,
+   "chars": 690
+  },
+  "Pattna-Ottna": {
+   "lines": 8,
+   "chars": 565
+  },
+  "Rokke": {
+   "lines": 8,
+   "chars": 618
+  },
+  "Shadow Lord": {
+   "lines": 8,
+   "chars": 670
+  },
+  "Dawdlix": {
+   "lines": 7,
+   "chars": 810
+  },
+  "Gerwulf": {
+   "lines": 7,
+   "chars": 603
+  },
+  "Hrichter Karst": {
+   "lines": 7,
+   "chars": 531
+  },
+  "Kamolo-Domilo": {
+   "lines": 7,
+   "chars": 626
+  },
+  "Pignoit": {
+   "lines": 7,
+   "chars": 667
+  },
+  "Rakke": {
+   "lines": 7,
+   "chars": 507
+  },
+  "Red Axe": {
+   "lines": 7,
+   "chars": 511
+  },
+  "Rongelouts": {
+   "lines": 7,
+   "chars": 741
+  },
+  "Voshekglok": {
+   "lines": 7,
+   "chars": 372
+  },
+  "Yrvaulair S Cousseraux": {
+   "lines": 7,
+   "chars": 594
+  },
+  "Abioleget": {
+   "lines": 6,
+   "chars": 578
+  },
+  "Biggorf": {
+   "lines": 6,
+   "chars": 691
+  },
+  "Fingerfilcher Dradzad": {
+   "lines": 6,
+   "chars": 126
+  },
+  "Fransont": {
+   "lines": 6,
+   "chars": 475
+  },
+  "Halver": {
+   "lines": 6,
+   "chars": 461
+  },
+  "Rasusu": {
+   "lines": 6,
+   "chars": 487
+  },
+  "Rikke": {
+   "lines": 6,
+   "chars": 579
+  },
+  "Vinairy": {
+   "lines": 6,
+   "chars": 338
+  },
+  "Garlbrei": {
+   "lines": 5,
+   "chars": 290
+  },
+  "Hersaume": {
+   "lines": 5,
+   "chars": 471
+  },
+  "Hippolite": {
+   "lines": 5,
+   "chars": 246
+  },
+  "Leki Shameene": {
+   "lines": 5,
+   "chars": 540
+  },
+  "Nhiko Rhaabel": {
+   "lines": 5,
+   "chars": 328
+  },
+  "Paul": {
+   "lines": 5,
+   "chars": 549
+  },
+  "Slumbering Savage": {
+   "lines": 5,
+   "chars": 138
+  },
+  "Vestillet": {
+   "lines": 5,
+   "chars": 633
+  },
+  "Wilhelmina": {
+   "lines": 5,
+   "chars": 792
+  },
+  "Count Bifrons": {
+   "lines": 4,
+   "chars": 442
+  },
+  "Dissaud": {
+   "lines": 4,
+   "chars": 215
+  },
+  "Egon": {
+   "lines": 4,
+   "chars": 190
+  },
+  "Gerold": {
+   "lines": 4,
+   "chars": 242
+  },
+  "Heiner": {
+   "lines": 4,
+   "chars": 111
+  },
+  "Jeremias": {
+   "lines": 4,
+   "chars": 151
+  },
+  "Martina": {
+   "lines": 4,
+   "chars": 116
+  },
+  "Merim-Kurim": {
+   "lines": 4,
+   "chars": 377
+  },
+  "Norbert": {
+   "lines": 4,
+   "chars": 138
+  },
+  "Ole": {
+   "lines": 4,
+   "chars": 300
+  },
+  "Orcish Fodder": {
+   "lines": 4,
+   "chars": 98
+  },
+  "Rakula-Motakula": {
+   "lines": 4,
+   "chars": 203
+  },
+  "Solitary Ant": {
+   "lines": 4,
+   "chars": 105
+  },
+  "Spencer": {
+   "lines": 4,
+   "chars": 384
+  },
+  "Thianond": {
+   "lines": 4,
+   "chars": 297
+  },
+  "Wilmar": {
+   "lines": 4,
+   "chars": 309
+  },
+  "Aldebrand": {
+   "lines": 3,
+   "chars": 129
+  },
+  "Buchzvotch": {
+   "lines": 3,
+   "chars": 49
+  },
+  "Dabem": {
+   "lines": 3,
+   "chars": 329
+  },
+  "Daigraffeaux": {
+   "lines": 3,
+   "chars": 237
+  },
+  "Dunbaff": {
+   "lines": 3,
+   "chars": 309
+  },
+  "Hestrefalcat": {
+   "lines": 3,
+   "chars": 268
+  },
+  "Krudsmud": {
+   "lines": 3,
+   "chars": 247
+  },
+  "Marcus": {
+   "lines": 3,
+   "chars": 127
+  },
+  "Masked Goblin": {
+   "lines": 3,
+   "chars": 273
+  },
+  "Paulyvan": {
+   "lines": 3,
+   "chars": 280
+  },
+  "Rotih Moalghett": {
+   "lines": 3,
+   "chars": 253
+  },
+  "Ansgar": {
+   "lines": 2,
+   "chars": 26
+  },
+  "Elbiont N Dieuler": {
+   "lines": 2,
+   "chars": 169
+  },
+  "Enguerrand": {
+   "lines": 2,
+   "chars": 94
+  },
+  "Erik": {
+   "lines": 2,
+   "chars": 184
+  },
+  "Estavoille": {
+   "lines": 2,
+   "chars": 89
+  },
+  "Ganathein": {
+   "lines": 2,
+   "chars": 93
+  },
+  "Geldav": {
+   "lines": 2,
+   "chars": 236
+  },
+  "Gorakbok": {
+   "lines": 2,
+   "chars": 33
+  },
+  "Kayeel-Payeel": {
+   "lines": 2,
+   "chars": 282
+  },
+  "Lieselotte": {
+   "lines": 2,
+   "chars": 21
+  },
+  "Minautte": {
+   "lines": 2,
+   "chars": 186
+  },
+  "Nag'molada": {
+   "lines": 2,
+   "chars": 244
+  },
+  "Rachelassiond": {
+   "lines": 2,
+   "chars": 186
+  },
+  "Riftborer Verokgok": {
+   "lines": 2,
+   "chars": 46
+  },
+  "Scraggy Gigas": {
+   "lines": 2,
+   "chars": 43
+  },
+  "Silvertongue Gnashrosh": {
+   "lines": 2,
+   "chars": 170
+  },
+  "Stefan": {
+   "lines": 2,
+   "chars": 63
+  },
+  "Ungainly Gigas": {
+   "lines": 2,
+   "chars": 32
+  },
+  "Zolku-Azolku": {
+   "lines": 2,
+   "chars": 65
+  },
+  "Zubaba": {
+   "lines": 2,
+   "chars": 104
+  },
+  "Zyndowa": {
+   "lines": 2,
+   "chars": 94
+  },
+  "Alexance": {
+   "lines": 1,
+   "chars": 18
+  },
+  "Ashmea B Greinner": {
+   "lines": 1,
+   "chars": 110
+  },
+  "Christoph": {
+   "lines": 1,
+   "chars": 6
+  },
+  "Drangord": {
+   "lines": 1,
+   "chars": 41
+  },
+  "Eusebius": {
+   "lines": 1,
+   "chars": 109
+  },
+  "Gariri": {
+   "lines": 1,
+   "chars": 66
+  },
+  "Laoudrant": {
+   "lines": 1,
+   "chars": 61
+  },
+  "Lukka-Lakka": {
+   "lines": 1,
+   "chars": 106
+  },
+  "Lutete": {
+   "lines": 1,
+   "chars": 36
+  },
+  "Nicephore": {
+   "lines": 1,
+   "chars": 10
+  },
+  "Oliverain": {
+   "lines": 1,
+   "chars": 24
+  },
+  "Orcish Bloodletter": {
+   "lines": 1,
+   "chars": 15
+  },
+  "Premas-Lamas": {
+   "lines": 1,
+   "chars": 52
+  },
+  "Quu Bokye": {
+   "lines": 1,
+   "chars": 49
+  },
+  "Raphaillance": {
+   "lines": 1,
+   "chars": 47
+  },
+  "Tagloix": {
+   "lines": 1,
+   "chars": 92
+  },
+  "Two of Cups": {
+   "lines": 1,
+   "chars": 31
+  },
+  "Wolfram": {
+   "lines": 1,
+   "chars": 41
+  },
+  "Zonpa-Zippa": {
+   "lines": 1,
+   "chars": 93
+  }
+ },
+ "unattributed": [
+  {
+   "zone": 80,
+   "event": 22,
+   "lines": 1
+  },
+  {
+   "zone": 80,
+   "event": 23,
+   "lines": 2
+  },
+  {
+   "zone": 80,
+   "event": 55,
+   "lines": 1
+  },
+  {
+   "zone": 80,
+   "event": 59,
+   "lines": 2
+  },
+  {
+   "zone": 80,
+   "event": 60,
+   "lines": 1
+  },
+  {
+   "zone": 82,
+   "event": 204,
+   "lines": 1
+  },
+  {
+   "zone": 82,
+   "event": 215,
+   "lines": 2
+  },
+  {
+   "zone": 83,
+   "event": 113,
+   "lines": 4
+  },
+  {
+   "zone": 84,
+   "event": 115,
+   "lines": 3
+  },
+  {
+   "zone": 84,
+   "event": 117,
+   "lines": 3
+  },
+  {
+   "zone": 87,
+   "event": 16,
+   "lines": 1
+  },
+  {
+   "zone": 87,
+   "event": 56,
+   "lines": 1
+  },
+  {
+   "zone": 87,
+   "event": 71,
+   "lines": 1
+  },
+  {
+   "zone": 87,
+   "event": 345,
+   "lines": 2
+  },
+  {
+   "zone": 87,
+   "event": 349,
+   "lines": 1
+  },
+  {
+   "zone": 88,
+   "event": 5,
+   "lines": 1
+  },
+  {
+   "zone": 88,
+   "event": 10,
+   "lines": 1
+  },
+  {
+   "zone": 88,
+   "event": 16,
+   "lines": 1
+  },
+  {
+   "zone": 88,
+   "event": 106,
+   "lines": 1
+  },
+  {
+   "zone": 89,
+   "event": 6,
+   "lines": 1
+  },
+  {
+   "zone": 90,
+   "event": 2,
+   "lines": 5
+  },
+  {
+   "zone": 90,
+   "event": 105,
+   "lines": 1
+  },
+  {
+   "zone": 92,
+   "event": 1,
+   "lines": 1
+  },
+  {
+   "zone": 94,
+   "event": 128,
+   "lines": 2
+  },
+  {
+   "zone": 94,
+   "event": 133,
+   "lines": 2
+  },
+  {
+   "zone": 94,
+   "event": 151,
+   "lines": 5
+  },
+  {
+   "zone": 96,
+   "event": 103,
+   "lines": 4
+  },
+  {
+   "zone": 98,
+   "event": 4,
+   "lines": 1
+  },
+  {
+   "zone": 98,
+   "event": 105,
+   "lines": 2
+  },
+  {
+   "zone": 104,
+   "event": 44,
+   "lines": 1
+  },
+  {
+   "zone": 136,
+   "event": 2,
+   "lines": 1
+  },
+  {
+   "zone": 136,
+   "event": 6,
+   "lines": 1
+  },
+  {
+   "zone": 137,
+   "event": 2,
+   "lines": 1
+  },
+  {
+   "zone": 137,
+   "event": 6,
+   "lines": 1
+  },
+  {
+   "zone": 137,
+   "event": 7,
+   "lines": 1
+  },
+  {
+   "zone": 137,
+   "event": 9,
+   "lines": 9
+  },
+  {
+   "zone": 137,
+   "event": 10,
+   "lines": 6
+  },
+  {
+   "zone": 138,
+   "event": 13,
+   "lines": 1
+  },
+  {
+   "zone": 155,
+   "event": 15,
+   "lines": 1
+  },
+  {
+   "zone": 155,
+   "event": 16,
+   "lines": 1
+  },
+  {
+   "zone": 164,
+   "event": 32,
+   "lines": 2
+  },
+  {
+   "zone": 164,
+   "event": 33,
+   "lines": 1
+  },
+  {
+   "zone": 175,
+   "event": 10,
+   "lines": 1
+  },
+  {
+   "zone": 175,
+   "event": 14,
+   "lines": 6
+  },
+  {
+   "zone": 175,
+   "event": 27,
+   "lines": 1
+  }
+ ]
+}
