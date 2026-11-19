@@ -1,0 +1,159 @@
+{
+ "source": "missions/amk",
+ "scripts": 15,
+ "scenes": {
+  "named": 38,
+  "with_lines": 37,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 434,
+   "chars": 42794
+  },
+  "narration": {
+   "lines": 19,
+   "chars": 1379
+  },
+  "unattributed": {
+   "lines": 7,
+   "chars": 367
+  },
+  "system": {
+   "lines": 3,
+   "chars": 125
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 18,
+   "chars": 755
+  },
+  "unvoiceable": {
+   "lines": 140,
+   "chars": 38
+  }
+ },
+ "voiced": {
+  "lines": 453,
+  "chars": 44173
+ },
+ "reasons": {
+  "unattributed": {
+   "no speaker": 7
+  },
+  "system": {
+   "an instruction or prompt": 2,
+   "told to the player about the player": 1
+  },
+  "menu": {
+   "menu": 18
+  },
+  "unvoiceable": {
+   "empty text": 11,
+   "live-only: 7f80, item": 1,
+   "live-only: item": 68,
+   "live-only: number": 25,
+   "live-only: too many variants": 34,
+   "punctuation only": 1
+  }
+ },
+ "speakers": {
+  "Moogle": {
+   "lines": 175,
+   "chars": 15829
+  },
+  "Stooge Moogle": {
+   "lines": 81,
+   "chars": 10262
+  },
+  "Riko Kupenreich": {
+   "lines": 40,
+   "chars": 3907
+  },
+  "Toto Kupeliaure": {
+   "lines": 28,
+   "chars": 2618
+  },
+  "Shantotto": {
+   "lines": 25,
+   "chars": 1643
+  },
+  "Goblin Grenadier": {
+   "lines": 24,
+   "chars": 2584
+  },
+  "Goblin Repossessor": {
+   "lines": 24,
+   "chars": 1909
+  },
+  "Goblin Geologist": {
+   "lines": 9,
+   "chars": 1286
+  },
+  "Henchman Moogle": {
+   "lines": 4,
+   "chars": 355
+  },
+  "Kupiruru": {
+   "lines": 4,
+   "chars": 251
+  },
+  "Goblin Enforcer": {
+   "lines": 3,
+   "chars": 159
+  },
+  "Kupatete": {
+   "lines": 3,
+   "chars": 404
+  },
+  "Kupert": {
+   "lines": 3,
+   "chars": 404
+  },
+  "Kupignol": {
+   "lines": 3,
+   "chars": 404
+  },
+  "Kupuckl": {
+   "lines": 3,
+   "chars": 404
+  },
+  "Nanaa Mihgo": {
+   "lines": 3,
+   "chars": 227
+  },
+  "6": {
+   "lines": 1,
+   "chars": 135
+  },
+  "Goblin Intimidator": {
+   "lines": 1,
+   "chars": 13
+  }
+ },
+ "unattributed": [
+  {
+   "zone": 165,
+   "event": 4,
+   "lines": 3
+  },
+  {
+   "zone": 168,
+   "event": 5,
+   "lines": 2
+  },
+  {
+   "zone": 244,
+   "event": 10182,
+   "lines": 1
+  },
+  {
+   "zone": 244,
+   "event": 10184,
+   "lines": 1
+  }
+ ]
+}
