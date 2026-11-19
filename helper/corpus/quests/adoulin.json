@@ -1,0 +1,136 @@
+{
+ "source": "quests/adoulin",
+ "scripts": 15,
+ "scenes": {
+  "named": 50,
+  "with_lines": 50,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 374,
+   "chars": 38189
+  },
+  "narration": {
+   "lines": 5,
+   "chars": 464
+  },
+  "unattributed": {
+   "lines": 0,
+   "chars": 0
+  },
+  "system": {
+   "lines": 0,
+   "chars": 0
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 17,
+   "chars": 1048
+  },
+  "unvoiceable": {
+   "lines": 46,
+   "chars": 38
+  }
+ },
+ "voiced": {
+  "lines": 379,
+  "chars": 38653
+ },
+ "reasons": {
+  "menu": {
+   "menu": 17
+  },
+  "unvoiceable": {
+   "empty text": 2,
+   "live-only: 7f80, item": 1,
+   "live-only: item": 35,
+   "live-only: item, number": 3,
+   "live-only: number": 1,
+   "punctuation only": 2,
+   "stage direction only": 2
+  }
+ },
+ "speakers": {
+  "Sylvie": {
+   "lines": 96,
+   "chars": 8839
+  },
+  "Berghent": {
+   "lines": 39,
+   "chars": 4418
+  },
+  "Lerene": {
+   "lines": 34,
+   "chars": 3040
+  },
+  "Toppled Tree": {
+   "lines": 33,
+   "chars": 3411
+  },
+  "Traiffeaux": {
+   "lines": 29,
+   "chars": 2487
+  },
+  "Westerly Breeze": {
+   "lines": 21,
+   "chars": 2058
+  },
+  "Teodor": {
+   "lines": 18,
+   "chars": 2374
+  },
+  "Vastran": {
+   "lines": 14,
+   "chars": 1268
+  },
+  "Pudith": {
+   "lines": 13,
+   "chars": 1172
+  },
+  "Dewalt": {
+   "lines": 12,
+   "chars": 1319
+  },
+  "Choubollet": {
+   "lines": 10,
+   "chars": 1272
+  },
+  "Rising Solstice": {
+   "lines": 10,
+   "chars": 1161
+  },
+  "Vaulois": {
+   "lines": 10,
+   "chars": 1175
+  },
+  "Felmsy": {
+   "lines": 9,
+   "chars": 1042
+  },
+  "Saldinor": {
+   "lines": 8,
+   "chars": 706
+  },
+  "Apolliane": {
+   "lines": 6,
+   "chars": 949
+  },
+  "Chalvava": {
+   "lines": 6,
+   "chars": 770
+  },
+  "Kongramm": {
+   "lines": 4,
+   "chars": 521
+  },
+  "Masad": {
+   "lines": 2,
+   "chars": 207
+  }
+ },
+ "unattributed": []
+}
