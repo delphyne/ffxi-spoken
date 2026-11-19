@@ -49,6 +49,12 @@
 #                    accept, or reset, filtered by race, gender, storyline, or a partial name, and hear a
 #                    voice say one of its speaker's lines through MOSS (needs .venv-moss) (tools/voice_review.py)
 #   make voice-stories   rebuild helper/voice_stories.json: each speaker's lines per storyline, and a few to hear
+#   make corpus [SOURCE=missions/rov]
+#                    extract what a source says (a mission folder, a quest region, a companion; all of
+#                    them without SOURCE), each line classed: the text into data/corpus/, the counts
+#                    into helper/corpus/ (tools/corpus.py; helper/exclude.yaml is what is never voiced)
+#   make audit-corpus SOURCE=quests/jeuno [SHOW=narration] [SPEAKER=Name] [SAMPLES=12]
+#                    what each exclude rule dropped, and samples of what stayed
 #   make venv-moss   build .venv-moss with MOSS-TTS from a checkout (MOSS_DIR=~/scm/github/OpenMOSS/MOSS-TTS)
 #   make spike-moss [LIMIT=N] [FRESH=1] [INT8=1]
 #                    the same lines through MOSS-TTS-Local, cloned from the Qwen-designed clips, with
@@ -114,7 +120,7 @@ NATIVE_CFLAGS := -O2 -Wall -Wextra -D_WIN32_WINNT=0x0600 -I$(DEPS)/include -I$(D
 # the Wine prefix two levels above drive_c/Windower4, for running the test exe
 WINEPREFIX := $(abspath $(WINDOWER)/../..)
 
-.PHONY: install uninstall where test lint check helper say venv venv-cuda venv-qwen spike-qwen design-voices audit-voices listen-voices review-voices voice-stories venv-moss spike-moss voices census nouns review-lexicon pack release deps native native-test
+.PHONY: install uninstall where test lint check helper say venv venv-cuda venv-qwen spike-qwen design-voices audit-voices listen-voices review-voices voice-stories corpus audit-corpus venv-moss spike-moss voices census nouns review-lexicon pack release deps native native-test
 
 # Each recipe below is one shell command, so an exit inside it ends the target.
 
@@ -266,6 +272,16 @@ review-voices:
 # Writes helper/voice_stories.json and data/word_stories.json (for review-lexicon).
 voice-stories data/word_stories.json:
 	python3 -I tools/voice_stories.py --lsb "$(LSB)"
+
+# The same needs. Without SOURCE every source is extracted and the exclude
+# rules that matched nothing are named.
+corpus:
+	python3 -I tools/corpus.py --lsb "$(LSB)" extract $(if $(SOURCE),$(SOURCE),--all --stale)
+
+audit-corpus:
+	@if [ -z "$(SOURCE)" ]; then echo "usage: make audit-corpus SOURCE=quests/jeuno [SHOW=narration] [SPEAKER=Name]" >&2; exit 1; fi
+	python3 -I tools/corpus.py --lsb "$(LSB)" audit $(SOURCE) $(if $(SHOW),--show $(SHOW)) \
+		$(if $(SPEAKER),--speaker "$(SPEAKER)") $(if $(SAMPLES),--samples $(SAMPLES))
 
 # MOSS-TTS is installed from its checkout (pip -e) because it is not on PyPI;
 # it pins torch 2.9.1+cu128, so it cannot share .venv-qwen. The model

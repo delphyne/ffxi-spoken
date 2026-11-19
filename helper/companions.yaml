@@ -1,0 +1,24 @@
+# Characters the player lives with, voiced whatever a storyline says:
+# tools/corpus.py reads this for its companions/<name> sources.
+#
+#   zones     zone ids whose events belong to the companion
+#   speakers  optional: keep only what these shown names say. Without it
+#             every event in the zones is the companion's; with it the
+#             zones may be shared (a Mog House is part of its city's zone)
+#   note      for the reader
+#
+# helper/exclude.yaml then drops the stock lines among them.
+
+mog-garden:
+  zones: [280]
+  note: The Green Thumb Moogle, Chacharoon, and the garden's visitors.
+
+mog-house:
+  # the cities with a residential area: San d'Oria, Bastok, Windurst, Jeuno,
+  # Al Zahbi and Whitegate, Adoulin. A Mog House has no zone of its own in
+  # the client's data: its moogle's events sit in the city's.
+  zones: [230, 231, 232, 234, 235, 236, 238, 239, 240, 241, 243, 244, 245, 246, 48, 50, 256, 257]
+  speakers: [Moogle]
+  note: >-
+    The Mog House moogle. Any other entity a city shows as "Moogle" is in
+    here too; exclude.yaml is where to drop one.

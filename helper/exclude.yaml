@@ -1,0 +1,63 @@
+# What is never voiced though it sits inside a storyline, a quest, or a
+# companion's events (docs/ElevenLabs-Handoff.md, Scope). tools/corpus.py
+# reads this top to bottom and the first rule that matches a line drops it.
+#
+#   class    system (the game talking) or boilerplate (stock NPC speech)
+#   reason   why, in a few words; it is what the counts are kept under
+#   text     a regular expression searched in the cleaned line
+#   speaker, zone, event   must equal the line's
+#   kind     the decoder's: "narration" (a message with no speaker) or "say"
+#
+# `python3 tools/corpus.py audit <source>` shows what each rule dropped and
+# samples of what stayed; `extract --all --stale` names rules that match
+# nothing any more.
+
+# ---- the game talking: messages with no speaker that are not story prose
+
+- class: system
+  reason: text the cleaner left damaged
+  text: "[\\x00-\\x1f\\ufffd∞〟]"
+
+- class: system
+  reason: emote or a sentence missing its subject
+  kind: narration
+  text: "^[a-z]"
+
+- class: system
+  reason: told to the player about the player
+  kind: narration
+  text: "^(You\\b|Your\\b|<player>)"
+
+- class: system
+  reason: item, key item, or gil changing hands
+  kind: narration
+  text: "(?i)\\b(obtain(s|ed)?|key item|gil\\b|retrieved|is lost|was lost|returned to you)"
+
+- class: system
+  reason: a labelled readout
+  kind: narration
+  text: "^[A-Z][\\w' ]{1,24}: "
+
+- class: system
+  reason: an instruction or prompt
+  kind: narration
+  text: "^(Start|Choose|Select|Examine|Press|Use|Trade|Enter|Speak|Talk|Return|Check|Please|Unable|Cannot|Not enough|There (is|are) (no|nothing)|Nothing)\\b"
+
+- class: system
+  reason: battle message
+  kind: narration
+  text: "^[A-Z][\\w' ]{1,24} (uses|casts|readies|gains|takes|is defeated|falls)\\b"
+
+# ---- stock NPC speech
+
+- class: boilerplate
+  reason: the tutorial, word for word in each nation
+  speaker: Alaune
+
+- class: boilerplate
+  reason: the tutorial, word for word in each nation
+  speaker: Gulldago
+
+- class: boilerplate
+  reason: the tutorial, word for word in each nation
+  speaker: Selele
