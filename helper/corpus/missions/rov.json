@@ -1,0 +1,199 @@
+{
+ "source": "missions/rov",
+ "scripts": 42,
+ "scenes": {
+  "named": 56,
+  "with_lines": 48,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 1173,
+   "chars": 78352
+  },
+  "narration": {
+   "lines": 1,
+   "chars": 44
+  },
+  "unattributed": {
+   "lines": 12,
+   "chars": 966
+  },
+  "system": {
+   "lines": 5,
+   "chars": 643
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 34,
+   "chars": 2393
+  },
+  "unvoiceable": {
+   "lines": 43,
+   "chars": 20
+  }
+ },
+ "voiced": {
+  "lines": 1174,
+  "chars": 78396
+ },
+ "reasons": {
+  "unattributed": {
+   "no speaker": 12
+  },
+  "system": {
+   "emote or a sentence missing its subject": 5
+  },
+  "menu": {
+   "menu": 34
+  },
+  "unvoiceable": {
+   "empty text": 15,
+   "live-only: item": 20,
+   "live-only: item, number": 6,
+   "stage direction only": 2
+  }
+ },
+ "speakers": {
+  "Iroha": {
+   "lines": 335,
+   "chars": 22588
+  },
+  "Tenzen": {
+   "lines": 175,
+   "chars": 11478
+  },
+  "Gilgamesh": {
+   "lines": 109,
+   "chars": 7595
+  },
+  "Prishe": {
+   "lines": 91,
+   "chars": 6118
+  },
+  "Lilisette": {
+   "lines": 76,
+   "chars": 4633
+  },
+  "Lion": {
+   "lines": 70,
+   "chars": 4067
+  },
+  "Zeid": {
+   "lines": 58,
+   "chars": 3218
+  },
+  "Cait Sith": {
+   "lines": 37,
+   "chars": 2180
+  },
+  "Alexander": {
+   "lines": 26,
+   "chars": 1943
+  },
+  "Siren": {
+   "lines": 26,
+   "chars": 1965
+  },
+  "Grav'iton": {
+   "lines": 24,
+   "chars": 2038
+  },
+  "Numi Adaligo": {
+   "lines": 19,
+   "chars": 1938
+  },
+  "Aldo": {
+   "lines": 18,
+   "chars": 1265
+  },
+  "Abelard": {
+   "lines": 16,
+   "chars": 1051
+  },
+  "Ekokoko": {
+   "lines": 16,
+   "chars": 1532
+  },
+  "Naillina": {
+   "lines": 15,
+   "chars": 1249
+  },
+  "Nashmeira": {
+   "lines": 14,
+   "chars": 682
+  },
+  "Kagero": {
+   "lines": 11,
+   "chars": 608
+  },
+  "Volto Oscuro": {
+   "lines": 8,
+   "chars": 266
+  },
+  "Esteban": {
+   "lines": 4,
+   "chars": 371
+  },
+  "Marilionne": {
+   "lines": 4,
+   "chars": 338
+  },
+  "Diabolos": {
+   "lines": 3,
+   "chars": 92
+  },
+  "Eunsoo": {
+   "lines": 3,
+   "chars": 138
+  },
+  "Kamui": {
+   "lines": 3,
+   "chars": 311
+  },
+  "Pacomart": {
+   "lines": 3,
+   "chars": 151
+  },
+  "Tonasav": {
+   "lines": 3,
+   "chars": 151
+  },
+  "Gottna": {
+   "lines": 2,
+   "chars": 123
+  },
+  "Ulmia": {
+   "lines": 2,
+   "chars": 112
+  },
+  "Comitiolus": {
+   "lines": 1,
+   "chars": 108
+  },
+  "Heillal": {
+   "lines": 1,
+   "chars": 43
+  }
+ },
+ "unattributed": [
+  {
+   "zone": 126,
+   "event": 64,
+   "lines": 1
+  },
+  {
+   "zone": 252,
+   "event": 277,
+   "lines": 2
+  },
+  {
+   "zone": 252,
+   "event": 278,
+   "lines": 9
+  }
+ ]
+}
