@@ -1,0 +1,166 @@
+{
+ "source": "quests/abyssea",
+ "scripts": 71,
+ "scenes": {
+  "named": 54,
+  "with_lines": 53,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 612,
+   "chars": 69382
+  },
+  "narration": {
+   "lines": 2,
+   "chars": 101
+  },
+  "unattributed": {
+   "lines": 257,
+   "chars": 32114
+  },
+  "system": {
+   "lines": 7,
+   "chars": 359
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 28,
+   "chars": 1576
+  },
+  "unvoiceable": {
+   "lines": 56,
+   "chars": 22
+  }
+ },
+ "voiced": {
+  "lines": 614,
+  "chars": 69483
+ },
+ "reasons": {
+  "unattributed": {
+   "no speaker": 257
+  },
+  "system": {
+   "an instruction or prompt": 1,
+   "told to the player about the player": 6
+  },
+  "menu": {
+   "menu": 28
+  },
+  "unvoiceable": {
+   "empty text": 7,
+   "live-only: 7f80, item": 5,
+   "live-only: item": 31,
+   "live-only: item, number": 4,
+   "live-only: number": 3,
+   "punctuation only": 6
+  }
+ },
+ "speakers": {
+  "Joachim": {
+   "lines": 203,
+   "chars": 22527
+  },
+  "Prishe": {
+   "lines": 71,
+   "chars": 6765
+  },
+  "Kuchi Eyjhann": {
+   "lines": 41,
+   "chars": 5144
+  },
+  "Rurukaka": {
+   "lines": 39,
+   "chars": 4953
+  },
+  "Moniquaurie": {
+   "lines": 38,
+   "chars": 4792
+  },
+  "Ragemont": {
+   "lines": 33,
+   "chars": 3753
+  },
+  "Norrah": {
+   "lines": 32,
+   "chars": 3124
+  },
+  "Reinhard": {
+   "lines": 30,
+   "chars": 3647
+  },
+  "Alberic": {
+   "lines": 29,
+   "chars": 3549
+  },
+  "Orgis": {
+   "lines": 26,
+   "chars": 3095
+  },
+  "Kocchi-Arocchi": {
+   "lines": 23,
+   "chars": 3211
+  },
+  "Curilla": {
+   "lines": 15,
+   "chars": 1356
+  },
+  "Halver": {
+   "lines": 10,
+   "chars": 1731
+  },
+  "Knotty Oak": {
+   "lines": 10,
+   "chars": 690
+  },
+  "Amaura": {
+   "lines": 6,
+   "chars": 516
+  },
+  "Secodiand": {
+   "lines": 6,
+   "chars": 529
+  }
+ },
+ "unattributed": [
+  {
+   "zone": 102,
+   "event": 11,
+   "lines": 42
+  },
+  {
+   "zone": 102,
+   "event": 12,
+   "lines": 25
+  },
+  {
+   "zone": 117,
+   "event": 38,
+   "lines": 1
+  },
+  {
+   "zone": 251,
+   "event": 6,
+   "lines": 70
+  },
+  {
+   "zone": 251,
+   "event": 7,
+   "lines": 67
+  },
+  {
+   "zone": 251,
+   "event": 8,
+   "lines": 28
+  },
+  {
+   "zone": 251,
+   "event": 9,
+   "lines": 24
+  }
+ ]
+}
