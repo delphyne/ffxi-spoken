@@ -1,0 +1,590 @@
+{
+ "source": "missions/wotg",
+ "scripts": 55,
+ "scenes": {
+  "named": 155,
+  "with_lines": 149,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 3441,
+   "chars": 259496
+  },
+  "narration": {
+   "lines": 12,
+   "chars": 541
+  },
+  "unattributed": {
+   "lines": 34,
+   "chars": 2441
+  },
+  "system": {
+   "lines": 17,
+   "chars": 1031
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 69,
+   "chars": 4790
+  },
+  "unvoiceable": {
+   "lines": 225,
+   "chars": 462
+  }
+ },
+ "voiced": {
+  "lines": 3453,
+  "chars": 260037
+ },
+ "reasons": {
+  "unattributed": {
+   "no speaker": 34
+  },
+  "system": {
+   "told to the player about the player": 17
+  },
+  "menu": {
+   "menu": 69
+  },
+  "unvoiceable": {
+   "empty text": 78,
+   "live-only: 7f80": 1,
+   "live-only: 7f80, item": 7,
+   "live-only: item": 41,
+   "live-only: number": 14,
+   "punctuation only": 84
+  }
+ },
+ "speakers": {
+  "Lilisette": {
+   "lines": 671,
+   "chars": 41099
+  },
+  "Cait Sith": {
+   "lines": 502,
+   "chars": 38085
+  },
+  "Ragelise": {
+   "lines": 355,
+   "chars": 28986
+  },
+  "Mayakov": {
+   "lines": 195,
+   "chars": 19155
+  },
+  "Lady Lilith": {
+   "lines": 153,
+   "chars": 11453
+  },
+  "Portia": {
+   "lines": 146,
+   "chars": 8343
+  },
+  "Larzos": {
+   "lines": 98,
+   "chars": 8119
+  },
+  "Haudrale": {
+   "lines": 90,
+   "chars": 6133
+  },
+  "Vestillet": {
+   "lines": 74,
+   "chars": 5231
+  },
+  "Aquila": {
+   "lines": 61,
+   "chars": 3696
+  },
+  "Cait Sith Naoi": {
+   "lines": 55,
+   "chars": 3735
+  },
+  "Cousseraux": {
+   "lines": 47,
+   "chars": 3880
+  },
+  "Noillurie": {
+   "lines": 44,
+   "chars": 3156
+  },
+  "Rongelouts N Distaud": {
+   "lines": 42,
+   "chars": 3915
+  },
+  "Nag'molada": {
+   "lines": 41,
+   "chars": 3207
+  },
+  "Cait Sith Ceithir": {
+   "lines": 40,
+   "chars": 2864
+  },
+  "Portentous Woman": {
+   "lines": 40,
+   "chars": 2994
+  },
+  "Brandolf": {
+   "lines": 34,
+   "chars": 3480
+  },
+  "Cavernous Maw": {
+   "lines": 31,
+   "chars": 1748
+  },
+  "Halver M Borel": {
+   "lines": 31,
+   "chars": 3011
+  },
+  "Amaura": {
+   "lines": 30,
+   "chars": 2898
+  },
+  "Zazarg": {
+   "lines": 27,
+   "chars": 2951
+  },
+  "Tanja": {
+   "lines": 22,
+   "chars": 1389
+  },
+  "Robel-Akbel": {
+   "lines": 21,
+   "chars": 1044
+  },
+  "Flit": {
+   "lines": 20,
+   "chars": 1514
+  },
+  "Cait Sith Coig": {
+   "lines": 17,
+   "chars": 880
+  },
+  "Corseihaut": {
+   "lines": 17,
+   "chars": 1939
+  },
+  "Raustigne": {
+   "lines": 17,
+   "chars": 1254
+  },
+  "Turlough": {
+   "lines": 16,
+   "chars": 1599
+  },
+  "Barnabas": {
+   "lines": 15,
+   "chars": 1110
+  },
+  "Remiotte": {
+   "lines": 15,
+   "chars": 1788
+  },
+  "Cait Sith Seachd": {
+   "lines": 14,
+   "chars": 889
+  },
+  "Raina": {
+   "lines": 14,
+   "chars": 1060
+  },
+  "Count Bifrons": {
+   "lines": 13,
+   "chars": 631
+  },
+  "Kayeel-Payeel": {
+   "lines": 13,
+   "chars": 1199
+  },
+  "Adelheid": {
+   "lines": 12,
+   "chars": 904
+  },
+  "Cloud Walker": {
+   "lines": 12,
+   "chars": 1118
+  },
+  "Hegouard": {
+   "lines": 12,
+   "chars": 1665
+  },
+  "One-eyed Gwajboj": {
+   "lines": 12,
+   "chars": 576
+  },
+  "Daigraffeaux": {
+   "lines": 11,
+   "chars": 1357
+  },
+  "Judith": {
+   "lines": 11,
+   "chars": 1294
+  },
+  "Vichauxdat": {
+   "lines": 11,
+   "chars": 1265
+  },
+  "Cait Sith Tri": {
+   "lines": 10,
+   "chars": 581
+  },
+  "Farouel": {
+   "lines": 10,
+   "chars": 952
+  },
+  "Gallauciond": {
+   "lines": 10,
+   "chars": 666
+  },
+  "Halver": {
+   "lines": 10,
+   "chars": 1138
+  },
+  "Irwyn": {
+   "lines": 10,
+   "chars": 741
+  },
+  "Kam'lanaut": {
+   "lines": 10,
+   "chars": 654
+  },
+  "Maximilian Berger": {
+   "lines": 10,
+   "chars": 945
+  },
+  "Bartholomaus": {
+   "lines": 9,
+   "chars": 460
+  },
+  "Coucheutand": {
+   "lines": 9,
+   "chars": 1186
+  },
+  "Henrinaud": {
+   "lines": 9,
+   "chars": 362
+  },
+  "Prien": {
+   "lines": 9,
+   "chars": 624
+  },
+  "Aurfet": {
+   "lines": 8,
+   "chars": 846
+  },
+  "Lehko Habhoka": {
+   "lines": 8,
+   "chars": 703
+  },
+  "Regal Feline": {
+   "lines": 8,
+   "chars": 357
+  },
+  "Shadow Lord": {
+   "lines": 8,
+   "chars": 651
+  },
+  "Velda-Galda": {
+   "lines": 8,
+   "chars": 807
+  },
+  "Cait Sith Aon": {
+   "lines": 7,
+   "chars": 468
+  },
+  "Cait Sith Ochd": {
+   "lines": 7,
+   "chars": 292
+  },
+  "Haja Zhwan": {
+   "lines": 7,
+   "chars": 799
+  },
+  "Cait Sith Dha": {
+   "lines": 6,
+   "chars": 421
+  },
+  "Clovis": {
+   "lines": 6,
+   "chars": 500
+  },
+  "Elnonde": {
+   "lines": 6,
+   "chars": 574
+  },
+  "Eumielle": {
+   "lines": 6,
+   "chars": 475
+  },
+  "Illeuse": {
+   "lines": 6,
+   "chars": 552
+  },
+  "Melderphaux": {
+   "lines": 6,
+   "chars": 621
+  },
+  "Allaipre": {
+   "lines": 5,
+   "chars": 431
+  },
+  "Festauve": {
+   "lines": 5,
+   "chars": 391
+  },
+  "Louxiard": {
+   "lines": 5,
+   "chars": 322
+  },
+  "Merfanont": {
+   "lines": 5,
+   "chars": 668
+  },
+  "Radford": {
+   "lines": 5,
+   "chars": 513
+  },
+  "Romaa Mihgo": {
+   "lines": 5,
+   "chars": 488
+  },
+  "Aissaville": {
+   "lines": 4,
+   "chars": 490
+  },
+  "Cait Sith Sia": {
+   "lines": 4,
+   "chars": 199
+  },
+  "Ethelbert": {
+   "lines": 4,
+   "chars": 55
+  },
+  "Gindaff": {
+   "lines": 4,
+   "chars": 439
+  },
+  "Hauberliond": {
+   "lines": 4,
+   "chars": 303
+  },
+  "Invincible Shield": {
+   "lines": 4,
+   "chars": 660
+  },
+  "Louvairausse": {
+   "lines": 4,
+   "chars": 203
+  },
+  "Mailleronce": {
+   "lines": 4,
+   "chars": 391
+  },
+  "Nicolaus": {
+   "lines": 4,
+   "chars": 174
+  },
+  "Sabiliont": {
+   "lines": 4,
+   "chars": 434
+  },
+  "Zeid": {
+   "lines": 4,
+   "chars": 128
+  },
+  "Zolku-Azolku": {
+   "lines": 4,
+   "chars": 397
+  },
+  "2": {
+   "lines": 3,
+   "chars": 130
+  },
+  "Andagge": {
+   "lines": 3,
+   "chars": 238
+  },
+  "Klara": {
+   "lines": 3,
+   "chars": 113
+  },
+  "Lilith Ascendant": {
+   "lines": 3,
+   "chars": 49
+  },
+  "Loillie": {
+   "lines": 3,
+   "chars": 311
+  },
+  "Lysander": {
+   "lines": 3,
+   "chars": 210
+  },
+  "Machionage": {
+   "lines": 3,
+   "chars": 294
+  },
+  "1": {
+   "lines": 2,
+   "chars": 156
+  },
+  "4": {
+   "lines": 2,
+   "chars": 68
+  },
+  "Atomos": {
+   "lines": 2,
+   "chars": 44
+  },
+  "Atori-Tutori": {
+   "lines": 2,
+   "chars": 192
+  },
+  "Chimene": {
+   "lines": 2,
+   "chars": 96
+  },
+  "Demon Suppressor": {
+   "lines": 2,
+   "chars": 41
+  },
+  "Eusmard": {
+   "lines": 2,
+   "chars": 32
+  },
+  "Gutrender Trooper": {
+   "lines": 2,
+   "chars": 73
+  },
+  "Ludwig Eichberg": {
+   "lines": 2,
+   "chars": 344
+  },
+  "Marquis Amon": {
+   "lines": 2,
+   "chars": 117
+  },
+  "Putori-Tutori": {
+   "lines": 2,
+   "chars": 288
+  },
+  "Vhino Delkahngo": {
+   "lines": 2,
+   "chars": 185
+  },
+  "Volker": {
+   "lines": 2,
+   "chars": 100
+  },
+  "Adhemar": {
+   "lines": 1,
+   "chars": 101
+  },
+  "Demon Befouler": {
+   "lines": 1,
+   "chars": 15
+  },
+  "Dionaste": {
+   "lines": 1,
+   "chars": 55
+  },
+  "Dixon": {
+   "lines": 1,
+   "chars": 7
+  },
+  "Five Moons": {
+   "lines": 1,
+   "chars": 24
+  },
+  "Gregoirion": {
+   "lines": 1,
+   "chars": 95
+  },
+  "Hagreface": {
+   "lines": 1,
+   "chars": 8
+  },
+  "Hauramus": {
+   "lines": 1,
+   "chars": 120
+  },
+  "Lansoise": {
+   "lines": 1,
+   "chars": 70
+  },
+  "Phillarceaux": {
+   "lines": 1,
+   "chars": 59
+  },
+  "Viridiana": {
+   "lines": 1,
+   "chars": 186
+  }
+ },
+ "unattributed": [
+  {
+   "zone": 82,
+   "event": 3,
+   "lines": 2
+  },
+  {
+   "zone": 84,
+   "event": 3,
+   "lines": 1
+  },
+  {
+   "zone": 85,
+   "event": 1,
+   "lines": 1
+  },
+  {
+   "zone": 85,
+   "event": 2,
+   "lines": 2
+  },
+  {
+   "zone": 85,
+   "event": 6,
+   "lines": 4
+  },
+  {
+   "zone": 89,
+   "event": 26,
+   "lines": 2
+  },
+  {
+   "zone": 89,
+   "event": 27,
+   "lines": 1
+  },
+  {
+   "zone": 89,
+   "event": 28,
+   "lines": 11
+  },
+  {
+   "zone": 89,
+   "event": 39,
+   "lines": 6
+  },
+  {
+   "zone": 136,
+   "event": 19,
+   "lines": 2
+  },
+  {
+   "zone": 137,
+   "event": 23,
+   "lines": 1
+  },
+  {
+   "zone": 138,
+   "event": 3,
+   "lines": 1
+  }
+ ]
+}
