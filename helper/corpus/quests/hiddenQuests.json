@@ -1,0 +1,304 @@
+{
+ "source": "quests/hiddenQuests",
+ "scripts": 26,
+ "scenes": {
+  "named": 100,
+  "with_lines": 95,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 838,
+   "chars": 68246
+  },
+  "narration": {
+   "lines": 15,
+   "chars": 1915
+  },
+  "unattributed": {
+   "lines": 8,
+   "chars": 629
+  },
+  "system": {
+   "lines": 4,
+   "chars": 276
+  },
+  "boilerplate": {
+   "lines": 600,
+   "chars": 73429
+  },
+  "menu": {
+   "lines": 59,
+   "chars": 3102
+  },
+  "unvoiceable": {
+   "lines": 242,
+   "chars": 55
+  }
+ },
+ "voiced": {
+  "lines": 853,
+  "chars": 70161
+ },
+ "reasons": {
+  "unattributed": {
+   "no speaker": 8
+  },
+  "system": {
+   "text the cleaner left damaged": 1,
+   "told to the player about the player": 3
+  },
+  "boilerplate": {
+   "the tutorial, word for word in each nation": 600
+  },
+  "menu": {
+   "menu": 59
+  },
+  "unvoiceable": {
+   "live-only: 7f80, item": 10,
+   "live-only: item": 202,
+   "live-only: item, number": 15,
+   "live-only: number": 5,
+   "punctuation only": 8,
+   "stage direction only": 2
+  }
+ },
+ "speakers": {
+  "Shantotto": {
+   "lines": 75,
+   "chars": 8353
+  },
+  "Shikaree Z": {
+   "lines": 71,
+   "chars": 5500
+  },
+  "Maat": {
+   "lines": 52,
+   "chars": 4547
+  },
+  "Prishe": {
+   "lines": 51,
+   "chars": 4446
+  },
+  "Ulmia": {
+   "lines": 47,
+   "chars": 3109
+  },
+  "Kushdeel": {
+   "lines": 34,
+   "chars": 3090
+  },
+  "Ingrid": {
+   "lines": 32,
+   "chars": 2354
+  },
+  "Raqtibahl": {
+   "lines": 31,
+   "chars": 2173
+  },
+  "Zhuk Vojahom": {
+   "lines": 31,
+   "chars": 1728
+  },
+  "Cherukiki": {
+   "lines": 29,
+   "chars": 1790
+  },
+  "Ceraule": {
+   "lines": 26,
+   "chars": 2436
+  },
+  "Nicadio": {
+   "lines": 25,
+   "chars": 2381
+  },
+  "Gumbah": {
+   "lines": 23,
+   "chars": 1937
+  },
+  "Watzahl": {
+   "lines": 23,
+   "chars": 1590
+  },
+  "Avandale": {
+   "lines": 22,
+   "chars": 2392
+  },
+  "Dhima Polevhia": {
+   "lines": 22,
+   "chars": 1789
+  },
+  "Matthias": {
+   "lines": 22,
+   "chars": 1749
+  },
+  "Valdemar": {
+   "lines": 20,
+   "chars": 1900
+  },
+  "Magian Moogle": {
+   "lines": 17,
+   "chars": 1129
+  },
+  "Leleroon": {
+   "lines": 14,
+   "chars": 935
+  },
+  "Taillegeas": {
+   "lines": 14,
+   "chars": 839
+  },
+  "Cornelia": {
+   "lines": 9,
+   "chars": 564
+  },
+  "Curilla": {
+   "lines": 9,
+   "chars": 797
+  },
+  "Nomad Moogle": {
+   "lines": 9,
+   "chars": 432
+  },
+  "Perih Vashai": {
+   "lines": 9,
+   "chars": 872
+  },
+  "Sedal-Godjal": {
+   "lines": 8,
+   "chars": 654
+  },
+  "Hantileon": {
+   "lines": 7,
+   "chars": 454
+  },
+  "Kupipi": {
+   "lines": 7,
+   "chars": 584
+  },
+  "Rahal": {
+   "lines": 7,
+   "chars": 604
+  },
+  "Arawn": {
+   "lines": 6,
+   "chars": 406
+  },
+  "Deidogg": {
+   "lines": 6,
+   "chars": 380
+  },
+  "Emrys": {
+   "lines": 6,
+   "chars": 311
+  },
+  "Gwill": {
+   "lines": 6,
+   "chars": 347
+  },
+  "Hani": {
+   "lines": 6,
+   "chars": 313
+  },
+  "Trion": {
+   "lines": 6,
+   "chars": 576
+  },
+  "Claidie": {
+   "lines": 5,
+   "chars": 395
+  },
+  "Olgald": {
+   "lines": 5,
+   "chars": 561
+  },
+  "Suibhne": {
+   "lines": 5,
+   "chars": 426
+  },
+  "Dalzakk": {
+   "lines": 4,
+   "chars": 362
+  },
+  "Lathuya": {
+   "lines": 4,
+   "chars": 305
+  },
+  "Pieuje": {
+   "lines": 4,
+   "chars": 520
+  },
+  "Semih Lafihna": {
+   "lines": 4,
+   "chars": 310
+  },
+  "Antreneau": {
+   "lines": 3,
+   "chars": 78
+  },
+  "Hakkuru-Rinkuru": {
+   "lines": 3,
+   "chars": 323
+  },
+  "Nanaa Mihgo": {
+   "lines": 3,
+   "chars": 314
+  },
+  "Tiger Tooth": {
+   "lines": 3,
+   "chars": 223
+  },
+  "Pulonono": {
+   "lines": 2,
+   "chars": 144
+  },
+  "Rigobertine": {
+   "lines": 2,
+   "chars": 131
+  },
+  "Zopago": {
+   "lines": 2,
+   "chars": 144
+  },
+  "Ajido-Marujido": {
+   "lines": 1,
+   "chars": 120
+  },
+  "Aramaviont": {
+   "lines": 1,
+   "chars": 89
+  },
+  "Colti": {
+   "lines": 1,
+   "chars": 53
+  },
+  "Gomada-Vulmada": {
+   "lines": 1,
+   "chars": 31
+  },
+  "Kuroido-Moido": {
+   "lines": 1,
+   "chars": 142
+  },
+  "Maunadolace": {
+   "lines": 1,
+   "chars": 53
+  },
+  "Papo-Hopo": {
+   "lines": 1,
+   "chars": 61
+  }
+ },
+ "unattributed": [
+  {
+   "zone": 26,
+   "event": 633,
+   "lines": 3
+  },
+  {
+   "zone": 257,
+   "event": 5062,
+   "lines": 5
+  }
+ ]
+}
