@@ -1,0 +1,108 @@
+{
+ "source": "missions/acp",
+ "scripts": 12,
+ "scenes": {
+  "named": 1,
+  "with_lines": 1,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 43,
+   "chars": 2646
+  },
+  "narration": {
+   "lines": 10,
+   "chars": 392
+  },
+  "unattributed": {
+   "lines": 21,
+   "chars": 1529
+  },
+  "system": {
+   "lines": 2,
+   "chars": 162
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 1,
+   "chars": 63
+  },
+  "unvoiceable": {
+   "lines": 6,
+   "chars": 0
+  }
+ },
+ "voiced": {
+  "lines": 53,
+  "chars": 3038
+ },
+ "reasons": {
+  "unattributed": {
+   "no speaker": 21
+  },
+  "system": {
+   "an instruction or prompt": 1,
+   "told to the player about the player": 1
+  },
+  "menu": {
+   "menu": 1
+  },
+  "unvoiceable": {
+   "empty text": 5,
+   "live-only: item": 1
+  }
+ },
+ "speakers": {
+  "NPC01": {
+   "lines": 10,
+   "chars": 420
+  },
+  "Aldo": {
+   "lines": 8,
+   "chars": 666
+  },
+  "NPC02": {
+   "lines": 8,
+   "chars": 595
+  },
+  "NPC03": {
+   "lines": 5,
+   "chars": 234
+  },
+  "NPC04": {
+   "lines": 3,
+   "chars": 279
+  },
+  "Joseph": {
+   "lines": 2,
+   "chars": 57
+  },
+  "Omer": {
+   "lines": 2,
+   "chars": 141
+  },
+  "Shomera": {
+   "lines": 2,
+   "chars": 156
+  },
+  "Verena": {
+   "lines": 2,
+   "chars": 52
+  },
+  "NPC05": {
+   "lines": 1,
+   "chars": 46
+  }
+ },
+ "unattributed": [
+  {
+   "zone": 245,
+   "event": 10094,
+   "lines": 21
+  }
+ ]
+}
