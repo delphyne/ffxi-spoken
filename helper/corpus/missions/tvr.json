@@ -1,0 +1,46 @@
+{
+ "source": "missions/tvr",
+ "scripts": 47,
+ "scenes": {
+  "named": 0,
+  "with_lines": 0,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 0,
+   "chars": 0
+  },
+  "narration": {
+   "lines": 0,
+   "chars": 0
+  },
+  "unattributed": {
+   "lines": 0,
+   "chars": 0
+  },
+  "system": {
+   "lines": 0,
+   "chars": 0
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 0,
+   "chars": 0
+  },
+  "unvoiceable": {
+   "lines": 0,
+   "chars": 0
+  }
+ },
+ "voiced": {
+  "lines": 0,
+  "chars": 0
+ },
+ "reasons": {},
+ "speakers": {},
+ "unattributed": []
+}
