@@ -1,0 +1,12 @@
+# Casting moves: a speaker and the casting group they belong in, when
+# cast.py's hand list or the census puts them in the wrong one (a moogle
+# among the hume men).
+#
+# A name here wins over both. `make review-voices` writes this file (Move,
+# on a speaker who is on a pool voice) and regenerates helper/voices.json;
+# by hand, add a line and run python3 helper/cast.py. The groups are
+# helper/casting.py's POOLS: hume_m_adult, taru_f_child, small, beast, ...
+# A moved speaker joins the end of the new group, and keeps their turn in
+# the old one, so nobody else changes voice.
+
+{}

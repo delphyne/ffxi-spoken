@@ -34,8 +34,13 @@ import struct
 import sys
 from pathlib import Path
 
-CLIENT_DEFAULT = (Path.home() / ".var/app/net.windower.Lumoria/data/prefixes/prefix-1/pfx/drive_c"
-                  "/Program Files (x86)/PlayOnline/SquareEnix/FINAL FANTASY XI")
+# Where the client is installed: under the Lumoria flatpak's prefix on Linux,
+# in a CrossOver bottle named ffxi on macOS. The first that exists, else the
+# first, so a message about a missing client names the usual place.
+_INSTALL = "drive_c/Program Files (x86)/PlayOnline/SquareEnix/FINAL FANTASY XI"
+CLIENT_CANDIDATES = (Path.home() / ".var/app/net.windower.Lumoria/data/prefixes/prefix-1/pfx" / _INSTALL,
+                     Path.home() / "Library/Application Support/CrossOver/Bottles/ffxi" / _INSTALL)
+CLIENT_DEFAULT = next((p for p in CLIENT_CANDIDATES if p.is_dir()), CLIENT_CANDIDATES[0])
 HERE = Path(__file__).resolve().parent
 ZONE_MAP = HERE / "zone_dats.json"
 

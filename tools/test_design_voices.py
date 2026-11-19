@@ -188,6 +188,18 @@ class DesignVoicesTest(unittest.TestCase):
         self.assertEqual(out.getvalue(), "== Iroha, Volto Oscuro (iroha; hume)\n"
                                          "Native Japanese. Female, young adult. High quality.\n"
                                          "Persona: a priestess. Emotion: unyielding, determined.\nWarm.\n\n")
+        # with a design line: the text when this machine has it, a note when not, the text itself when written
+        said = "Follow me, and do not look back."
+        for line, lines, expect in ((designs.line_ref(said), {"Volto Oscuro": [said]}, said),
+                                    (designs.line_ref(said), {}, "a line this machine does not have"),
+                                    ("Written for the purpose.", {}, "Written for the purpose.")):
+            d = make_designs(Iroha=dict(IROHA, line=line))
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                dv.print_prompts(d, ["iroha"], lines)
+            self.assertIn("Warm.\n-- says:\n", out.getvalue())
+            self.assertIn(expect, out.getvalue().split("-- says:\n")[1])
+        self.assertEqual(dv.design_text(make_designs(), "hume_m_adult-0", {}), "", "a pool voice has no line")
 
 
 if __name__ == "__main__":

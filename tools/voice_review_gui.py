@@ -2,8 +2,11 @@
 the window opens, like the lexicon review's (helper/review_gui.py).
 
 Left: a search box (any part of a name or voice), filters for race,
-gender, storyline, and kind, and a tree of what matches, most-spoken
-first: races, under each its pool voices with their speakers and its own
+gender, storyline, kind, and status, and a tree of what matches,
+most-spoken first. Status is the burn-down: "to do" lists, flat, the own
+voices whose prompt lacks an accent, a persona, an emotion, or a
+description (the `needs` column says which), "ready" the ones with all
+four; saving one that becomes ready moves on to the next. Otherwise: races, under each its pool voices with their speakers and its own
 voices (a row shown only because a match sits under it is greyed). The
 `via` column says how a speaker got their voice: cast.py, the census,
 voices.json, or the default, else their own or a shared own voice. Right:
@@ -17,17 +20,22 @@ and
     Regenerate      the same description with a new seed
     Play take       the latest take again
     Accept          keep the take: clip, index, and voice_designs.yaml
+    Save            write the fields to voice_designs.yaml with no take, for
+                    a prompt meant for ElevenLabs or a machine without Qwen;
+                    a saved clip is then from an older design
     Reset           drop the take and the edits
 
-    Show prompt     a window with the prompt composed from the fields as
-                    they stand, in the form ElevenLabs asks for (Copy puts
-                    it on the clipboard; it is also what Qwen is given),
-                    kept up to date while it is open, beside what the saved
-                    clip was made with
+    Copy            the prompt, to the clipboard. The prompt is always shown
+                    under the buttons, composed from the fields as they
+                    stand, in the form ElevenLabs asks for (it is also what
+                    Qwen is given), and follows them as they change
     Hear (MOSS)     the line picked or typed below, said by this voice the way
                     a pack line is: MOSS continues the take, else the saved
                     clip (helper/moss_say.py under .venv-moss). The picker
-                    offers the speaker's own lines from voice_stories.json.
+                    offers the speaker's own lines from data/voice_lines.json.
+    Use for design  record the line picked or typed as the one the voice is
+                    designed saying (an own voice's `line`); shown under the
+                    picker, saved with the rest, and printed with the prompt
 
 Whatever is typed is kept until it is accepted or reset: moving to another
 row and back shows it again, and the tree's state column says "edited",
@@ -36,7 +44,8 @@ it must be auditioned again before Accept). A pool voice's gender and race
 are its casting group's and cannot be changed here, and it has no accent,
 persona, or emotion; its age can change. A speaker on a shared pool voice
 gets a "Give ... a voice of their own" button, which starts a new design
-from the pool voice's. A race row is a heading: race is shown while
+from the pool voice's, and a group picker with Move, which puts them in
+another casting group (helper/cast_groups.yaml). A race row is a heading: race is shown while
 designing and is not part of any prompt.
 Designing and hearing run off the Tk thread; the first take loads Qwen3
 and the first line loads MOSS, each a while, and the card holds one at a
@@ -139,7 +148,7 @@ class Window:
         search.pack(side="left", padx=(px(4), px(12)))
         self.query.trace_add("write", lambda *_: self.refresh())
         self.filters = {}
-        for name, width in (("race", 12), ("gender", 10), ("story", 26), ("kind", 11)):
+        for name, width in (("race", 12), ("gender", 10), ("story", 26), ("kind", 11), ("status", 10)):
             var = tk.StringVar()
             box = ttk.Combobox(bar, textvariable=var, state="readonly", width=width)
             box.pack(side="left", padx=px(4))
@@ -153,14 +162,14 @@ class Window:
         left.grid(row=1, column=0, sticky="nsew")
         left.rowconfigure(0, weight=1)
         left.columnconfigure(0, weight=1)
-        cols = ("voice", "via", "race", "gender", "age", "lines", "stories", "state")
+        cols = ("voice", "via", "race", "gender", "age", "lines", "stories", "needs", "state")
         tree = self.tree = ttk.Treeview(left, columns=cols, selectmode="browse")
         self.sort = None          # (column, descending), or None for the session's order
         self.columns = ("#0",) + cols
         tree.heading("#0", text="speaker", command=lambda: self.sort_by("#0"))
         tree.column("#0", width=px(220))
         tree.tag_configure("context", foreground="#888")   # a parent shown only for what is under it
-        for col, width in zip(cols, (120, 80, 80, 70, 90, 60, 180, 80)):
+        for col, width in zip(cols, (120, 80, 80, 70, 90, 60, 150, 150, 80)):
             tree.heading(col, text=col, command=lambda c=col: self.sort_by(c))
             tree.column(col, width=px(width), anchor="e" if col == "lines" else "w")
         scroll = ttk.Scrollbar(left, orient="vertical", command=tree.yview)
@@ -177,9 +186,22 @@ class Window:
         self.info = ttk.Label(right, text="", wraplength=px(480), justify="left")
         self.info.grid(row=1, column=0, sticky="w", pady=(px(2), px(6)))
         self.field_label = ttk.Label(right, text="Description")
-        self.own = ttk.Button(right, text="", command=self.give_own)
-        self.own.grid(row=2, column=0, sticky="w")
+        # what a speaker on a pool voice can have done: a voice of their own, or another pool
+        actions = ttk.Frame(right)
+        actions.grid(row=2, column=0, sticky="w")
+        self.own = ttk.Button(actions, text="", command=self.give_own)
+        self.own.grid(row=0, column=0, columnspan=3, sticky="w")
         self.own.grid_remove()
+        self.groups = self.ses.options()["group"]
+        self.move_label = ttk.Label(actions, text="Or move to pool")
+        self.move_var = tk.StringVar()
+        self.move_box = ttk.Combobox(actions, textvariable=self.move_var, state="readonly", width=30,
+                                     values=[label for _, label in self.groups])
+        self.move_button = ttk.Button(actions, text="Move", command=self.move)
+        self.move_widgets = (self.move_label, self.move_box, self.move_button)
+        for col, widget in enumerate(self.move_widgets):
+            widget.grid(row=1, column=col, sticky="w", padx=(0, px(6)), pady=(px(4), 0))
+            widget.grid_remove()
         meta = ttk.Frame(right)
         meta.grid(row=3, column=0, sticky="w", pady=(px(8), 0))
         self.meta = {}
@@ -208,7 +230,7 @@ class Window:
             var.trace_add("write", lambda *_: self.meta_modified())
             self.meta[name] = (var, box, "normal")
         self.field_label.grid(row=4, column=0, sticky="w", pady=(px(8), 0))
-        self.text = tk.Text(right, wrap="word", height=7, font=self.f_text, undo=True, padx=px(4), pady=px(4))
+        self.text = tk.Text(right, wrap="word", height=5, font=self.f_text, undo=True, padx=px(4), pady=px(4))
         self.text.grid(row=5, column=0, sticky="ew")
         self.text.bind("<<Modified>>", self.text_modified)
         self.seed = ttk.Label(right, text="")
@@ -216,17 +238,24 @@ class Window:
         buttons = ttk.Frame(right)
         buttons.grid(row=7, column=0, sticky="w")
         self.buttons = {}
-        self.prompt_window = None
         rows = ((("play_saved", "Play saved"), ("audition", "Audition"), ("regenerate", "Regenerate"),
                  ("play_take", "Play take")),
-                (("accept", "Accept"), ("reset", "Reset"), ("show_prompt", "Show prompt")))
+                (("accept", "Accept"), ("save", "Save"), ("reset", "Reset")))
         for r, row in enumerate(rows):
             for c, (name, label) in enumerate(row):
                 b = ttk.Button(buttons, text=label, command=getattr(self, name))
                 b.grid(row=r, column=c, sticky="ew", padx=(0, px(6)), pady=(0, px(6)))
                 self.buttons[name] = b
-        self.calibration = ttk.Label(right, text="", wraplength=px(480), justify="left", foreground="#666")
-        self.calibration.grid(row=8, column=0, sticky="w", pady=(px(10), 0))
+        # the prompt as the fields stand, always in view, with a button to copy it
+        prompt = ttk.Frame(right)
+        prompt.grid(row=8, column=0, sticky="ew", pady=(px(6), 0))
+        prompt.columnconfigure(0, weight=1)
+        ttk.Label(prompt, text="Prompt").grid(row=0, column=0, sticky="w")
+        self.buttons["copy_prompt"] = ttk.Button(prompt, text="Copy", command=self.copy_prompt)
+        self.buttons["copy_prompt"].grid(row=0, column=1, sticky="e")
+        self.prompt_text = tk.Text(prompt, wrap="word", height=5, font=self.f_text, padx=px(4), pady=px(4),
+                                   foreground="#333", state="disabled")
+        self.prompt_text.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(px(2), 0))
         # hearing a line through MOSS, the way a pack would say it
         hear = ttk.Frame(right)
         hear.grid(row=9, column=0, sticky="ew", pady=(px(10), 0))
@@ -238,8 +267,13 @@ class Window:
         self.line_box.grid(row=0, column=1, sticky="ew")
         self.buttons["hear"] = ttk.Button(hear, text="Hear (MOSS)", command=self.hear)
         self.buttons["hear"].grid(row=0, column=2, sticky="e", padx=(px(6), 0))
+        self.buttons["use_line"] = ttk.Button(hear, text="Use for design", command=self.use_line)
+        self.buttons["use_line"].grid(row=0, column=3, sticky="e", padx=(px(6), 0))
+        self.design_var = tk.StringVar()   # the design line as recorded: a reference to a line, or text
+        self.design_label = ttk.Label(right, text="", wraplength=px(480), justify="left")
+        self.design_label.grid(row=10, column=0, sticky="w", pady=(px(4), 0))
         self.hear_note = ttk.Label(right, text="", wraplength=px(480), justify="left", foreground="#666")
-        self.hear_note.grid(row=10, column=0, sticky="w", pady=(px(2), 0))
+        self.hear_note.grid(row=11, column=0, sticky="w", pady=(px(2), 0))
         self.status_line = ttk.Label(root, text="", padding=px(6), anchor="w")
         self.status_line.grid(row=2, column=0, columnspan=2, sticky="ew")
 
@@ -268,12 +302,16 @@ class Window:
 
     def refresh(self, keep=None):
         """The tree: the matching rows under their parents, siblings in the
-        catalogue's order or the sorted column's."""
+        catalogue's order or the sorted column's. With a status chosen it
+        is a flat list of characters instead, to work down."""
         rows = self.ses.filter(self.query.get(), **{n: self.chosen(n) for n in self.filters})
         matched = {r["key"] for r in rows}
         children = {}
-        for r in self.ses.with_parents(rows).values():
-            children.setdefault(r["parent"], []).append(r)
+        if self.chosen("status") != "all":
+            children[""] = rows
+        else:
+            for r in self.ses.with_parents(rows).values():
+                children.setdefault(r["parent"], []).append(r)
         self.tree.delete(*self.tree.get_children())
 
         def insert(parent):
@@ -285,10 +323,11 @@ class Window:
                 self.tree.insert(parent, "end", iid=r["key"], text=r["label"], open=True,
                                  tags=() if r["key"] in matched else ("context",),
                                  values=(r["voice"], r["via"], r["race"], r["gender"], r["age"], r["lines"] or "",
-                                         " ".join(sorted(r["stories"])), self.state_of(r)))
+                                         " ".join(sorted(r["stories"])), r["needs"], self.state_of(r)))
                 insert(r["key"])
         insert("")
-        self.count.configure(text=f"{len(rows)} of {len(self.ses.rows)}")
+        todo, ready = self.ses.progress()
+        self.count.configure(text=f"{len(rows)} of {len(self.ses.rows)}  ·  prompts: {todo} to do, {ready} ready")
         if keep and self.tree.exists(keep):
             self.tree.selection_set(keep)
             self.tree.see(keep)
@@ -349,12 +388,20 @@ class Window:
         else:
             self.title.configure(text=f"Own voice {self.voice}" + (" (new, not accepted yet)" if st["new"] else ""))
             info = r["how"] if r["name"] is not None else ""
+            if r.get("status"):
+                info += ("\nPrompt: " + (f"to do, missing {r['needs']}. " if r["status"] == "todo" else "ready. ")
+                         + self.ses.STATUS_RULE)
         self.info.configure(text=info + (f"\nLines: {stories}" if stories else ""))
         if r["name"] is not None and st["kind"] == "pool":
             self.own.configure(text=f"Give {r['label']} a voice of their own")
             self.own.grid()
+            self.move_var.set(next((label for g, label in self.groups if g == r["group"]), ""))
+            for widget in self.move_widgets:
+                widget.grid()
         else:
             self.own.grid_remove()
+            for widget in self.move_widgets:
+                widget.grid_remove()
         self.loading = True   # filling the fields is not an edit
         pool = st["kind"] == "pool"
         for name, (var, box, state) in self.meta.items():
@@ -363,10 +410,11 @@ class Window:
         self.text.delete("1.0", "end")
         self.text.insert("1.0", st["description"])
         self.text.edit_modified(False)
+        self.design_var.set(st["line"])
         self.loading = False
+        self.show_design_line(st)
         self.seed_line(st)
         self.update_prompt()
-        self.calibration.configure(text=f"Every clip says: {st['calibration']}")
         self.fill_lines(r)
         self.enable()
 
@@ -378,10 +426,12 @@ class Window:
         self.line_box.configure(values=lines)
         if self.line_var.get() not in lines and (lines or not self.line_var.get().strip()):
             self.line_var.set(lines[0] if lines else "")
-        self.hear_note.configure(text="MOSS says the line continuing the take, else the saved clip, as a pack would; "
-                                      "<player> becomes the pack's word, directions are dropped, the lexicon applies. "
-                                      "Pick one of the speaker's lines or type any text."
-                                 if lines else "No lines of this voice's speakers on record; type any text to hear.")
+        self.hear_note.configure(text="" if lines else
+                                 f"{self.ses.lines_path} is missing, so there are no lines to pick: it holds the game's "
+                                 "text and is never committed. Copy it from the machine that ran make voice-stories, "
+                                 "or run that here. Any text typed can still be heard."
+                                 if self.ses.lines_path else
+                                 "No lines of this voice's speakers on record; type any text to hear.")
 
     def seed_line(self, st=None):
         st = st or self.ses.state(self.voice)
@@ -403,16 +453,19 @@ class Window:
         self.info.configure(text=f"{len(voices)} voices: {who or 'none yet'}.\nRace is here to design by; it is "
                                  "not part of a prompt. Select a voice or a speaker to edit.")
         self.own.grid_remove()
+        for widget in self.move_widgets:
+            widget.grid_remove()
         self.loading = True
         for name, (var, box, state) in self.meta.items():
             var.set("")
             box.configure(state="disabled")
         self.text.delete("1.0", "end")
         self.text.edit_modified(False)
+        self.design_var.set("")
         self.loading = False
+        self.design_label.configure(text="")
         self.seed.configure(text="")
         self.update_prompt()
-        self.calibration.configure(text="")
         self.line_box.configure(values=())
         self.line_var.set("")
         self.hear_note.configure(text="")
@@ -424,7 +477,33 @@ class Window:
         return self.text.get("1.0", "end").strip()
 
     def meta_values(self):
-        return {name: var.get().strip() for name, (var, _, _) in self.meta.items()}
+        return {**{name: var.get().strip() for name, (var, _, _) in self.meta.items()},
+                "line": self.design_var.get()}
+
+    def show_design_line(self, st=None):
+        """Under the picker: the line the voice is designed saying."""
+        st = st or (self.ses.state(self.voice) if self.voice else None)
+        if not st or st["kind"] == "pool":
+            return self.design_label.configure(text="")
+        if not st["line"]:
+            text = "Design line: none yet. Pick or type a line above and press Use for design."
+        elif st["line_text"] is None:
+            text = (f"Design line: {st['line']}, a line this machine does not have "
+                    "(data/voice_lines.json; make voice-stories).")
+        else:
+            text = f"Design line: {st['line_text']}"
+        self.design_label.configure(text=text)
+
+    def use_line(self):
+        """Record the picked or typed line as the one this voice is
+        designed saying; an edit like any other, kept until saved."""
+        text = self.line_var.get().strip()
+        if not self.voice or not text:
+            return self.status("pick or type a line to design the voice with")
+        self.design_var.set(self.ses.design_line(self.voice, text))
+        self.edited()
+        self.show_design_line()
+        self.status("design line set; Save keeps it")
 
     def text_modified(self, event=None):
         if self.text.edit_modified():
@@ -447,32 +526,7 @@ class Window:
             self.tree.set(self.row["key"], "state", self.state_of(self.row))
         self.enable()
 
-    # -- the prompt popout -------------------------------------------
-
-    def show_prompt(self):
-        tk, ttk = self.tk, self.ttk
-        if self.prompt_window is not None and self.prompt_window.winfo_exists():
-            self.prompt_window.lift()
-            return self.update_prompt()
-        px = self.px
-        win = self.prompt_window = tk.Toplevel(self.root)
-        win.title("Spoken: the voice's prompt")
-        win.geometry(f"{px(720)}x{px(420)}")
-        win.columnconfigure(0, weight=1)
-        win.rowconfigure(1, weight=1)
-        win.rowconfigure(3, weight=1)
-        self.prompt_title = ttk.Label(win, text="", padding=(px(8), px(8), px(8), px(2)), font=self.f_title)
-        self.prompt_title.grid(row=0, column=0, sticky="w")
-        self.prompt_text = tk.Text(win, wrap="word", height=5, font=self.f_text, padx=px(6), pady=px(6))
-        self.prompt_text.grid(row=1, column=0, sticky="nsew", padx=px(8))
-        self.prompt_saved_label = ttk.Label(win, text="", padding=(px(8), px(8), px(8), px(2)))
-        self.prompt_saved_label.grid(row=2, column=0, sticky="w")
-        self.prompt_saved = tk.Text(win, wrap="word", height=4, font=self.f_text, padx=px(6), pady=px(6),
-                                    foreground="#555")
-        self.prompt_saved.grid(row=3, column=0, sticky="nsew", padx=px(8), pady=(0, px(8)))
-        ttk.Button(win, text="Copy", command=self.copy_prompt).grid(row=4, column=0, sticky="e",
-                                                                     padx=px(8), pady=(0, px(8)))
-        self.update_prompt()
+    # -- the prompt --------------------------------------------------
 
     def prompt(self):
         if not self.voice:
@@ -480,27 +534,18 @@ class Window:
         return self.ses.compose(self.voice, self.description(), **self.meta_values())
 
     def update_prompt(self):
-        if getattr(self, "loading", False) or self.prompt_window is None or not self.prompt_window.winfo_exists():
+        """The prompt box follows the fields; blank when no voice is
+        selected."""
+        if getattr(self, "loading", False):
             return
-        st = self.ses.state(self.voice) if self.voice else None
-        self.prompt_title.configure(text=f"{self.row['label']} ({self.voice})" if st else "Nothing selected")
-        for widget, text in ((self.prompt_text, self.prompt()),
-                             (self.prompt_saved, (st or {}).get("clip_instruct") or "")):
-            widget.configure(state="normal")
-            widget.delete("1.0", "end")
-            widget.insert("1.0", text)
-            widget.configure(state="disabled")
-        if not st:
-            label = ""
-        elif not st["clip"]:
-            label = "No saved clip yet."
-        elif st["clip_instruct"] == self.prompt():
-            label = "The saved clip was made with exactly this."
-        else:
-            label = "The saved clip was made with:"
-        self.prompt_saved_label.configure(text=label)
+        self.prompt_text.configure(state="normal")
+        self.prompt_text.delete("1.0", "end")
+        self.prompt_text.insert("1.0", self.prompt())
+        self.prompt_text.configure(state="disabled")
 
     def copy_prompt(self):
+        if not self.voice:
+            return
         self.root.clipboard_clear()
         self.root.clipboard_append(self.prompt())
         self.status("prompt copied")
@@ -514,6 +559,20 @@ class Window:
         self.refresh(keep=self.row["key"])
         self.show()
         self.status(f"new voice {self.voice}: edit the description, audition, then accept")
+
+    def move(self):
+        """Put the selected speaker in the picked casting group."""
+        group = next((g for g, label in self.groups if label == self.move_var.get()), None)
+        if not self.row or self.row["name"] is None or group is None:
+            return
+        label = self.row["label"]
+        if group == self.row["group"]:
+            return self.status(f"{label} is already in {group}")
+        try:
+            voice = self.ses.move(self.row["name"], group)
+        except (ValueError, OSError) as e:
+            return self.status(str(e))
+        self.after_change(f"moved {label} to {group}: now on {voice} (helper/cast_groups.yaml, voices.json)")
 
     def audition(self):
         description, meta = self.description(), self.meta_values()
@@ -591,17 +650,44 @@ class Window:
             return self.status(str(e))
         self.after_change(f"saved {clip.name} and voice_designs.yaml")
 
+    def save(self):
+        if not self.voice:
+            return
+        try:
+            self.ses.save(self.voice)
+        except (ValueError, OSError) as e:
+            return self.status(str(e))
+        self.after_change(f"saved {self.voice} to voice_designs.yaml, with no take")
+
     def reset(self):
         if not self.voice:
             return
         self.ses.reset(self.voice)
         self.after_change(f"{self.voice} reset to what is saved")
 
+    def shown(self, parent=""):
+        """Every row's key, in the order the tree shows them."""
+        out = []
+        for key in self.tree.get_children(parent):
+            out += [key] + self.shown(key)
+        return out
+
     def after_change(self, message):
+        """Redraw after a save, an accept, a move, or a reset. A row the
+        filters no longer show (a prompt that became ready, in the to-do
+        list) gives way to the one that took its place, so a list can be
+        worked down without reaching for the mouse."""
         key = self.row["key"]
+        before = self.shown()
         self.fill_filters()
         self.refresh(keep=key)
-        if self.tree.exists(key):
+        if not self.tree.exists(key):
+            after = self.shown()
+            key = after[min(before.index(key), len(after) - 1)] if after and key in before else None
+            if key:
+                self.tree.selection_set(key)
+                self.tree.see(key)
+        if key:
             self.row = self.ses.row(key)
             self.voice = self.row["voice"] or None
             self.show()
@@ -636,8 +722,10 @@ class Window:
             "audition": bool(st) and not self.busy, "regenerate": bool(st) and not self.busy,
             "play_take": bool(st and st["candidate"]),
             "accept": bool(st and st["candidate"] and not st["edited_since_take"]) and not self.busy,
+            "save": bool(st and st["pending"]) and not self.busy,
+            "use_line": bool(st and st["kind"] == "cast"),
             "reset": bool(st and st["pending"]) and not self.busy,
-            "show_prompt": bool(st),
+            "copy_prompt": bool(st),
             "hear": bool(st and (st["clip"] or (st["candidate"] and not st["edited_since_take"]))) and not self.busy,
         }
         for name, b in self.buttons.items():
@@ -654,7 +742,7 @@ class Window:
             print("takes not accepted (still in refs/.candidates/): " + ", ".join(sorted(pending)))
         typed = [v for v, d in self.ses.drafts.items() if d.get("typed") or not d.get("candidate")]
         if typed:
-            print("voices edited and not auditioned (lost): " + ", ".join(sorted(typed)))
+            print("voices edited and neither saved nor auditioned (lost): " + ", ".join(sorted(typed)))
         self.root.destroy()
 
     def run(self):

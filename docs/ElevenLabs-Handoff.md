@@ -24,7 +24,7 @@ only (`docs/Audio-Packs.md`). ElevenLabs is developer-side generation.
 |---|---|
 | Model | `eleven_v4`; the model is a setting. `eleven_v4_turbo` bills at half the rate and is worth hearing beside it |
 | Auditions | Mostly in the ElevenLabs UI and app, not in our tools |
-| Voice matching | Voices named `ffxi/<voice key>`; a sync command resolves names into a committed lock file |
+| Voice matching | Voices filed in the `ffxi` collection and named as the character; a sync command resolves them into a committed lock file |
 | Voice creation | Named characters are made by hand in the UI from `voice_designs.yaml`'s prompts; pools are stock voices |
 | Voice ceiling | Pro's 160 custom slots (confirmed by the account check); Voice Library voices for pools where they work; fewer individual voices |
 | Individual voices | By importance across all storylines, not per storyline (Shantotto keeps one voice everywhere) |
@@ -167,10 +167,21 @@ pool voices, 272 in all, which does not fit Pro. So:
 
 ### Sync
 
-`make elevenlabs-sync` lists the account (`GET /v2/voices`, paged), matches
-`ffxi/<key>` names to voice keys, and writes the lock file. It reports keys
-with no voice, duplicate names, `ffxi/` voices no key wants, and slots used
-against the ceiling. Builds read only the lock file and never list the
+`make elevenlabs-sync` lists the account (`GET /v2/voices`, paged) and its
+collections (`GET /v1/voices/collections`), takes the voices filed in the
+collection titled `ffxi`, matches each by its name to a cast entry (the
+name or one of its `also` names; the voice key is the name's slug), and
+writes the lock file. It reports keys with no voice, duplicate names,
+voices in the collection that no key wants, and slots used against the
+ceiling. A voice is ours by being filed in the collection in the UI, so
+its name stays the character's, with no prefix (changed 2026-11-19 from
+names of the form `ffxi/<key>`). Stock voices we do not own cannot be
+renamed, so pool voices are still assigned by id in
+`helper/elevenlabs.yaml`.
+
+Each voice also carries the `description` it was designed from, so sync
+can say when that differs from what `voice_designs.yaml` composes today,
+and ElevenLabs' own `labels` (age, gender, accent) to set beside our meta. Builds read only the lock file and never list the
 account. A voice replaced in the UI gets a new id, so the lock changes and
 only that voice's lines re-render.
 
@@ -192,6 +203,19 @@ leaves its part out. The quality level is the run's, `QUALITY=` on the
 Makefile, high by default. `make voice-prompts [ONLY=Name] [QUALITY=high]`
 prints the prompts to paste into the UI, and the review window's Show
 prompt has a Copy button.
+
+A cast entry also records its `line`: the text the voice says while it is
+designed, since ElevenLabs speaks a text in the voice it drafts. Picked in
+the review window (Use for design) from the character's own lines, it is
+kept as a reference, `sha1:` and a short hash, because the file is
+committed and the game's text is not; the text is found again in
+`data/voice_lines.json` on a machine that has run `make voice-stories`.
+Text written for the purpose is kept as it is. `make voice-prompts` prints
+it under the prompt. *(Unverified: whether ElevenLabs sets a minimum or
+maximum length on that text.)*
+
+The review window's status filter is the burn-down: an own voice is to do
+until it has an accent, a persona, an emotion, a description, and a line.
 
 Race is not in the prompt: the per-race phrases written for Qwen are gone.
 A design keeps its race because it helps whoever is designing the voice.
@@ -287,8 +311,8 @@ stays on disk, and deleting the entry reverts to it.
   running as the user can read the keyring entry, which is why the key is
   a restricted one.
 - `make elevenlabs-check` reads the account and spends nothing: plan,
-  characters left, voice slots, the voices and how many are `ffxi/`, and
-  the speech models. A read the key has no permission for is reported in
+  characters left, voice slots, the voices and which are in the `ffxi`
+  collection, and the speech models. A read the key has no permission for is reported in
   its place. Built 2026-11-19 (`helper/elevenlabs.py`); the first run
   showed restricted keys do have per-endpoint permissions: the check
   needs `user_read`, `voices_read`, and `models_read`.

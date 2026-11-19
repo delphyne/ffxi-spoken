@@ -21,10 +21,17 @@ description is one or two sentences on timbre, pacing, and delivery.
     Persona: <persona>. Emotion: <emotion>.
     <description>
 
-A blank field, or an unknown gender, leaves its part out. The quality level
+A blank field, or an unknown gender, leaves its part out; the description
+may be blank too when there is a persona or an emotion. The quality level
 is not in the file: it is the run's (`make ... QUALITY=`, high by default).
 Race is never in the prompt; it is kept because it helps whoever is
 designing the voice, and must be one of RACES, the casting groups' races.
+
+A cast voice also records its `line`: what the voice says while it is being
+designed (ElevenLabs speaks a text in the voice it drafts). It is one of
+the character's own lines, kept as a reference (`line_ref`: "sha1:" and a
+short hash) because this file is committed and the game's text is not, or
+any text written for the purpose, kept as it is.
 
 `Designs` answers which voice a named character has, what each group's pool
 is, and what every voice's design is. It validates the file on load so a
@@ -32,6 +39,7 @@ typo fails here rather than halfway through designing, and `dump` writes it
 back keeping the comment block that opens it.
 """
 
+import hashlib
 import json
 import re
 import sys
@@ -56,7 +64,11 @@ RACES = tuple(dict.fromkeys(race for race, _ in GROUP_INFO.values()))
 # a design's meta; the last three are a cast voice's only
 META = ("gender", "age", "race", "accent", "persona", "emotion")
 PROMPT_KEYS = ("accent", "persona", "emotion")
-CAST_KEYS = {*META, "description", "seed", "also"}
+# everything about a design but its description and seed: the meta, and the
+# line a cast voice is designed saying
+FIELDS = (*META, "line")
+CAST_KEYS = {*FIELDS, "description", "seed", "also"}
+LINE_REF = "sha1:"
 POOL_KEYS = {"age", "description", "seed"}
 DEFAULT_QUALITY = "high"
 
@@ -93,6 +105,23 @@ def pool_voice(group, index):
 
 def tidy(text):
     return " ".join(str(text or "").split())
+
+
+def line_ref(text):
+    """How a line of the game is named in the file: the file is committed
+    and the game's text never is, so a design keeps a short hash of the
+    line, and the text is found again in data/ (resolve_line)."""
+    return LINE_REF + hashlib.sha1(tidy(text).encode("utf-8")).hexdigest()[:12]
+
+
+def resolve_line(value, candidates):
+    """The text a design's `line` stands for: a reference is looked for
+    among `candidates` (the speaker's lines on this machine) and is None
+    when it is not there; anything else is the text itself."""
+    value = tidy(value)
+    if not value.startswith(LINE_REF):
+        return value
+    return next((tidy(c) for c in candidates if line_ref(c) == value), None)
 
 
 def phrase(text):
@@ -142,7 +171,7 @@ class Designs:
             also = [str(a) for a in (entry.get("also") or [])]
             self._add(voice_slug(name), f"cast entry {name!r}", kind="cast", names=[name] + also,
                       description=entry.get("description"), seed=entry.get("seed", 1),
-                      **{k: entry.get(k) for k in META})
+                      **{k: entry.get(k) for k in FIELDS})
             for speaker in [name] + also:
                 if speaker in self.speakers:
                     raise ValueError(f"{source}: {speaker!r} is cast twice "
@@ -174,10 +203,12 @@ class Designs:
             if missing:
                 raise ValueError(f"{source}: no pool for casting group(s) {', '.join(missing)}")
 
-    def _check(self, what, gender, age, race, description, seed, accent=None, persona=None, emotion=None):
+    def _check(self, what, gender, age, race, description, seed, accent=None, persona=None, emotion=None,
+               line=None):
         gender, age, race, description = tidy(gender), tidy(age), tidy(race), tidy(description)
-        if not description:
-            raise ValueError(f"{self.source}: {what} has no description")
+        if not description and not (phrase(persona) or phrase(emotion)):
+            raise ValueError(f"{self.source}: {what} has no description (nor a persona or an emotion to stand "
+                             "in for one)")
         if isinstance(seed, bool) or not isinstance(seed, int):
             raise ValueError(f"{self.source}: {what} seed must be a whole number, not {seed!r}")
         if race and race not in RACES:
@@ -188,14 +219,14 @@ class Designs:
                              "that belongs in the meta, which compose() puts in front")
         return {"gender": gender or "unknown", "age": age, "race": race or "unknown",
                 "accent": phrase(accent), "persona": phrase(persona), "emotion": phrase(emotion),
-                "description": description, "seed": seed}
+                "line": tidy(line), "description": description, "seed": seed}
 
     def _add(self, voice, what, kind, description, seed, gender=None, age=None, race=None, accent=None,
-             persona=None, emotion=None, **info):
+             persona=None, emotion=None, line=None, **info):
         if voice in self.voices:
             raise ValueError(f"{self.source}: {what} gives voice name {voice!r}, which another entry already has")
         self.voices[voice] = dict(info, kind=kind, **self._check(what, gender, age, race, description, seed,
-                                                                 accent, persona, emotion))
+                                                                 accent, persona, emotion, line))
 
     @classmethod
     def load(cls, path=DEFAULT_PATH, groups=None, quality=DEFAULT_QUALITY):
@@ -232,16 +263,16 @@ class Designs:
     # -- editing (the voice review) ----------------------------------------
 
     def update(self, voice, description, seed, **meta):
-        """A new design for an existing voice; `meta` is any of the META
-        fields, the rest staying as they are. A pool voice keeps its
-        group's gender and race and has no accent, persona, or emotion."""
+        """A new design for an existing voice; `meta` is any of FIELDS,
+        the rest staying as they are. A pool voice keeps its group's
+        gender and race and has no accent, persona, emotion, or line."""
         v = self.voices[voice]
-        unknown = set(meta) - set(META)
+        unknown = set(meta) - set(FIELDS)
         if unknown:
             raise TypeError(f"update() got unknown field(s) {', '.join(sorted(unknown))}")
-        new = {k: v[k] if meta.get(k) is None else meta[k] for k in META}
+        new = {k: v[k] if meta.get(k) is None else meta[k] for k in FIELDS}
         if v["kind"] == "pool":
-            new.update(gender=v["gender"], race=v["race"], accent="", persona="", emotion="")
+            new.update(gender=v["gender"], race=v["race"], accent="", persona="", emotion="", line="")
         v.update(self._check(voice, description=description, seed=seed, **new))
 
     def add_cast(self, name, description, seed=1, **meta):
@@ -267,7 +298,10 @@ class Designs:
             name, *also = v["names"]
             out.append(f"  {yaml_key(name)}:")
             out += [f"    {k}: {yaml_key(v[k])}" for k in META if v[k] and v[k] != "unknown"]
-            out += ["    description: >-", *fold(v["description"], 6)]
+            if v["description"]:
+                out += ["    description: >-", *fold(v["description"], 6)]
+            if v["line"]:
+                out += ["    line: >-", *fold(v["line"], 6)]
             if v["seed"] != 1:
                 out.append(f"    seed: {v['seed']}")
             if also:

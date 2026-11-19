@@ -19,7 +19,9 @@ the rest of the cast their group's designed pool, spread the same way. Edit
 the designs there, then re-run this.
 
 The NPC list is Balloon's portrait set. Fix a miscast by moving the name to
-another group here and re-running; hand edits to voices.json are lost.
+another group here and re-running, or with a line in cast_groups.yaml
+(speaker: group), which wins over this list and the census and is what the
+voice review's Move writes; hand edits to voices.json are lost.
 
     python3 helper/cast.py            # rewrite helper/voices.json
     python3 helper/cast.py --check    # exit 1 if voices.json is stale
@@ -124,21 +126,63 @@ DEFAULTS = {"kokoro": {"default": "am_adam", "": "bm_fable"},
             "piper": {"default": "en_US-lessac-medium", "": "en_GB-alan-medium"}}
 
 
+MOVES = Path(__file__).resolve().parent / "cast_groups.yaml"
+MOVES_HEADER = "# Casting moves: speaker: group (helper/cast.py, make review-voices).\n\n"
+
+
+def load_moves(path=MOVES):
+    """cast_groups.yaml: speaker -> the group they are moved to. Missing
+    or empty is no moves; an unknown group is an error."""
+    path = Path(path)
+    if not path.exists():
+        return {}
+    import yaml
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if not isinstance(data, dict):
+        raise ValueError(f"{path.name}: expected speaker: group lines")
+    moves = {str(name): str(group) for name, group in data.items()}
+    for name, group in moves.items():
+        if group not in POOLS:
+            raise ValueError(f"{path.name}: {name!r} is moved to {group!r}, which is not a casting group")
+    return moves
+
+
+def write_moves(moves, path=MOVES):
+    """Write the moves back, sorted, keeping the comment block that opens
+    the file."""
+    path = Path(path)
+    old = path.read_text(encoding="utf-8") if path.exists() else MOVES_HEADER
+    lines = old.splitlines(keepends=True)
+    head = "".join(lines[:next((i for i, line in enumerate(lines) if line.strip() and not line.startswith("#")),
+                               len(lines))])
+    body = "".join(f"{json.dumps(name, ensure_ascii=False)}: {group}\n"
+                   for name, group in sorted(moves.items(), key=lambda kv: kv[0].lower())) or "{}\n"
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(head + body, encoding="utf-8")
+    tmp.replace(path)
+
+
 def moss_defaults(d):
     """The unnamed speaker is narration; anyone uncast and unknown to the
     census gets the first ordinary voice."""
     return {"default": d.pools["hume_m_adult"][0], "": d.pools["narrator"][0]}
 
 
-def build(designs=None):
+def build(designs=None, moves=None):
     """voices.json: per engine, speaker -> voice. MOSS voices come from
     voice_designs.yaml: a character with a design gets their own voice, the
-    rest of the cast their group's designed pool, spread the same way."""
+    rest of the cast their group's designed pool, spread the same way.
+    `moves` (cast_groups.yaml unless given) puts a speaker in another
+    group: they keep their turn in the listed group, so nobody after them
+    shifts, and join the end of the new one."""
     if designs is None:
         designs = load_designs(groups=set(POOLS))
+    if moves is None:
+        moves = load_moves()
     out = {engine: dict(defaults) for engine, defaults in DEFAULTS.items()}
     out["moss"] = moss_defaults(designs)
     seen = set()
+    turns = {}   # group -> (members listed, members on its MOSS pool), where the moved ones carry on from
     for group, characters in CAST.items():
         kokoro_pool, piper_voice = POOLS[group]
         pooled = 0   # members on the MOSS pool so far: the designed ones do not take a turn
@@ -153,9 +197,22 @@ def build(designs=None):
                 if name in seen:
                     raise SystemExit(f"{name!r} is cast twice")
                 seen.add(name)
+                if moves.get(name, group) != group:
+                    continue   # placed below, in the group they were moved to
                 out["kokoro"][name] = voice
                 out["piper"][name] = piper_voice
                 out["moss"][name] = designs.voice_for_speaker(name) or moss
+        turns[group] = (len(characters), pooled)
+    for name, group in sorted(moves.items()):
+        if name in out["kokoro"]:
+            continue   # moved to the group the list already has them in
+        kokoro_pool, piper_voice = POOLS[group]
+        listed, pooled = turns.get(group, (0, 0))
+        moss = designs.voice_for_speaker(name)
+        out["kokoro"][name] = spread(kokoro_pool, listed)
+        out["piper"][name] = piper_voice
+        out["moss"][name] = moss or spread(designs.pools[group], pooled)
+        turns[group] = (listed + 1, pooled + (0 if moss else 1))
     # designed characters outside the hand cast (minor NPCs given a voice of their own)
     for name, voice in designs.speakers.items():
         out["moss"].setdefault(name, voice)

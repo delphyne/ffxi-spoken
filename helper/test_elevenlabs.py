@@ -141,8 +141,10 @@ class ClientTest(unittest.TestCase):
 
 SUB = {"tier": "pro", "status": "active", "character_count": 238000, "character_limit": 1238000,
        "next_character_count_reset_unix": 1796083200, "voice_slots_used": 3, "voice_limit": 160}
-VOICES = {"voices": [{"name": "ffxi/tenzen", "category": "generated"}, {"name": "ffxi/iroha", "category": "generated"},
-                     {"name": "George", "category": "premade"}], "has_more": False}
+VOICES = {"voices": [{"name": "Tenzen", "category": "generated", "collection_ids": ["c1"]},
+                     {"name": "Iroha", "category": "generated", "collection_ids": ["c2", "c1"]},
+                     {"name": "George", "category": "premade", "collection_ids": ["c2"]}], "has_more": False}
+COLLECTIONS = {"collections": [{"collection_id": "c1", "title": "ffxi"}, {"collection_id": "c2", "title": "favourites"}]}
 MODELS = [{"model_id": "eleven_v4", "can_do_text_to_speech": True, "maximum_text_length_per_request": 5000,
            "model_rates": {"character_cost_multiplier": 1.0}},
           {"model_id": "scribe", "can_do_text_to_speech": False}]
@@ -151,7 +153,7 @@ MODELS = [{"model_id": "eleven_v4", "can_do_text_to_speech": True, "maximum_text
 class CheckTest(unittest.TestCase):
     def test_the_report(self):
         c, transport, _ = client({"/v1/user/subscription": [(200, SUB)], "/v2/voices": [(200, VOICES)],
-                                  "/v1/models": [(200, MODELS)]})
+                                  "/v1/voices/collections": [(200, COLLECTIONS)], "/v1/models": [(200, MODELS)]})
         lines = el.check(c, now=datetime(2026, 11, 19, tzinfo=timezone.utc))
         self.assertEqual(lines, [
             "plan            pro (active)",
@@ -159,7 +161,7 @@ class CheckTest(unittest.TestCase):
             "resets          2026-12-01 (12 days)",
             "voice slots     3 of 160 used",
             "voices          3 in the account: 2 generated, 1 premade",
-            "ffxi/ voices    2: ffxi/iroha, ffxi/tenzen",
+            "ffxi collection 2 voices: Iroha, Tenzen",
             "speech models   eleven_v4",
             "  eleven_v4                    5000 characters a request, cost x1.0"])
         self.assertTrue(all(method == "GET" for method, *_ in transport.calls), "a check only reads")
@@ -167,11 +169,21 @@ class CheckTest(unittest.TestCase):
     def test_a_read_the_key_may_not_make_is_reported_in_its_place(self):
         denied = (401, {"detail": {"message": "The API key you used is missing the permission user_read"}})
         c, _, _ = client({"/v1/user/subscription": [denied], "/v2/voices": [(200, VOICES)],
+                          "/v1/voices/collections": [(200, {"collections": [{"collection_id": "c2", "title": "FFXI"}]})],
                           "/v1/models": [(200, MODELS)]})
         lines = el.check(c)
         self.assertIn("missing the permission user_read", lines[0])
         self.assertTrue(lines[0].startswith("plan            not read: "))
         self.assertEqual(lines[1], "voices          3 in the account: 2 generated, 1 premade")
+        self.assertIn("ffxi collection not found", lines[2], "the title is matched exactly")
+
+    def test_our_voices_are_the_collections_by_name(self):
+        voices, collections = VOICES["voices"], COLLECTIONS["collections"]
+        self.assertEqual([v["name"] for v in el.our_voices(voices, collections)], ["Iroha", "Tenzen"])
+        self.assertEqual(el.our_voices(voices, collections, title="favourites")[0]["name"], "George",
+                         "a stock voice can be filed in a collection too")
+        self.assertIsNone(el.our_voices(voices, []), "no collection is not the same as an empty one")
+        self.assertEqual(el.our_voices(voices[:0], collections), [])
 
     def test_main_reports_a_missing_key_without_a_traceback(self):
         import contextlib
@@ -181,6 +193,71 @@ class CheckTest(unittest.TestCase):
                 contextlib.redirect_stderr(err):
             self.assertEqual(el.main(["check"]), 1)
         self.assertIn("no ElevenLabs API key", err.getvalue())
+
+
+class FakeDesigns:
+    """voice_designs.yaml as describe needs it, without PyYAML."""
+    voices = {"iroha": {"kind": "cast"}, "tenzen": {"kind": "cast"}, "hume_m_adult-0": {"kind": "pool"}}
+    speakers = {"Iroha": "iroha", "Volto Oscuro": "iroha", "Tenzen": "tenzen"}
+
+    def voice_for_speaker(self, name):
+        return self.speakers.get(name)
+
+    def compose(self, voice):
+        return f"Native Japanese. High quality.\nPersona: {voice}."
+
+
+OURS = [{"name": "Iroha", "voice_id": "id-i", "description": "Native Japanese. High quality.\nPersona: iroha.",
+         "collection_ids": ["c1"]},
+        {"name": "Tenzen", "voice_id": "id/t", "description": "Native Japan. A samurai.", "collection_ids": ["c1"]},
+        {"name": "Gilgamesh", "voice_id": "id-g", "description": None, "collection_ids": ["c1"]},
+        {"name": "George", "voice_id": "id-s", "description": "stock", "collection_ids": []}]
+
+
+class DescribeTest(unittest.TestCase):
+    def replies(self, edits=0):
+        return {"/v2/voices": [(200, {"voices": OURS, "has_more": False})],
+                "/v1/voices/collections": [(200, COLLECTIONS)],
+                "/v1/voices/id%2Ft/edit": [(200, {"status": "ok"})] * edits}
+
+    def test_the_plan_is_the_voices_whose_description_is_not_the_prompt(self):
+        todo, strangers = el.describe_plan(FakeDesigns(), OURS[:3])
+        self.assertEqual([(t["name"], t["voice"], t["voice_id"]) for t in todo], [("Tenzen", "tenzen", "id/t")])
+        self.assertEqual((todo[0]["stored"], todo[0]["composed"]),
+                         ("Native Japan. A samurai.", "Native Japanese. High quality.\nPersona: tenzen."))
+        self.assertEqual(strangers, ["Gilgamesh"], "in the collection, with no design by that name")
+        self.assertEqual(el.describe_plan(FakeDesigns(), OURS[:3], only=["Iroha"]), ([], []))
+
+    def test_without_write_nothing_is_sent(self):
+        c, transport, _ = client(self.replies())
+        said = []
+        self.assertEqual(el.describe(c, FakeDesigns(), out=said.append), 1)
+        self.assertTrue(all(method == "GET" for method, *_ in transport.calls))
+        self.assertIn("would write", said[0])
+        self.assertIn("Gilgamesh: in the ffxi collection", said[1])
+        self.assertEqual(said[-1], "1 of 3 descriptions differ; WRITE=1 sends them")
+
+    def test_write_edits_only_what_differs_keeping_the_name(self):
+        c, transport, _ = client(self.replies(edits=1))
+        said = []
+        self.assertEqual(el.describe(c, FakeDesigns(), write=True, out=said.append), 1)
+        posts = [call for call in transport.calls if call[0] == "POST"]
+        self.assertEqual(len(posts), 1)
+        _, url, headers, body = posts[0]
+        self.assertEqual(url, el.BASE + "/v1/voices/id%2Ft/edit", "the id is quoted into the path")
+        boundary = headers["Content-Type"].split("boundary=")[1]
+        self.assertTrue(headers["Content-Type"].startswith("multipart/form-data; "))
+        text = body.decode("utf-8")
+        self.assertEqual(text, f'--{boundary}\r\nContent-Disposition: form-data; name="name"\r\n\r\nTenzen\r\n'
+                               f'--{boundary}\r\nContent-Disposition: form-data; name="description"\r\n\r\n'
+                               f'Native Japanese. High quality.\nPersona: tenzen.\r\n--{boundary}--\r\n')
+        self.assertEqual(said[-1], "1 of 3 descriptions written")
+
+    def test_no_collection_is_an_error_not_an_empty_plan(self):
+        c, _, _ = client({"/v2/voices": [(200, {"voices": OURS, "has_more": False})],
+                          "/v1/voices/collections": [(200, {"collections": []})]})
+        with self.assertRaisesRegex(el.ApiError, "no voice collection titled 'ffxi'"):
+            el.describe(c, FakeDesigns(), write=True)
 
 
 class KeyScanTest(unittest.TestCase):

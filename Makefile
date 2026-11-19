@@ -43,6 +43,10 @@
 #                    keyring prompts for it, unseen. ELEVENLABS_API_KEY overrides it (helper/elevenlabs.py)
 #   make elevenlabs-check   read the account, spending nothing: plan, characters left, voice slots, voices,
 #                    models; says which permissions a restricted key still lacks
+#   make elevenlabs-describe [ONLY=Name] [WRITE=1] [QUALITY=high]
+#                    set the stored description of each voice in the ffxi collection to the prompt
+#                    voice_designs.yaml composes; without WRITE it only lists what differs. Changes what
+#                    is written about a voice, never how it sounds; needs a key with voices_write
 #   make voice-prompts [ONLY=Name] [QUALITY=high]
 #                    print each own voice's prompt from helper/voice_designs.yaml in the form ElevenLabs
 #                    asks for, to paste into its voice design. QUALITY is the level the prompt asks for
@@ -56,8 +60,12 @@
 #   make listen-voices   a page with every designed voice and its description, to listen to
 #   make review-voices   a window to edit the voices, grouped by race: each pool voice (shared by the
 #                    speakers hashed onto it) and each own voice (with its accent, persona, and emotion);
-#                    see and copy the prompt, audition, regenerate, accept, or reset, filtered by race, gender, storyline, or a partial name, and hear a
-#                    voice say one of its speaker's lines through MOSS (needs .venv-moss) (tools/voice_review.py)
+#                    see and copy the prompt, audition, regenerate, accept, save with no take, or reset
+#                    (auditions need .venv-qwen; without it the window opens under .venv to edit and save);
+#                    move a pool speaker to another casting group (helper/cast_groups.yaml); filter by
+#                    status for the burn-down of own voices whose prompt is still to do, or by race, gender,
+#                    storyline, or a partial name; and hear a voice say one of its speaker's lines through
+#                    MOSS (needs .venv-moss) (tools/voice_review.py)
 #   make voice-stories   rebuild helper/voice_stories.json: each speaker's lines per storyline, and a few to hear
 #   make corpus [SOURCE=missions/rov]
 #                    extract what a source says (a mission folder, a quest region, a companion; all of
@@ -115,6 +123,10 @@ CUDA_PKGS := onnxruntime-gpu "nvidia-cuda-runtime>=13,<14" nvidia-cudnn-cu13 "nv
 	"nvidia-cufft>=12" "nvidia-curand>=10" "nvidia-cuda-nvrtc>=13,<14" "nvidia-nvjitlink>=13,<14"
 
 LSB ?= $(HOME)/scm/github/LandSandBoat/server
+# The system python3 when it has PyYAML (Fedora's does), else the venv's
+# (Homebrew's python3 has none and will not take one): for the tests and
+# the tools that read the hand-kept YAML files.
+SYS_PY := $(shell python3 -c 'import yaml' 2>/dev/null && echo python3 || echo "$(PY)")
 
 # The player is a 32-bit Windows DLL linked against Windower's LuaCore.dll,
 # like Balloon's gamepad module. Any Lua 5.1 compatible headers will do;
@@ -132,7 +144,7 @@ NATIVE_CFLAGS := -O2 -Wall -Wextra -D_WIN32_WINNT=0x0600 -I$(DEPS)/include -I$(D
 # the Wine prefix two levels above drive_c/Windower4, for running the test exe
 WINEPREFIX := $(abspath $(WINDOWER)/../..)
 
-.PHONY: install uninstall where test lint check helper say venv venv-cuda venv-qwen spike-qwen elevenlabs-key elevenlabs-check voice-prompts design-voices audit-voices listen-voices review-voices voice-stories corpus audit-corpus venv-moss spike-moss voices census nouns review-lexicon pack release deps native native-test
+.PHONY: install uninstall where test lint check helper say venv venv-cuda venv-qwen spike-qwen elevenlabs-key elevenlabs-check elevenlabs-describe voice-prompts design-voices audit-voices listen-voices review-voices voice-stories corpus audit-corpus venv-moss spike-moss voices census nouns review-lexicon pack release deps native native-test
 
 # Each recipe below is one shell command, so an exit inside it ends the target.
 
@@ -172,9 +184,7 @@ uninstall:
 	elif [ -e "$(LINK)" ]; then echo "$(LINK) is not a symlink; leaving it." >&2; exit 1; \
 	else echo "Nothing installed at $(LINK)."; fi
 
-# The system python3 when it has PyYAML (Fedora's does), else the venv's
-# (Homebrew's python3 has none and will not take one).
-TEST_PY ?= $(shell python3 -c 'import yaml' 2>/dev/null && echo python3 || echo "$(PY)")
+TEST_PY ?= $(SYS_PY)
 test:
 	luajit test/test_$(NAME).lua
 	$(TEST_PY) -I -m unittest discover -s helper -p 'test_*.py'
@@ -197,7 +207,7 @@ venv:
 
 # System python3 (Fedora ships PyYAML); the venv works too once built.
 census:
-	python3 -I helper/census.py --lsb "$(LSB)" --client --report
+	$(SYS_PY) -I helper/census.py --lsb "$(LSB)" --client --report
 
 # Reads the client's dialogue DATs and decodes one storyline's scenes
 # (MISSIONS, the same folder name `make pack` takes); Kokoro IPA needs the
@@ -271,6 +281,9 @@ elevenlabs-key:
 elevenlabs-check:
 	@python3 -I helper/elevenlabs.py check
 
+elevenlabs-describe:
+	@$(PY) -I helper/elevenlabs.py describe --quality "$(QUALITY)" $(if $(ONLY),--only "$(ONLY)") $(if $(WRITE),--write)
+
 # The prompts ElevenLabs' voice design is given by hand (docs/ElevenLabs-Handoff.md).
 voice-prompts:
 	@$(PY) -I tools/design_voices.py --prompts --quality "$(QUALITY)" $(if $(ONLY),--only "$(ONLY)")
@@ -289,24 +302,30 @@ audit-voices:
 listen-voices:
 	$(PY) -I tools/design_voices.py --review --quality "$(QUALITY)"
 
+# Under .venv-qwen when it is there. Without it (a machine with no NVIDIA
+# card cannot build it) the window still opens under .venv to edit the
+# designs and show their prompts; only Audition and Regenerate need Qwen.
 review-voices:
-	@test -x "$(VENV_QWEN)/bin/python" || { echo ".venv-qwen is missing; run make venv-qwen" >&2; exit 1; }; \
+	@if [ -x "$(VENV_QWEN)/bin/python" ]; then py="$(VENV_QWEN)/bin/python"; \
+	elif [ -x "$(VENV)/bin/python" ]; then py="$(VENV)/bin/python"; \
+		echo ".venv-qwen is missing: opening under .venv to edit designs and prompts; auditions need make venv-qwen" >&2; \
+	else echo "no venv: run make venv (to edit) or make venv-qwen (to audition too)" >&2; exit 1; fi; \
 	HF_HOME="$(VOICES)/qwen3/hf" PYTORCH_ALLOC_CONF=expandable_segments:True \
-		"$(VENV_QWEN)/bin/python" -I tools/voice_review.py --quality "$(QUALITY)"
+		"$$py" -I tools/voice_review.py --quality "$(QUALITY)"
 
 # Needs the client and a LandSandBoat checkout, like make pack; system python3.
 # Writes helper/voice_stories.json and data/word_stories.json (for review-lexicon).
 voice-stories data/word_stories.json:
-	python3 -I tools/voice_stories.py --lsb "$(LSB)"
+	$(SYS_PY) -I tools/voice_stories.py --lsb "$(LSB)"
 
 # The same needs. Without SOURCE every source is extracted and the exclude
 # rules that matched nothing are named.
 corpus:
-	python3 -I tools/corpus.py --lsb "$(LSB)" extract $(if $(SOURCE),$(SOURCE),--all --stale)
+	$(SYS_PY) -I tools/corpus.py --lsb "$(LSB)" extract $(if $(SOURCE),$(SOURCE),--all --stale)
 
 audit-corpus:
 	@if [ -z "$(SOURCE)" ]; then echo "usage: make audit-corpus SOURCE=quests/jeuno [SHOW=narration] [SPEAKER=Name]" >&2; exit 1; fi
-	python3 -I tools/corpus.py --lsb "$(LSB)" audit $(SOURCE) $(if $(SHOW),--show $(SHOW)) \
+	$(SYS_PY) -I tools/corpus.py --lsb "$(LSB)" audit $(SOURCE) $(if $(SHOW),--show $(SHOW)) \
 		$(if $(SPEAKER),--speaker "$(SPEAKER)") $(if $(SAMPLES),--samples $(SAMPLES))
 
 # MOSS-TTS is installed from its checkout (pip -e) because it is not on PyPI;

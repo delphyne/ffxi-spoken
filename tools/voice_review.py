@@ -20,7 +20,9 @@ pool voice, and the pane says so. For a voice you can edit its meta
 description, see the prompt they compose into (designs.compose, the form
 ElevenLabs asks for, with the run's quality level), audition it (Qwen3 VoiceDesign speaks the calibration
 sentence with that instruction and seed), regenerate with a new seed, then
-accept the take or reset to what is saved. What is typed for a voice is a
+accept the take, save the fields with no take (the prompt is what
+ElevenLabs is given; no clip is needed for that), or reset to what is
+saved. What is typed for a voice is a
 draft that moving to another row keeps, as is its take; a take heard
 before a later edit cannot be accepted until the voice is auditioned
 again. A speaker on a shared pool voice can be given a voice of their own,
@@ -37,13 +39,18 @@ voice also regenerates helper/voices.json. The YAML is re-read from disk
 before each write and only the accepted voice changes, so edits made in an
 editor meanwhile survive. Takes not accepted stay in refs/.candidates/.
 
-A speaker's casting group comes from helper/cast.py's CAST, else from the
-census race; a hash of the name picks one voice from the group's pool. Race
+A speaker's casting group comes from a move in helper/cast_groups.yaml,
+else helper/cast.py's CAST, else the census race; a speaker on a pool voice
+can be moved to another group from the window, which writes that file.
+Filtering by status turns the tree into a burn-down list: the own voices
+whose prompt still lacks an accent, a persona, an emotion, or a
+description ("to do"), most-spoken first, or the ones that have all four. Race
 and gender come from a design's meta when the speaker has one, else from
 the group. Storylines come from helper/voice_stories.json (make
 voice-stories).
 
-Runs under .venv-qwen, which has Tk and the Qwen3 model. `Session` is the
+Runs under .venv-qwen, which has Tk and the Qwen3 model; under .venv it
+opens to edit designs and show prompts, and an audition says what it lacks. `Session` is the
 logic and has no Tk in it; voice_review_gui.py is the window.
 """
 
@@ -72,6 +79,11 @@ MOSS_PYTHON = REPO / ".venv-moss" / "bin" / "python"
 MOSS_HF = REPO / "helper" / "voices" / "moss" / "hf"
 # a row's kind: a race, a pool voice, a speaker with a voice of their own, a speaker on a pool voice
 KINDS = ("all", "race", "pool voice", "own voice", "on a pool voice")
+# what an own voice's prompt is made of; one with any of them blank is still to do
+PROMPT_PARTS = ("accent", "persona", "emotion", "description", "line")
+STATUS_RULE = ("A prompt is ready when it has an accent, a persona, an emotion, a description, and a line to be "
+               "designed saying; until then it is to do. Nothing else is judged.")
+STATUSES = (("all", "all prompts"), ("todo", "to do"), ("ready", "ready"))
 
 
 def cast_groups():
@@ -83,6 +95,12 @@ def cast_groups():
             for name in [names] if isinstance(names, str) else names:
                 out[name] = group
     return out
+
+
+def group_choices():
+    """(group, label) for every casting group, in casting.py's order:
+    what a speaker can be moved to."""
+    return [(g, casting.group_label(g) + ("" if casting.split_group(g) else f" ({g})")) for g in casting.POOLS]
 
 
 def load_json(path, default):
@@ -140,11 +158,14 @@ class Session:
     holds one of the two at a time, so each is let go before the other
     loads."""
 
+    STATUS_RULE = STATUS_RULE
+
     def __init__(self, designs_path=designs_module.DEFAULT_PATH, refs=dv.REFS,
                  voices_json=REPO / "helper" / "voices.json", census=REPO / "helper" / "census.json",
                  stories=REPO / "helper" / "voice_stories.json", engine_factory=None, rng=None,
                  worker_factory=None, lexicon=REPO / "helper" / "lexicon.yaml",
-                 lines=REPO / "data" / "voice_lines.json", quality=designs_module.DEFAULT_QUALITY):
+                 lines=REPO / "data" / "voice_lines.json", quality=designs_module.DEFAULT_QUALITY,
+                 moves=REPO / "helper" / "cast_groups.yaml"):
         self.designs_path, self.refs = Path(designs_path), Path(refs)
         self.quality = quality
         self.voices_json = Path(voices_json)
@@ -153,7 +174,9 @@ class Session:
         self.story_names, self.speaker_stories = data["stories"], data["speakers"]
         # speaker -> a few lines they say, to hear a voice say: the game's text, so kept in data/
         self.lines = load_json(lines, {})
-        self.cast_groups = cast_groups()
+        self.lines_path = Path(lines) if not Path(lines).exists() else None   # set when the file is not there
+        self.moves_path = Path(moves)
+        self.listed_groups = cast_groups()
         self.engine_factory = engine_factory or (lambda: dv.Qwen())
         self.worker_factory = worker_factory or MossWorker
         self.lexicon_path = Path(lexicon)
@@ -175,13 +198,16 @@ class Session:
         for voice, draft in self.drafts.items():   # a voice given in this session, not yet accepted
             if draft.get("new") and voice not in self.designs.voices:
                 self.designs.add_cast(draft["new"], draft["description"], draft["seed"], **draft["meta"])
+        import cast
+        self.moves = cast.load_moves(self.moves_path)
+        self.cast_groups = {**self.listed_groups, **self.moves}   # a move wins over cast.py's list
         self.index = dv.load_index(self.refs)
         self.voice_map = load_json(self.voices_json, {}).get("moss", {})
         self.rows = self._rows()
 
     def group_of(self, name, voice):
-        """The speaker's casting group, from cast.py or the census, else the
-        pool voice they are on."""
+        """The speaker's casting group, from a move (cast_groups.yaml),
+        cast.py, or the census, else the pool voice they are on."""
         if name in self.cast_groups:
             return self.cast_groups[name]
         race = (self.census.get(name) or {}).get("race")
@@ -220,7 +246,9 @@ class Session:
                 return "own (new)", f"{label} is getting a voice of their own, {voice}; not accepted yet."
             return "own", f"{label} has a voice of their own, {voice}, in the cast section."
         census = (self.census.get(name) or {}).get("race")
-        if name in self.cast_groups:
+        if name in self.moves:
+            source, why = "moved", f"cast_groups.yaml moves {label} to group {group}"
+        elif name in self.cast_groups:
             source, why = "cast.py", f"cast.py puts {label} in group {group}"
         elif census in casting.RACE_GROUPS:
             source, why = "census", f"the census gives {label} race {census}, group {group}"
@@ -231,7 +259,7 @@ class Session:
                                f"{voice}. Add them to cast.py, or give them a voice of their own.")
         pool = self.designs.pools.get(group) or []
         n = pool.index(voice) + 1 if voice in pool else 0
-        return source, f"{why}; a hash of the name picks voice {n} of {len(pool)} in that pool, {voice}."
+        return source, f"{why}; that puts them on voice {n} of {len(pool)} in that pool, {voice}."
 
     def _rows(self):
         """Every row of the tree: races, their pool voices and the speakers
@@ -246,7 +274,9 @@ class Session:
             stories = self.speaker_stories.get(name, {})
             own = self.designs.voices.get(voice, {}).get("kind") == "cast"
             via, how = self.cast_via(name, voice, group)
+            status, needs = self.prompt_status(voice) if own and via != "shares" else ("", "")
             rows.append({"key": f"speaker:{name}", "label": name or NARRATION, "name": name, "voice": voice,
+                         "status": status, "needs": needs,
                          "kind": "own voice" if own else "on a pool voice", "group": group, "race": race,
                          "gender": gender, "age": age, "stories": stories, "lines": sum(stories.values()),
                          "via": via, "how": how, "parent": f"race:{race}" if own else f"voice:{voice}"})
@@ -258,16 +288,32 @@ class Session:
                 rows.append({"key": f"voice:{voice}", "name": None, "voice": voice,
                              "label": "pool " + designs_module.pool_label(group, voices.index(voice), len(voices)),
                              "kind": "pool voice", "group": group, "race": race, "gender": gender,
+                             "status": "", "needs": "",
                              "age": self.designs.voices[voice]["age"], "stories": self._sum(who),
                              "lines": sum(r["lines"] for r in who), "via": group, "how": "",
                              "parent": f"race:{race}"})
         for race in sorted(set(designs_module.RACES) | {r["race"] for r in rows}):
             under = [r for r in rows if r["parent"] == f"race:{race}"]
             rows.append({"key": f"race:{race}", "label": race, "name": None, "voice": "", "kind": "race",
+                         "status": "", "needs": "",
                          "group": None, "race": race, "gender": "", "age": "", "stories": self._sum(under),
                          "lines": sum(r["lines"] for r in under), "via": "", "how": "", "parent": ""})
         self.users = {v: sorted((r["label"] for r in rs), key=str.lower) for v, rs in users.items()}
         return sorted(rows, key=lambda r: (-r["lines"], r["label"].lower()))
+
+    def prompt_status(self, voice):
+        """("todo", what is blank) or ("ready", ""): an own voice's prompt
+        is ready when it has an accent, a persona, an emotion, a
+        description, and the line it is designed saying: what ElevenLabs
+        is given. Only blanks are judged, never the wording."""
+        v = self.designs.voices[voice]
+        missing = [part for part in PROMPT_PARTS if not v.get(part)]
+        return ("todo", ", ".join(missing)) if missing else ("ready", "")
+
+    def progress(self):
+        """(to do, ready): the own voices, each counted once."""
+        states = [r["status"] for r in self.rows if r["status"]]
+        return states.count("todo"), states.count("ready")
 
     @staticmethod
     def _sum(rows):
@@ -303,10 +349,13 @@ class Session:
                 "gender": [("all", "all genders")] + [(g, g) for g in genders],
                 "story": [("all", "all storylines")] + list(self.story_names.items()),
                 "kind": [("all", "all kinds")] + [(k, k) for k in KINDS if k != "all"],
+                "status": list(STATUSES), "group": group_choices(),
                 "meta_gender": list(designs_module.GENDERS), "meta_age": list(designs_module.AGES),
                 "meta_race": list(designs_module.RACES)}
 
-    def filter(self, query="", race="all", gender="all", story="all", kind="all"):
+    def filter(self, query="", race="all", gender="all", story="all", kind="all", status="all"):
+        """The rows that match. `status` is the burn-down: only own voices
+        have one, so "todo" and "ready" list characters and nothing else."""
         q = query.strip().lower()
         out = []
         for r in self.rows:
@@ -319,6 +368,8 @@ class Session:
             if story != "all" and story not in r["stories"]:
                 continue
             if kind != "all" and r["kind"] != kind:
+                continue
+            if status != "all" and r["status"] != status:
                 continue
             out.append(r)
         if story != "all":   # most-spoken in that storyline first
@@ -357,6 +408,7 @@ class Session:
                 "saved_description": v["description"], "saved_seed": v["seed"],
                 "saved_meta": self._meta(v),
                 "description": description, "seed": draft.get("seed", v["seed"]), **meta,
+                "line_text": self.line_text(voice, meta["line"]),
                 "instruct": self.compose(voice, description, **meta), "saved_instruct": self.designs.compose(voice),
                 "clip": clip, "clip_instruct": dv.made_with(rec) if clip and rec else None,
                 "stale": bool(clip and rec and dv.is_changed(self.designs, voice, rec)),
@@ -367,7 +419,20 @@ class Session:
 
     @staticmethod
     def _meta(v):
-        return {k: v[k] for k in designs_module.META}
+        return {k: v[k] for k in designs_module.FIELDS}
+
+    def design_line(self, voice, text):
+        """What to record as the voice's design line for `text`: a
+        reference when it is one of the lines its speakers say (the game's
+        text stays out of the committed file), else the text itself."""
+        text = " ".join(text.split())
+        known = {" ".join(line.split()) for line in self.lines_of(voice)}
+        return designs_module.line_ref(text) if text in known else text
+
+    def line_text(self, voice, value):
+        """The text a recorded design line stands for; None when it is a
+        reference to a line this machine does not have."""
+        return designs_module.resolve_line(value, self.lines_of(voice)) if value else ""
 
     @staticmethod
     def _pool_meta(v, meta):
@@ -375,7 +440,7 @@ class Session:
         return {k: (val if k == "age" else None) for k, val in meta.items()} if v["kind"] == "pool" else meta
 
     def edit_voice(self, voice, description, **meta):
-        """The fields as typed for a voice (`meta` is any of designs.META),
+        """The fields as typed for a voice (`meta` is any of designs.FIELDS),
         kept as a draft so moving to another row does not lose them. Typed
         back to the take's values (or the saved ones when there is no take)
         they are no draft at all. A take heard before the edit cannot be
@@ -406,7 +471,11 @@ class Session:
     def engine(self):
         if self._engine is None:
             self.close_worker()   # the card holds one engine at a time
-            self._engine = self.engine_factory()
+            try:
+                self._engine = self.engine_factory()
+            except ImportError as e:
+                raise RuntimeError(f"auditions need Qwen3, which this Python does not have ({e}): run the window "
+                                   "under .venv-qwen (make venv-qwen). Editing and Show prompt work without it") from e
         return self._engine
 
     def free_engine(self):
@@ -493,7 +562,7 @@ class Session:
         seed = st["seed"] if seed is None else seed
         v = self.designs.voices[voice]
         meta = self._pool_meta(v, meta)
-        meta = {k: st[k] if meta.get(k) is None else meta[k] for k in designs_module.META}
+        meta = {k: st[k] if meta.get(k) is None else meta[k] for k in designs_module.FIELDS}
         if v["kind"] == "pool":
             meta.update(gender=st["saved_meta"]["gender"], race=st["saved_meta"]["race"])
         if meta["race"] not in designs_module.RACES and meta["race"] != "unknown":
@@ -523,7 +592,7 @@ class Session:
         src = self.designs.voices[current]
         race, gender, age = self.meta_of(name, current)
         meta = {"gender": gender, "age": age, "race": race if race in designs_module.RACES else "hume",
-                "accent": "", "persona": "", "emotion": ""}
+                "accent": "", "persona": "", "emotion": "", "line": ""}
         voice = self.designs.add_cast(name, src["description"], src["seed"], **meta)
         self.drafts[voice] = {"description": src["description"], "seed": src["seed"], "new": name, "meta": meta}
         self.rows = self._rows()
@@ -552,11 +621,61 @@ class Session:
         dv.write_index(self.refs, index, fresh.calibration)
         if draft.get("new"):
             import cast
-            self.voices_json.write_text(json.dumps(cast.build(fresh), indent=2, ensure_ascii=False) + "\n",
+            self.voices_json.write_text(json.dumps(cast.build(fresh, moves=cast.load_moves(self.moves_path)), indent=2, ensure_ascii=False) + "\n",
                                         encoding="utf-8")
         del self.drafts[voice]
         self.reload()
         return clip
+
+    def move(self, name, group):
+        """Put a speaker who is on a pool voice in another casting group:
+        a line in cast_groups.yaml, which wins over cast.py and the
+        census, and voices.json regenerated from it. Returns the pool voice
+        they are on now. Someone with a voice of their own is not moved:
+        their race is a field of their design."""
+        if name is None:
+            raise ValueError("select a speaker to move, not a pool voice or a race")
+        if group not in casting.POOLS:
+            raise ValueError(f"{group!r} is not a casting group")
+        if self.designs.voice_for_speaker(name):
+            raise ValueError(f"{name or NARRATION} has a voice of their own; change its race instead")
+        import cast
+        moves = cast.load_moves(self.moves_path)
+        if self.listed_groups.get(name) == group:
+            moves.pop(name, None)   # back where cast.py lists them: no move needed
+        else:
+            moves[name] = group
+        cast.write_moves(moves, self.moves_path)
+        self.voices_json.write_text(json.dumps(cast.build(self.load(), moves=moves), indent=2, ensure_ascii=False)
+                                    + "\n", encoding="utf-8")
+        self.reload()
+        return self.voice_of(name)
+
+    def save(self, voice):
+        """Write the fields as they stand to the YAML with no take: for
+        designing a voice's prompt where nothing can be auditioned, or
+        when the clip does not matter (ElevenLabs makes the voice, not
+        Qwen). The seed stays the saved one, the clip is left alone and is
+        from then on from an older design, and a take not accepted is let
+        go. A new voice also regenerates voices.json. The YAML is re-read
+        first so only this voice changes."""
+        draft = self.drafts.get(voice)
+        if not draft:
+            raise ValueError("nothing has changed to save")
+        st = self.state(voice)
+        meta = {k: st[k] for k in designs_module.FIELDS}
+        fresh = self.load()
+        if draft.get("new"):
+            fresh.add_cast(draft["new"], st["description"], draft["seed"], **meta)
+        else:
+            fresh.update(voice, st["description"], st["saved_seed"], **meta)
+        fresh.dump(self.designs_path)
+        if draft.get("new"):
+            import cast
+            self.voices_json.write_text(json.dumps(cast.build(fresh, moves=cast.load_moves(self.moves_path)), indent=2, ensure_ascii=False) + "\n",
+                                        encoding="utf-8")
+        del self.drafts[voice]
+        self.reload()
 
     def reset(self, voice):
         """Back to what is saved: the draft and its take are dropped, and a

@@ -103,9 +103,12 @@ class SessionTest(unittest.TestCase):
         self.worker = FakeWorker()
         lexicon = root / "lexicon.yaml"
         lexicon.write_text("Vana'diel:\n    ipa: \"vɑnədiˈɛl\"\n", encoding="utf-8")
+        self.moves = root / "cast_groups.yaml"
+        self.moves.write_text("# moves, kept\n\n{}\n", encoding="utf-8")
         self.ses = vr.Session(self.yaml, self.refs, self.voices_json, census, stories,
                               engine_factory=lambda: self.engine, rng=random.Random(4),
-                              worker_factory=lambda: self.worker.start(), lexicon=lexicon, lines=lines)
+                              worker_factory=lambda: self.worker.start(), lexicon=lexicon, lines=lines,
+                              moves=self.moves)
 
     def tearDown(self):
         self.dir.cleanup()
@@ -125,7 +128,7 @@ class SessionTest(unittest.TestCase):
         self.assertEqual((numi["via"], numi["parent"]), ("cast.py", f"voice:{numi['voice']}"))
         tonasav = self.ses.row("speaker:Tonasav")      # not in cast.py: the census race byte casts them
         self.assertEqual((tonasav["via"], tonasav["kind"], tonasav["race"]), ("census", "on a pool voice", "hume"))
-        self.assertIn("the census gives Tonasav race 1, group hume_m_adult; a hash of the name picks voice ",
+        self.assertIn("the census gives Tonasav race 1, group hume_m_adult; that puts them on voice ",
                       tonasav["how"])
         self.assertIn(" of 2 in that pool, hume_m_adult-", tonasav["how"])
         eko = self.ses.row("speaker:Ekokoko")         # race and gender from the design's own meta
@@ -275,6 +278,114 @@ class SessionTest(unittest.TestCase):
         self.assertFalse(ses.state("iroha")["stale"])
         self.ses.reload()
         self.assertTrue(self.ses.state("iroha")["stale"], "a clip made at another quality level is from another prompt")
+
+    def test_save_writes_the_fields_with_no_take(self):
+        self.ses.audition("iroha", "Warm.")
+        self.ses.accept("iroha")                                  # a clip from the design as it was
+        with self.assertRaisesRegex(ValueError, "nothing has changed"):
+            self.ses.save("iroha")
+        self.ses.edit_voice("iroha", "Measured.", age="14 years old", accent="Japanese", persona="a priestess")
+        self.yaml.write_text(self.yaml.read_text().replace("Small and chirpy.", "Small, chirpy, hand-edited."))
+        self.ses.save("iroha")
+        self.assertEqual(len(self.engine.calls), 2, "nothing was designed for the save")
+        saved = designs.Designs.load(self.yaml, groups=set(casting.POOLS))
+        v = saved.voices["iroha"]
+        self.assertEqual((v["description"], v["age"], v["accent"], v["persona"], v["seed"]),
+                         ("Measured.", "14 years old", "Japanese", "a priestess", 7))
+        self.assertEqual(saved.voices["ekokoko"]["description"], "Small, chirpy, hand-edited.",
+                         "only the saved voice changes")
+        st = self.ses.state("iroha")
+        self.assertFalse(st["pending"])
+        self.assertTrue(st["stale"], "the clip is from the design before the save")
+        self.assertEqual(st["instruct"], "Native Japanese. Female, 14 years old. High quality.\n"
+                                         "Persona: a priestess.\nMeasured.")
+
+    def test_save_keeps_a_new_voice_without_a_take(self):
+        voice = self.ses.give_own_voice("Numi Adaligo")
+        self.ses.edit_voice(voice, "A sly merchant.", persona="a merchant", gender="female", age="forties", race="mithra")
+        self.ses.save(voice)
+        saved = designs.Designs.load(self.yaml, groups=set(casting.POOLS))
+        self.assertEqual(saved.voice_for_speaker("Numi Adaligo"), "numi-adaligo")
+        self.assertEqual((saved.voices[voice]["persona"], saved.voices[voice]["description"]),
+                         ("a merchant", "A sly merchant."))
+        self.assertEqual(json.loads(self.voices_json.read_text())["moss"]["Numi Adaligo"], "numi-adaligo")
+        self.assertEqual(self.ses.row("speaker:Numi Adaligo")["kind"], "own voice")
+        self.assertIsNone(self.ses.clip(voice))
+
+    def test_a_speaker_on_a_pool_voice_can_be_moved_to_another_group(self):
+        tonasav = self.ses.row("speaker:Tonasav")
+        self.assertEqual((tonasav["group"], tonasav["via"]), ("hume_m_adult", "census"))
+        before = json.loads(self.voices_json.read_text())
+        voice = self.ses.move("Tonasav", "small")
+        self.assertEqual(voice, "small-0")
+        row = self.ses.row("speaker:Tonasav")
+        self.assertEqual((row["group"], row["via"], row["race"], row["parent"]),
+                         ("small", "moved", "creature", "voice:small-0"))
+        self.assertIn("cast_groups.yaml moves Tonasav to group small", row["how"])
+        self.assertEqual(self.moves.read_text(encoding="utf-8"), '# moves, kept\n\n"Tonasav": small\n')
+        after = json.loads(self.voices_json.read_text())
+        self.assertEqual(after["moss"]["Tonasav"], "small-0")
+        self.assertEqual({e: {n: v for n, v in after[e].items() if n != "Tonasav"} for e in after}, before,
+                         "nobody else changes voice")
+        self.assertIn("Tonasav", after["kokoro"], "every engine learns the move")
+        # someone cast.py lists: moved, then put back, which needs no line at all
+        self.assertEqual(self.ses.row("speaker:Prishe")["group"], "elvaan_f_teen")
+        self.ses.move("Prishe", "elvaan_f_young")
+        self.assertEqual((self.ses.row("speaker:Prishe")["group"], self.ses.row("speaker:Prishe")["via"]),
+                         ("elvaan_f_young", "moved"))
+        self.ses.move("Prishe", "elvaan_f_teen")
+        self.assertEqual(self.ses.row("speaker:Prishe")["via"], "cast.py")
+        self.assertNotIn("Prishe", self.moves.read_text(encoding="utf-8"))
+        for name, group, message in (("Tonasav", "orc", "not a casting group"), (None, "small", "select a speaker"),
+                                     ("Iroha", "small", "voice of their own")):
+            with self.assertRaisesRegex(ValueError, message):
+                self.ses.move(name, group)
+        labels = [label for _, label in self.ses.options()["group"]]
+        self.assertEqual(len(labels), len(set(labels)), "every group reads differently in the picker")
+        self.assertEqual([g for g, _ in self.ses.options()["group"]], list(casting.POOLS))
+
+    def test_status_is_the_burn_down_of_own_voices(self):
+        self.assertEqual(self.ses.progress(), (2, 0), "Iroha and Ekokoko; Volto Oscuro shares and is not counted")
+        iroha = self.ses.row("speaker:Iroha")
+        self.assertEqual((iroha["status"], iroha["needs"]), ("todo", "accent, persona, emotion, line"))
+        self.assertEqual(self.ses.row("speaker:Volto Oscuro")["status"], "")
+        self.assertEqual(self.ses.row("speaker:Numi Adaligo")["status"], "", "a pool speaker has no prompt")
+        self.assertEqual(self.labels(status="todo"), ["Iroha", "Ekokoko"], "characters only, most-spoken first")
+        self.assertEqual(self.labels(status="ready"), [])
+        self.ses.edit_voice("iroha", "Warm.", accent="Japanese", persona="a priestess", emotion="grave")
+        self.ses.save("iroha")
+        self.assertEqual(self.ses.row("speaker:Iroha")["needs"], "line", "everything but what she is designed saying")
+        self.ses.edit_voice("iroha", "Warm.", line=self.ses.design_line("iroha", "Master,  Vana'diel needs you."))
+        self.ses.save("iroha")
+        self.assertEqual((self.ses.progress(), self.labels(status="todo"), self.labels(status="ready")),
+                         ((1, 1), ["Ekokoko"], ["Iroha"]))
+        st = self.ses.state("iroha")
+        self.assertRegex(st["line"], r"^sha1:[0-9a-f]{12}$", "one of her lines is kept as a reference")
+        self.assertEqual(st["line_text"], "Master, Vana'diel needs you.")
+        self.assertNotIn("needs you", self.yaml.read_text(encoding="utf-8"), "the game's text stays out of the file")
+        self.assertIn("    line: >-\n      sha1:", self.yaml.read_text(encoding="utf-8"))
+        self.assertEqual(self.ses.design_line("iroha", " Written for  the purpose. "), "Written for the purpose.",
+                         "text that is no line of hers is kept as it is")
+        self.assertIsNone(self.ses.line_text("ekokoko", st["line"]), "not a line Ekokoko has")
+        self.assertIn("Nothing else is judged", self.ses.STATUS_RULE)
+        self.assertEqual(self.ses.row("speaker:Iroha")["needs"], "")
+        self.assertEqual(self.labels(status="todo", race="hume"), [], "the other filters still apply")
+
+    def test_a_missing_lines_file_is_known(self):
+        self.assertIsNone(self.ses.lines_path, "the file is there")
+        missing = Path(self.dir.name) / "nowhere" / "voice_lines.json"
+        ses = vr.Session(self.yaml, self.refs, self.voices_json, lines=missing)
+        self.assertEqual((ses.lines_path, ses.lines_of("iroha", "Iroha")), (missing, []))
+
+    def test_an_audition_without_qwen_says_what_is_missing(self):
+        def no_torch():
+            raise ModuleNotFoundError("No module named 'torch'")
+        ses = vr.Session(self.yaml, self.refs, self.voices_json, engine_factory=no_torch)
+        self.assertEqual(ses.state("iroha")["instruct"], "Female, young adult. High quality.\nWarm.",
+                         "the prompt needs no engine")
+        with self.assertRaisesRegex(RuntimeError, "auditions need Qwen3.*make venv-qwen"):
+            ses.audition("iroha", "Warm.")
+        self.assertFalse(ses.state("iroha")["candidate"])
 
     def test_a_pool_voice_keeps_its_groups_gender_and_race(self):
         self.ses.audition("mithra_f_adult-0", "Sly.", gender="male", race="hume", age="forties")
@@ -540,11 +651,15 @@ class GuiTest(unittest.TestCase):
         self.assertIn("Editing here changes every speaker on mithra_f_adult-0", w.info.cget("text"))
         self.assertIn("cast.py puts Numi Adaligo in group mithra_f_adult", w.info.cget("text"))
         self.assertTrue(w.own.winfo_manager(), "a pool speaker gets the own-voice button")
+        self.assertTrue(w.move_box.winfo_manager(), "and can be moved to another pool")
+        self.assertEqual(w.move_var.get(), "mithra female adult", "the picker starts on their group")
         self.assertIn("mithra_f_adult voice", w.text.get("1.0", "end"))
         self.assertEqual(str(w.meta["gender"][1].cget("state")), "disabled", "a pool voice's gender is its group's")
         self.assertEqual(w.meta["age"][0].get(), "thirties")
-        # the prompt popout follows the fields as they change
-        w.show_prompt()
+        # the prompt is always in view and follows the fields as they change
+        self.assertFalse(hasattr(w, "calibration"), "no clip sentence in the pane any more")
+        self.assertEqual(w.hear_note.cget("text"), "", "nothing to say when there are lines to pick")
+        self.assertNotIn("show_prompt", w.buttons)
         self.assertEqual(w.prompt_text.get("1.0", "end").strip(), "Female, thirties. High quality.\nmithra_f_adult voice")
         w.meta["age"][0].set("forties")
         w.text.delete("1.0", "end")
@@ -552,7 +667,9 @@ class GuiTest(unittest.TestCase):
         w.refresh(keep="speaker:Numi Adaligo")   # as after an audition or a filter change
         w.root.update()
         self.assertEqual(w.prompt_text.get("1.0", "end").strip(), "Female, forties. High quality.\nSly.")
-        self.assertEqual(w.prompt_saved_label.cget("text"), "No saved clip yet.")
+        w.copy_prompt()
+        self.assertEqual(w.root.clipboard_get(), "Female, forties. High quality.\nSly.")
+        self.assertEqual(w.status_line.cget("text"), "prompt copied")
         self.assertEqual(w.meta["age"][0].get(), "forties", "edits survive the list being refreshed")
         w.query.set("")
         w.tree.selection_set("speaker:Iroha")
@@ -571,7 +688,17 @@ class GuiTest(unittest.TestCase):
         self.assertEqual(w.prompt_text.get("1.0", "end").strip(),
                          "Native Japanese. Female, young adult. High quality.\nPersona: a priestess.\nWarm.")
         self.assertEqual(w.tree.set("speaker:Iroha", "state"), "edited")
-        w.reset()
+        self.assertNotIn("disabled", w.buttons["save"].state(), "an edit can be saved with no take")
+        w.save()
+        w.root.update()
+        self.assertIn("with no take", w.status_line.cget("text"))
+        self.assertIn("    accent: Japanese\n    persona: a priestess\n", t.yaml.read_text(encoding="utf-8"))
+        self.assertEqual(w.tree.set("speaker:Iroha", "state"), "no clip")
+        self.assertIn("disabled", w.buttons["save"].state())
+        w.meta["accent"][0].set("")
+        w.meta["persona"][0].set("")
+        w.root.update()
+        w.save()
         w.root.update()
         self.assertEqual(w.meta["accent"][0].get(), "")
         # a race row is a heading: nothing to edit, audition, or hear
@@ -583,7 +710,8 @@ class GuiTest(unittest.TestCase):
         self.assertEqual(w.text.get("1.0", "end").strip(), "")
         self.assertEqual(str(w.meta["age"][1].cget("state")), "disabled")
         self.assertFalse(w.own.winfo_manager())
-        for name in ("accept", "reset", "audition", "show_prompt", "hear", "play_saved"):
+        self.assertEqual(w.prompt_text.get("1.0", "end").strip(), "", "a race has no prompt")
+        for name in ("accept", "reset", "audition", "copy_prompt", "hear", "play_saved"):
             self.assertIn("disabled", w.buttons[name].state(), name)
         self.assertEqual(w.tree.set("race:mithra", "state"), "")
         w.tree.selection_set("speaker:Numi Adaligo")   # the pool voice's edits from before are still there
@@ -591,6 +719,67 @@ class GuiTest(unittest.TestCase):
         self.assertEqual(w.prompt_text.get("1.0", "end").strip(), "Female, forties. High quality.\nSly.")
         self.assertEqual(w.tree.set("speaker:Numi Adaligo", "state"), "edited")
         self.assertEqual(str(w.meta["accent"][1].cget("state")), "disabled", "a pool voice has no accent")
+        w.tree.selection_set("speaker:Iroha")
+        w.root.update()
+        self.assertFalse(w.move_box.winfo_manager(), "an own voice is not moved between pools")
+        # the burn-down: a flat list of the prompts to do, and saving one moves on to the next
+        var, box = w.filters["status"]
+        var.set("to do")
+        w.refresh()
+        w.root.update()
+        self.assertEqual(w.tree.get_children(), ("speaker:Iroha", "speaker:Ekokoko"), "flat, most-spoken first")
+        self.assertEqual(w.tree.set("speaker:Iroha", "needs"), "accent, persona, emotion, line")
+        self.assertIn("prompts: 2 to do, 0 ready", w.count.cget("text"))
+        w.tree.selection_set("speaker:Iroha")
+        w.root.update()
+        self.assertIn("Prompt: to do, missing accent, persona, emotion, line. A prompt is ready when",
+                      w.info.cget("text"), "the pane says what decides it")
+        self.assertIn("Design line: none yet", w.design_label.cget("text"))
+        for field, value in (("accent", "Japanese"), ("persona", "a priestess"), ("emotion", "grave")):
+            w.meta[field][0].set(value)
+        w.root.update()
+        w.save()
+        w.root.update()
+        self.assertEqual(w.tree.set("speaker:Iroha", "needs"), "line", "still to do: nothing to be designed saying")
+        w.line_var.set("<Sigh> Follow me, <player>.")
+        w.use_line()
+        w.root.update()
+        self.assertEqual(w.design_label.cget("text"), "Design line: <Sigh> Follow me, <player>.")
+        self.assertRegex(w.design_var.get(), r"^sha1:", "one of her lines: recorded as a reference")
+        self.assertEqual(w.tree.set("speaker:Iroha", "state"), "edited")
+        w.save()
+        w.root.update()
+        self.assertEqual(w.tree.get_children(), ("speaker:Ekokoko",), "the finished one leaves the list")
+        self.assertEqual(w.design_label.cget("text"), "Design line: none yet. Pick or type a line above and press "
+                                                      "Use for design.", "Ekokoko's, not the one just saved")
+        self.assertEqual((w.tree.selection(), w.row["key"], w.voice), (("speaker:Ekokoko",), "speaker:Ekokoko", "ekokoko"),
+                         "and the next one is selected and shown")
+        self.assertIn("prompts: 1 to do, 1 ready", w.count.cget("text"))
+        var.set("all prompts")
+        w.refresh()
+        w.root.update()
+        self.assertIn("race:hume", w.tree.get_children(), "back to the tree")
+        # moving a pool speaker from the window
+        w.tree.selection_set("speaker:Tonasav")
+        w.root.update()
+        w.move_var.set("creature (small)")
+        w.move()
+        w.root.update()
+        self.assertIn("moved Tonasav to small: now on small-0", w.status_line.cget("text"))
+        self.assertEqual(w.tree.parent("speaker:Tonasav"), "voice:small-0")
+        self.assertEqual((w.tree.set("speaker:Tonasav", "via"), w.move_var.get()), ("moved", "creature (small)"))
+        w.move()
+        self.assertIn("already in small", w.status_line.cget("text"))
+        w.tree.selection_set("speaker:Iroha")
+        w.root.update()
+        self.assertIn("Prompt: ready.", w.info.cget("text"))
+        self.assertEqual(w.design_label.cget("text"), "Design line: <Sigh> Follow me, <player>.")
+        for field in ("accent", "persona", "emotion"):
+            w.meta[field][0].set("")
+        w.design_var.set("")
+        w.root.update()
+        w.save()
+        w.root.update()
         # a voice's typed fields survive the trip too, and a take finishing elsewhere does not move the selection
         w.tree.selection_set("speaker:Iroha")
         w.root.update()

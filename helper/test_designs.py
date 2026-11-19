@@ -34,11 +34,11 @@ class DesignsTest(unittest.TestCase):
         self.assertEqual(d.pools, {"hume_m_adult": ["hume_m_adult-0", "hume_m_adult-1"], "narrator": ["narrator-0"]})
         self.assertEqual(d.voices["iroha"], {"kind": "cast", "names": ["Iroha", "Volto Oscuro"], "gender": "female",
                                              "age": "young adult", "race": "hume", "accent": "", "persona": "",
-                                             "emotion": "", "description": "Warm.", "seed": 7})
+                                             "emotion": "", "line": "", "description": "Warm.", "seed": 7})
         self.assertEqual((d.voices["grav-iton"]["seed"], d.voices["grav-iton"]["age"]), (1, ""))
         self.assertEqual(d.voices["hume_m_adult-0"], {"kind": "pool", "group": "hume_m_adult", "gender": "male",
                                                 "age": "thirties", "race": "hume", "accent": "", "persona": "",
-                                                "emotion": "", "description": "one", "seed": 1})
+                                                "emotion": "", "line": "", "description": "one", "seed": 1})
         self.assertEqual(d.voices["hume_m_adult-1"]["age"], "adult", "a bare string is a description; the age is the band's")
         self.assertEqual(d.voice_for_speaker("Volto Oscuro"), "iroha")
         self.assertIsNone(d.voice_for_speaker("Nobody"))
@@ -62,8 +62,32 @@ class DesignsTest(unittest.TestCase):
                          ["Native Japanese. Female, late-thirties. Studio quality.", "Persona: A samurai."])
         self.assertEqual(d.compose("tenzen", quality=""), "Native Japanese. Female, late-thirties.\n"
                                                           "Persona: A samurai. Emotion: grave and stoic.\nWarm.")
+        bare = {"gender": "female", "persona": "a noblewoman", "emotion": "warm"}
+        d = designs.Designs(minimal(cast={"Arciela": bare}), groups=GROUPS)
+        self.assertEqual(d.compose("arciela"), "Female. High quality.\nPersona: a noblewoman. Emotion: warm.",
+                         "a persona or an emotion can stand without a description")
         d = designs.Designs(minimal(), groups=GROUPS, quality="medium")
         self.assertEqual(d.compose("iroha"), "Female, young adult. Medium quality.\nWarm.", "the run's level")
+
+    def test_a_design_line_is_a_reference_or_the_text(self):
+        said = "Wait  here,\n adventurer."
+        ref = designs.line_ref(said)
+        self.assertRegex(ref, r"^sha1:[0-9a-f]{12}$")
+        self.assertEqual(ref, designs.line_ref("Wait here, adventurer."), "spacing does not change which line it is")
+        self.assertEqual(designs.resolve_line(ref, ["Something else.", said]), "Wait here, adventurer.")
+        self.assertIsNone(designs.resolve_line(ref, ["Something else."]), "a line this machine does not have")
+        self.assertEqual(designs.resolve_line("  Written for  the purpose. ", []), "Written for the purpose.")
+        iroha = dict(minimal()["cast"]["Iroha"], line=ref)
+        d = designs.Designs(minimal(cast={"Iroha": iroha}), groups=GROUPS)
+        self.assertEqual(d.voices["iroha"]["line"], ref)
+        self.assertEqual(d.compose("iroha"), "Female, young adult. High quality.\nWarm.", "never part of the prompt")
+        d.update("iroha", "Warm.", 7, line="Say this instead.")
+        self.assertEqual(d.voices["iroha"]["line"], "Say this instead.")
+        d.update("hume_m_adult-0", "one", 1, line="x")
+        self.assertEqual(d.voices["hume_m_adult-0"]["line"], "", "a pool voice is not designed, so it has none")
+        with self.assertRaisesRegex(ValueError, "unknown key"):
+            designs.Designs(minimal(pools={"hume_m_adult": [{"description": "a", "line": "x"}], "narrator": ["b"]}),
+                            groups=GROUPS)
 
     def test_slugs(self):
         self.assertEqual(designs.voice_slug("Cait Sith"), "cait-sith")
@@ -116,9 +140,10 @@ class DesignsTest(unittest.TestCase):
         self.assertTrue(d.calibration.endswith("look behind you."))
         # the listening spike's voices keep the seeds their clips were drawn with
         self.assertEqual(d.voices["tenzen"]["seed"], 1862)
-        self.assertEqual(d.compose("tenzen").splitlines()[:2],
-                         ["Native Japanese. Male, late-thirties. High quality.",
-                          "Persona: a samurai. Emotion: grave and stoic."])
+        # the wording is edited in the review window all the time; only the form is fixed
+        first, second = d.compose("tenzen").splitlines()[:2]
+        self.assertRegex(first, r"^Native \S.*\. Male, \S.*\. High quality\.$")
+        self.assertRegex(second, r"^Persona: \S.*\. Emotion: \S.*\.$")
         self.assertEqual({v["race"] for v in d.voices.values()} - set(designs.RACES), set())
         self.assertEqual({designs.race_gender(g)[0] for g in casting.POOLS}, set(designs.RACES))
 
@@ -164,6 +189,9 @@ class EditAndDumpTest(unittest.TestCase):
             d = designs.Designs(minimal(cast={"#7 Guard": {"description": "A gate guard.", "race": "hume"},
                                               "Cait Sith": {"description": "Prim.", "also": [f"Cait Sith {n}"
                                                             for n in range(12)]}}), groups=GROUPS)
+            d.add_cast("Arciela", "", persona="a noblewoman", line=designs.line_ref("A line of hers."))
+            d.add_cast("Zeid", "Deep.", line="A sentence written for the purpose, long enough that it has to be "
+                                              "folded over more than one line of the file.")
             d.add_cast("Grav'iton", "Cold. " * 30, 5, gender="male", age="ageless", race="galka",
                        accent="Bastokan", persona="a weary guard", emotion="cold, tired")
             d.dump(p)
@@ -175,6 +203,9 @@ class EditAndDumpTest(unittest.TestCase):
         self.assertIn('    race: galka\n    accent: Bastokan\n    persona: a weary guard\n'
                       '    emotion: "cold, tired"\n    description: >-\n', text)
         self.assertNotIn("races:", text)
+        self.assertIn("  Arciela:\n    persona: a noblewoman\n    line: >-\n      sha1:", text,
+                      "a blank description is left out; a line of the game is kept as a reference")
+        self.assertIn("    line: >-\n      A sentence written for the purpose,", text)
         self.assertIn('"#7 Guard":', text, "a key YAML would misread as a comment is quoted")
         self.assertIn('    - age: thirties\n      description: "one"', text)
 
@@ -206,6 +237,33 @@ class MossCastingTest(unittest.TestCase):
         census = {"Numi Adaligo": {"race": 7}}
         self.assertEqual(casting.census_voice(census, "Numi Adaligo", "moss"),
                          casting.pick(casting.moss_pools()["mithra_f_adult"], "Numi Adaligo"))
+
+    def test_a_move_puts_a_speaker_in_another_group_and_shifts_nobody(self):
+        import cast
+        plain = cast.build(self.d, moves={})
+        moved = cast.build(self.d, moves={"Gumbah": "small", "Green Thumb Moogle": "small", "Moogle": "small"})
+        self.assertEqual(moved["moss"]["Gumbah"], "small-0")
+        self.assertIn(moved["kokoro"]["Gumbah"], casting.POOLS["small"][0])
+        self.assertEqual(moved["moss"]["Green Thumb Moogle"], "small-0", "someone no list has can be placed too")
+        self.assertNotIn("Green Thumb Moogle", plain["kokoro"])
+        rest = lambda out: {e: {n: v for n, v in out[e].items() if n not in ("Gumbah", "Green Thumb Moogle")}  # noqa: E731
+                            for e in out}
+        self.assertEqual(rest(moved), rest(plain), "a moved speaker keeps their turn where they were listed")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "cast_groups.yaml"
+            self.assertEqual(cast.load_moves(path), {})
+            path.write_text("# kept\n# too\n\n{}\n", encoding="utf-8")
+            self.assertEqual(cast.load_moves(path), {})
+            cast.write_moves({"Zeta": "small", "Green Thumb Moogle": "small", "D'Arc": "beast"}, path)
+            self.assertEqual(path.read_text(encoding="utf-8"),
+                             '# kept\n# too\n\n"D\'Arc": beast\n"Green Thumb Moogle": small\n"Zeta": small\n')
+            self.assertEqual(cast.load_moves(path), {"D'Arc": "beast", "Green Thumb Moogle": "small", "Zeta": "small"})
+            cast.write_moves({}, path)
+            self.assertEqual(path.read_text(encoding="utf-8"), "# kept\n# too\n\n{}\n")
+            path.write_text("Zeta: orc\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "not a casting group"):
+                cast.load_moves(path)
+        self.assertEqual(cast.load_moves(), {}, "the committed file starts with no moves")
 
     def test_cast_moss_section(self):
         import cast

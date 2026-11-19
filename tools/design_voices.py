@@ -334,10 +334,29 @@ def write_review(d, refs, index):
     return page
 
 
-def print_prompts(d, voices):
-    """Each voice's prompt under who it is for, ready to paste."""
+LINES = REPO / "data" / "voice_lines.json"   # speaker -> a few of their lines; the game's text, never committed
+
+
+def design_text(d, voice, lines):
+    """What a cast voice says while it is designed, from its `line`: the
+    text, a note when it names a line this machine does not have, or
+    nothing when none is recorded."""
+    v = d.voices[voice]
+    if not v.get("line"):
+        return ""
+    known = [line for name in v.get("names", []) for line in lines.get(name, [])]
+    text = designs_module.resolve_line(v["line"], known)
+    return text if text is not None else f"({v['line']}: a line this machine does not have; make voice-stories)"
+
+
+def print_prompts(d, voices, lines=None):
+    """Each voice's prompt under who it is for, then the line it is
+    designed saying, ready to paste."""
+    lines = lines or {}
     for voice in voices:
-        print(f"== {who_is(d, voice)} ({voice}; {d.voices[voice]['race']})\n{d.compose(voice)}\n")
+        said = design_text(d, voice, lines)
+        print(f"== {who_is(d, voice)} ({voice}; {d.voices[voice]['race']})\n{d.compose(voice)}\n"
+              + (f"-- says:\n{said}\n" if said else ""))
 
 
 def main(argv=None):
@@ -363,8 +382,9 @@ def main(argv=None):
 
     d = designs_module.Designs.load(args.designs, groups=set(casting.POOLS), quality=args.quality)
     if args.prompts:
+        lines = json.loads(LINES.read_text(encoding="utf-8")) if LINES.exists() else {}
         print_prompts(d, selected(d, args.only) if args.only
-                      else [v for v, design in d.voices.items() if design["kind"] == "cast"])
+                      else [v for v, design in d.voices.items() if design["kind"] == "cast"], lines)
         return 0
     index = load_index(args.refs)
     if args.audit:

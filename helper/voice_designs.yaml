@@ -32,7 +32,15 @@
 #                                place's adjective ("Japanese")
 #                  persona       two to five words ("a samurai")
 #                  emotion       two or three adjectives ("grave and stoic")
-#                  description   the last line
+#                  description   the last line; may be left out when there
+#                                is a persona or an emotion
+#                  line          what the voice says while it is designed:
+#                                one of the character's own lines, kept as
+#                                "sha1:" and a short hash because the
+#                                game's text is never committed (the
+#                                review window picks it and shows the
+#                                text, from data/voice_lines.json), or any
+#                                text written for the purpose
 #                  seed          optional, 1 by default (Qwen's)
 #                  also          other names that share the voice (Volto
 #                                Oscuro is Iroha's shadow)
@@ -60,7 +68,7 @@ calibration: >-
 cast:
   Iroha:
     gender: female
-    age: young adult
+    age: "14 years old"
     race: hume
     accent: Japanese
     persona: a priestess
@@ -76,45 +84,64 @@ cast:
     age: late-thirties
     race: hume
     accent: Japanese
-    persona: a samurai
+    persona: samurai
     emotion: grave and stoic
     description: >-
       A great warrior attempting to prevent his land from being devoured by the
       darkness. He is honor-bound but reluctant.
+    line: >-
+      sha1:f442ffcdc720
     seed: 1862
   Gilgamesh:
     gender: male
     age: fifties
     race: hume
+    accent: English
+    persona: A Pirate Captain
+    emotion: "Quick-witted, suspicious"
     description: >-
       A booming, gravelly pirate captain's voice; hearty and brash, rough
       working-class English accent, quick and loud.
+    line: >-
+      sha1:093ce4d4c1f2
     seed: 2147
   Lilisette:
     gender: female
     age: young adult
     race: elvaan
+    accent: French
+    persona: An elegant dancer
+    emotion: "Bright, lively, energetic"
     description: >-
-      An elegant dancer; bright, lively, energetic, quick, expressive, easily
-      excited
+      Quick-speaking, expressive, easily excited
+    line: >-
+      sha1:b7e05a4835cc
     seed: 1838567497
   Cait Sith:
     gender: female
+    age: young adult
     race: cait sith
+    accent: Irish
+    persona: Enigmatic talking cat
+    emotion: Sarcastic and Regal
     description: >-
-      A prim, precise, feline voice with a refined British accent; crisp
-      consonants, slightly haughty, a hint of purr.
+      A prim, precise, and quick with crisp consonants. Slightly haughty, a hint
+      of purr.
+    line: >-
+      sha1:83b5eced20dc
     seed: 953240600
     also: [Cait Sith Prime, Cait Sith Aon, Cait Sith Dha, Cait Sith Tri,
            Cait Sith Ceithir, Cait Sith Coig, Cait Sith Sia, Cait Sith Seachd,
            Cait Sith Ochd, Cait Sith Naoi, Cait Sith Deich]
   Prishe:
     gender: female
-    age: young adult
+    age: child
     race: elvaan
-    description: >-
-      A brash, husky, confident voice with a working-class British accent; fast,
-      blunt, amused.
+    accent: French
+    persona: "Tomboyish, Impulsive, Forthright"
+    emotion: Impetuous
+    line: >-
+      sha1:cd9ca44a8fab
     seed: 1853
   Zeid:
     gender: male
@@ -222,6 +249,8 @@ cast:
     emotion: warm and earnest
     description: >-
       Quick, with an aristocratic polish.
+    line: >-
+      sha1:348a32db4ea0
     seed: 1821545054
   Cid:
     gender: male
@@ -1328,6 +1357,14 @@ cast:
     description: >-
       A warm, low, unhurried voice; kind, patient, dry.
     seed: 408747289
+  Nicolaus:
+    gender: male
+    age: thirties
+    race: hume
+    accent: German
+    persona: A soldier
+    description: >-
+      A strict rule follower. Holds grudges way too long.
 
 pools:
   hume_m_child:
