@@ -1,0 +1,275 @@
+{
+ "source": "quests/outlands",
+ "scripts": 27,
+ "scenes": {
+  "named": 124,
+  "with_lines": 121,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 561,
+   "chars": 54964
+  },
+  "narration": {
+   "lines": 29,
+   "chars": 1321
+  },
+  "unattributed": {
+   "lines": 18,
+   "chars": 1003
+  },
+  "system": {
+   "lines": 47,
+   "chars": 2879
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 46,
+   "chars": 1187
+  },
+  "unvoiceable": {
+   "lines": 142,
+   "chars": 16
+  }
+ },
+ "voiced": {
+  "lines": 590,
+  "chars": 56285
+ },
+ "reasons": {
+  "unattributed": {
+   "no speaker": 18
+  },
+  "system": {
+   "text the cleaner left damaged": 8,
+   "told to the player about the player": 39
+  },
+  "menu": {
+   "menu": 46
+  },
+  "unvoiceable": {
+   "empty text": 4,
+   "live-only: 7f80, item": 14,
+   "live-only: item": 107,
+   "live-only: number": 13,
+   "punctuation only": 4
+  }
+ },
+ "speakers": {
+  "Jaucribaix": {
+   "lines": 50,
+   "chars": 5422
+  },
+  "Gilgamesh": {
+   "lines": 33,
+   "chars": 4383
+  },
+  "Jakoh Wahcondalo": {
+   "lines": 33,
+   "chars": 3357
+  },
+  "Ronta-Onta": {
+   "lines": 26,
+   "chars": 2380
+  },
+  "Washu": {
+   "lines": 25,
+   "chars": 2477
+  },
+  "Novice Moogle": {
+   "lines": 22,
+   "chars": 1386
+  },
+  "Ren": {
+   "lines": 20,
+   "chars": 2482
+  },
+  "Kagetora": {
+   "lines": 19,
+   "chars": 1703
+  },
+  "Zoriboh": {
+   "lines": 19,
+   "chars": 1700
+  },
+  "Ryoma": {
+   "lines": 18,
+   "chars": 2423
+  },
+  "Leodarion": {
+   "lines": 17,
+   "chars": 1449
+  },
+  "Patient Wheel": {
+   "lines": 16,
+   "chars": 1407
+  },
+  "Yve'noile": {
+   "lines": 16,
+   "chars": 1306
+  },
+  "Sohyon": {
+   "lines": 13,
+   "chars": 1097
+  },
+  "Ensetsu": {
+   "lines": 12,
+   "chars": 1077
+  },
+  "Rudolfo": {
+   "lines": 12,
+   "chars": 1039
+  },
+  "Gimb": {
+   "lines": 11,
+   "chars": 691
+  },
+  "Keal": {
+   "lines": 11,
+   "chars": 1188
+  },
+  "Sanctia": {
+   "lines": 11,
+   "chars": 652
+  },
+  "Lokpix": {
+   "lines": 10,
+   "chars": 1356
+  },
+  "Abelard": {
+   "lines": 9,
+   "chars": 951
+  },
+  "Atori-Tutori": {
+   "lines": 9,
+   "chars": 823
+  },
+  "Chelvadurai": {
+   "lines": 9,
+   "chars": 420
+  },
+  "Datta": {
+   "lines": 9,
+   "chars": 1121
+  },
+  "Alfesar": {
+   "lines": 8,
+   "chars": 983
+  },
+  "Laisrean": {
+   "lines": 8,
+   "chars": 797
+  },
+  "Lion": {
+   "lines": 8,
+   "chars": 444
+  },
+  "Shivivi": {
+   "lines": 8,
+   "chars": 889
+  },
+  "Etteh Sulaej": {
+   "lines": 7,
+   "chars": 868
+  },
+  "Mhebi Juhbily": {
+   "lines": 7,
+   "chars": 489
+  },
+  "Vishwas": {
+   "lines": 7,
+   "chars": 483
+  },
+  "Hani": {
+   "lines": 6,
+   "chars": 603
+  },
+  "Hayris": {
+   "lines": 6,
+   "chars": 343
+  },
+  "Koetsu": {
+   "lines": 6,
+   "chars": 549
+  },
+  "Seeker": {
+   "lines": 6,
+   "chars": 519
+  },
+  "Charlaimagnat": {
+   "lines": 5,
+   "chars": 517
+  },
+  "Yomi": {
+   "lines": 5,
+   "chars": 458
+  },
+  "Ayame": {
+   "lines": 4,
+   "chars": 393
+  },
+  "Hawk Nose": {
+   "lines": 4,
+   "chars": 413
+  },
+  "Jeisson": {
+   "lines": 4,
+   "chars": 312
+  },
+  "Phoochuchu": {
+   "lines": 4,
+   "chars": 708
+  },
+  "Sanosuke": {
+   "lines": 4,
+   "chars": 486
+  },
+  "Aeka": {
+   "lines": 3,
+   "chars": 362
+  },
+  "Carbuncle": {
+   "lines": 3,
+   "chars": 110
+  },
+  "Heiji": {
+   "lines": 3,
+   "chars": 280
+  },
+  "Heizo": {
+   "lines": 3,
+   "chars": 293
+  },
+  "Mitsunari": {
+   "lines": 3,
+   "chars": 410
+  },
+  "Ranemaud": {
+   "lines": 3,
+   "chars": 440
+  },
+  "Chef Nonberry": {
+   "lines": 2,
+   "chars": 74
+  },
+  "Ganan": {
+   "lines": 2,
+   "chars": 273
+  },
+  "Usharani": {
+   "lines": 2,
+   "chars": 178
+  }
+ },
+ "unattributed": [
+  {
+   "zone": 250,
+   "event": 273,
+   "lines": 18
+  }
+ ]
+}
