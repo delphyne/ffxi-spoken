@@ -1,0 +1,503 @@
+{
+ "source": "missions/bastok",
+ "scripts": 24,
+ "scenes": {
+  "named": 139,
+  "with_lines": 130,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 1572,
+   "chars": 129732
+  },
+  "narration": {
+   "lines": 6,
+   "chars": 523
+  },
+  "unattributed": {
+   "lines": 66,
+   "chars": 4781
+  },
+  "system": {
+   "lines": 106,
+   "chars": 6562
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 12,
+   "chars": 813
+  },
+  "unvoiceable": {
+   "lines": 104,
+   "chars": 24
+  }
+ },
+ "voiced": {
+  "lines": 1578,
+  "chars": 130255
+ },
+ "reasons": {
+  "unattributed": {
+   "no speaker": 66
+  },
+  "system": {
+   "told to the player about the player": 106
+  },
+  "menu": {
+   "menu": 12
+  },
+  "unvoiceable": {
+   "empty text": 2,
+   "live-only: 7f80, item": 1,
+   "live-only: item": 72,
+   "live-only: number": 21,
+   "punctuation only": 8
+  }
+ },
+ "speakers": {
+  "Iron Eater": {
+   "lines": 96,
+   "chars": 8047
+  },
+  "Gumbah": {
+   "lines": 95,
+   "chars": 7408
+  },
+  "Karst": {
+   "lines": 85,
+   "chars": 8491
+  },
+  "Cornelia": {
+   "lines": 80,
+   "chars": 6250
+  },
+  "Cid": {
+   "lines": 76,
+   "chars": 7313
+  },
+  "Zeid": {
+   "lines": 71,
+   "chars": 7104
+  },
+  "Volker": {
+   "lines": 70,
+   "chars": 6113
+  },
+  "Palometa": {
+   "lines": 69,
+   "chars": 1628
+  },
+  "Naji": {
+   "lines": 62,
+   "chars": 4517
+  },
+  "Lucius": {
+   "lines": 51,
+   "chars": 5309
+  },
+  "Ayame": {
+   "lines": 50,
+   "chars": 5338
+  },
+  "Lion": {
+   "lines": 39,
+   "chars": 3028
+  },
+  "Schultz": {
+   "lines": 37,
+   "chars": 4737
+  },
+  "Verena": {
+   "lines": 33,
+   "chars": 1771
+  },
+  "Halver": {
+   "lines": 31,
+   "chars": 3928
+  },
+  "Helaku": {
+   "lines": 27,
+   "chars": 2719
+  },
+  "Fickblix": {
+   "lines": 26,
+   "chars": 1012
+  },
+  "Shadow Lord": {
+   "lines": 23,
+   "chars": 1917
+  },
+  "Duke Alloces": {
+   "lines": 22,
+   "chars": 1815
+  },
+  "Werei": {
+   "lines": 21,
+   "chars": 2250
+  },
+  "Raogrimm": {
+   "lines": 20,
+   "chars": 1010
+  },
+  "Alois": {
+   "lines": 19,
+   "chars": 1858
+  },
+  "Altair": {
+   "lines": 17,
+   "chars": 1546
+  },
+  "Kam'lanaut": {
+   "lines": 17,
+   "chars": 1165
+  },
+  "Muckvix": {
+   "lines": 17,
+   "chars": 1295
+  },
+  "Dazbog": {
+   "lines": 16,
+   "chars": 585
+  },
+  "Gabbot": {
+   "lines": 16,
+   "chars": 1259
+  },
+  "Gilgamesh": {
+   "lines": 15,
+   "chars": 1481
+  },
+  "Francmage": {
+   "lines": 14,
+   "chars": 1229
+  },
+  "Franziska": {
+   "lines": 14,
+   "chars": 1156
+  },
+  "Goggehn": {
+   "lines": 14,
+   "chars": 1171
+  },
+  "Eald'narche": {
+   "lines": 13,
+   "chars": 908
+  },
+  "Aldo": {
+   "lines": 12,
+   "chars": 1124
+  },
+  "Ulrich": {
+   "lines": 12,
+   "chars": 524
+  },
+  "Magh Bihu": {
+   "lines": 11,
+   "chars": 462
+  },
+  "Povall": {
+   "lines": 11,
+   "chars": 639
+  },
+  "Wolfgang": {
+   "lines": 11,
+   "chars": 652
+  },
+  "Drake Fang": {
+   "lines": 10,
+   "chars": 939
+  },
+  "Atori-Tutori": {
+   "lines": 9,
+   "chars": 823
+  },
+  "Argus": {
+   "lines": 8,
+   "chars": 733
+  },
+  "Cleades": {
+   "lines": 8,
+   "chars": 733
+  },
+  "Eideialc": {
+   "lines": 8,
+   "chars": 616
+  },
+  "Hani": {
+   "lines": 8,
+   "chars": 794
+  },
+  "Malduc": {
+   "lines": 8,
+   "chars": 733
+  },
+  "Rashid": {
+   "lines": 8,
+   "chars": 733
+  },
+  "Uu Zhoumo": {
+   "lines": 8,
+   "chars": 688
+  },
+  "Dancing Wolf": {
+   "lines": 7,
+   "chars": 422
+  },
+  "Laila": {
+   "lines": 7,
+   "chars": 613
+  },
+  "Trion": {
+   "lines": 7,
+   "chars": 604
+  },
+  "Mawl'gofaur": {
+   "lines": 6,
+   "chars": 467
+  },
+  "Monberaux": {
+   "lines": 6,
+   "chars": 392
+  },
+  "Searcher": {
+   "lines": 6,
+   "chars": 538
+  },
+  "Seeker": {
+   "lines": 6,
+   "chars": 519
+  },
+  "Spotter": {
+   "lines": 6,
+   "chars": 472
+  },
+  "Davyad": {
+   "lines": 5,
+   "chars": 345
+  },
+  "Geebeh": {
+   "lines": 5,
+   "chars": 190
+  },
+  "Medicine Eagle": {
+   "lines": 5,
+   "chars": 431
+  },
+  "Salimah": {
+   "lines": 5,
+   "chars": 480
+  },
+  "Courisaille": {
+   "lines": 4,
+   "chars": 140
+  },
+  "Gold Skull": {
+   "lines": 4,
+   "chars": 328
+  },
+  "Hilda": {
+   "lines": 4,
+   "chars": 540
+  },
+  "Iru-Kuiru": {
+   "lines": 4,
+   "chars": 226
+  },
+  "Paya-Sabya": {
+   "lines": 4,
+   "chars": 239
+  },
+  "Rabntah": {
+   "lines": 4,
+   "chars": 287
+  },
+  "Raibaht": {
+   "lines": 4,
+   "chars": 138
+  },
+  "Rochefogne": {
+   "lines": 4,
+   "chars": 321
+  },
+  "Shadow of Darkness": {
+   "lines": 4,
+   "chars": 293
+  },
+  "Tall Mountain": {
+   "lines": 4,
+   "chars": 334
+  },
+  "Detzo": {
+   "lines": 3,
+   "chars": 163
+  },
+  "Echo Hawk": {
+   "lines": 3,
+   "chars": 196
+  },
+  "High Wind": {
+   "lines": 3,
+   "chars": 102
+  },
+  "Karaha-Baruha": {
+   "lines": 3,
+   "chars": 154
+  },
+  "Makarim": {
+   "lines": 3,
+   "chars": 309
+  },
+  "Melek": {
+   "lines": 3,
+   "chars": 217
+  },
+  "Michea": {
+   "lines": 3,
+   "chars": 278
+  },
+  "Pavvke": {
+   "lines": 3,
+   "chars": 254
+  },
+  "Ren": {
+   "lines": 3,
+   "chars": 212
+  },
+  "Semih Lafihna": {
+   "lines": 3,
+   "chars": 485
+  },
+  "Warlord Rojgnoj": {
+   "lines": 3,
+   "chars": 190
+  },
+  "Ada": {
+   "lines": 2,
+   "chars": 258
+  },
+  "Babenn": {
+   "lines": 2,
+   "chars": 162
+  },
+  "Baraka": {
+   "lines": 2,
+   "chars": 137
+  },
+  "Blamor": {
+   "lines": 2,
+   "chars": 134
+  },
+  "Deidogg": {
+   "lines": 2,
+   "chars": 257
+  },
+  "Josef": {
+   "lines": 2,
+   "chars": 302
+  },
+  "Kareh'ayollio": {
+   "lines": 2,
+   "chars": 220
+  },
+  "Pieuje": {
+   "lines": 2,
+   "chars": 200
+  },
+  "Seed Goblin": {
+   "lines": 2,
+   "chars": 293
+  },
+  "Seed Orc": {
+   "lines": 2,
+   "chars": 146
+  },
+  "Seed Yagudo": {
+   "lines": 2,
+   "chars": 46
+  },
+  "Yagudo Inquisitor": {
+   "lines": 2,
+   "chars": 28
+  },
+  "Amar": {
+   "lines": 1,
+   "chars": 56
+  },
+  "Boytz": {
+   "lines": 1,
+   "chars": 44
+  },
+  "Dalzakk": {
+   "lines": 1,
+   "chars": 129
+  },
+  "Deadly Spider": {
+   "lines": 1,
+   "chars": 30
+  },
+  "Drangord": {
+   "lines": 1,
+   "chars": 105
+  },
+  "Gawful": {
+   "lines": 1,
+   "chars": 23
+  },
+  "Gerbaum": {
+   "lines": 1,
+   "chars": 26
+  },
+  "Hans": {
+   "lines": 1,
+   "chars": 22
+  },
+  "Maunadolace": {
+   "lines": 1,
+   "chars": 105
+  },
+  "Mydon": {
+   "lines": 1,
+   "chars": 24
+  },
+  "Nonterene": {
+   "lines": 1,
+   "chars": 126
+  },
+  "Omran": {
+   "lines": 1,
+   "chars": 123
+  },
+  "Parraggoh": {
+   "lines": 1,
+   "chars": 41
+  },
+  "Rasmus": {
+   "lines": 1,
+   "chars": 124
+  },
+  "Seed Quadav": {
+   "lines": 1,
+   "chars": 38
+  },
+  "Shakir": {
+   "lines": 1,
+   "chars": 103
+  }
+ },
+ "unattributed": [
+  {
+   "zone": 206,
+   "event": 32001,
+   "lines": 56
+  },
+  {
+   "zone": 247,
+   "event": 104,
+   "lines": 10
+  }
+ ]
+}
