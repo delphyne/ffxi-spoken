@@ -125,6 +125,13 @@ uses. Non-humanoid models (moogles, beasts, Iroha's unique model) have no
 race and fall through to the default until they are cast by name. The
 report `make census` prints takes the Rhapsodies of Vana'diel speakers from
 the event decoder and says which are still uncast.
+
+Some cutscene lines are shown with no name, with `???`, or with a
+placeholder: every zone keeps a `???` actor that speaks for whoever is still
+off screen, usually just before that character's first named line.
+`helper/cast_as.yaml` names who is really speaking, by zone and entity id,
+and the pack builder renders the line in that voice while the lookup key
+keeps the name the game shows.
 ### Pronunciation
 
 `helper/lexicon.yaml` fixes words the engines mispronounce. An entry is
@@ -137,7 +144,9 @@ given. An entry applies to every engine unless it names the ones it is for
 (`backends: [kokoro, piper, espeak]`): MOSS and Qwen say laughs and grunts
 right on their own, so those entries are kept from them. It is applied before synthesis and before the cache key, so editing
 an entry regenerates only the lines it touches, and the running helper
-reloads the file within a second of a save. The lexicon is built from the game's own text rather than by waiting to be
+reloads the file within a second of a save. Stage directions in a line
+("<Sigh>", "<Sniffle, sob>") are never given to an engine; they stay in
+the text the addon looks audio up by. The lexicon is built from the game's own text rather than by waiting to be
 surprised in play:
 
 1. `make nouns` decodes every zone's dialogue table from the client, ranks

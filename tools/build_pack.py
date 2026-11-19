@@ -88,9 +88,12 @@ def file_name(speaker, text, taken):
     raise RuntimeError(f"cannot name {speaker!r} {text!r}")
 
 
-def corpus(rows, narration=True):
+def corpus(rows, narration=True, cast_as=None):
     """Unique (speaker, text) keys from decoder rows, in first-seen order,
-    each with its sources; plus counts of what was left out and why."""
+    each with its sources; plus counts of what was left out and why.
+    `cast_as` (helper/cast_as.py) names who really says a line whose shown
+    name is blank, "???", or a placeholder: the line then carries `as`, and
+    one key cast two ways is an error, because a pack holds one file for it."""
     lines, order, skipped = {}, [], {}
     for row in rows:
         if row["kind"] == "menu" or (row["kind"] == "narration" and not narration):
@@ -105,11 +108,23 @@ def corpus(rows, narration=True):
             skipped[why] = skipped.get(why, 0) + 1
             continue
         source = {"zone": row["zone"], "event": row["event"], "text_id": row["text_id"]}
+        who = cast_as.who(row) if cast_as else None
         for text in row["variants"]:
+            if not sh.strip_directions(text):   # "<Sigh>" alone: nothing to render
+                skipped["stage direction only"] = skipped.get("stage direction only", 0) + 1
+                continue
             key = (row["speaker"], text)
             if key not in lines:
                 lines[key] = {"speaker": row["speaker"], "text": text, "sources": []}
+                if who:
+                    lines[key]["as"] = who
                 order.append(key)
+            elif lines[key].get("as") != who:
+                first = lines[key]["sources"][0]
+                raise ValueError(
+                    f"{row['speaker'] or '(no name)'!r} {text!r} is cast as {lines[key].get('as') or 'nobody'} "
+                    f"(zone {first['zone']} event {first['event']} text {first['text_id']}) and as {who or 'nobody'} "
+                    f"(zone {row['zone']} event {row['event']} text {row['text_id']}); cast_as.yaml must cover both")
             if source not in lines[key]["sources"]:
                 lines[key]["sources"].append(source)
     return [lines[k] for k in order], skipped
@@ -172,18 +187,23 @@ class Builder:
         self.two_pass = two_pass
 
     def spoken(self, text):
-        """What the engine is given: the player's slot filled, then the lexicon."""
-        return self.lexicon.apply(text.replace(ffxitext.PLAYER, self.player_word), phonemes=self.phonemes)
+        """What the engine is given: the player's slot filled, the stage
+        directions dropped, then the lexicon."""
+        plain = sh.strip_directions(text.replace(ffxitext.PLAYER, self.player_word))
+        return self.lexicon.apply(plain, phonemes=self.phonemes)
 
     def plan(self, lines):
         """Rows before any audio exists: key, file, voice, spoken text, sources."""
         taken, rows = {}, []
         for line in lines:
             speaker, text = line["speaker"], line["text"]
-            rows.append({"speaker": speaker, "text": text, "file": file_name(speaker, text, taken),
-                         "voice": self.voice_for(speaker), "spoken": self.spoken(text),
-                         "sources": [dict(s, game_text=self.game_text(s)) if self.game_text else dict(s)
-                                     for s in line["sources"]]})
+            row = {"speaker": speaker, "text": text, "file": file_name(speaker, text, taken),
+                   "voice": self.voice_for(line.get("as") or speaker), "spoken": self.spoken(text),
+                   "sources": [dict(s, game_text=self.game_text(s)) if self.game_text else dict(s)
+                               for s in line["sources"]]}
+            if line.get("as"):
+                row["as"] = line["as"]   # the shown name stays the key; the voice is this character's
+            rows.append(row)
         return rows
 
     def wav_path(self, row):
@@ -379,6 +399,36 @@ def release_notes(manifest, archive_sha256=None):
     return "\n".join(lines) + "\n"
 
 
+def cast_as_table(path):
+    """helper/cast_as.yaml, or None when there is none."""
+    path = Path(path)
+    if not path.exists():
+        return None
+    import cast_as  # helper/, on sys.path above
+    return cast_as.CastAs.load(path)
+
+
+def cast_as_warnings(table, voice_map_path, census_path):
+    """What is off in the cast-as table after the corpus has been through
+    it: entries the build reached that matched no line, and names no
+    casting knows (any engine's section of voices.json, or the census)."""
+    if table is None:
+        return []
+    out = [f"cast_as entry matched no line: {e} ({e.where})" for e in table.unused()]
+    known = set()
+    if Path(voice_map_path).exists():
+        data = json.loads(Path(voice_map_path).read_text(encoding="utf-8"))
+        for section in (data.values() if any(isinstance(v, dict) for v in data.values()) else [data]):
+            known.update(section)
+    census = {}
+    if Path(census_path).exists():
+        census = json.loads(Path(census_path).read_text(encoding="utf-8"))
+    for name in table.names():
+        if name not in known and not census.get(name, {}).get("race"):
+            out.append(f"cast_as name {name!r} is in neither voices.json nor the census; it gets the default voice")
+    return out
+
+
 def game_text_hasher(client):
     """source -> short hash of the DAT entry's bytes, so a rebuild can see
     that the game changed a line since the pack was built."""
@@ -394,17 +444,19 @@ def game_text_hasher(client):
 
 
 def summarise(rows, skipped, log=print):
+    def label(r):
+        return (r["speaker"] or "<narration>") + (f" as {r['as']}" if r.get("as") else "")
     speakers = {}
     for r in rows:
-        speakers[r["speaker"]] = speakers.get(r["speaker"], 0) + 1
+        speakers[label(r)] = speakers.get(label(r), 0) + 1
     log(f"{len(rows)} lines from {len(speakers)} speakers; skipped: "
         + (", ".join(f"{k} {v}" for k, v in sorted(skipped.items())) or "nothing"))
     with_player = sum(ffxitext.PLAYER in r["text"] for r in rows)
     if with_player:
         log(f"{with_player} lines name the player")
     for name, n in sorted(speakers.items(), key=lambda kv: (-kv[1], kv[0])):
-        voice = rows[next(i for i, r in enumerate(rows) if r["speaker"] == name)]["voice"]
-        log(f"  {n:5}  {name or '<narration>':28} {voice}")
+        voice = rows[next(i for i, r in enumerate(rows) if label(r) == name)]["voice"]
+        log(f"  {n:5}  {name:28} {voice}")
 
 
 def main(argv=None):
@@ -421,6 +473,8 @@ def main(argv=None):
     ap.add_argument("--voice-map", default=str(here / "helper/voices.json"))
     ap.add_argument("--lexicon", default=str(here / "helper/lexicon.yaml"))
     ap.add_argument("--census", default=str(here / "helper/census.json"))
+    ap.add_argument("--cast-as", default=str(here / "helper/cast_as.yaml"),
+                    help="who says the lines whose shown name is blank, ???, or a placeholder")
     ap.add_argument("--cache", default=str(here / "helper/cache"), help="the helper's WAV cache; shared with live play")
     ap.add_argument("--player-word", default=PLAYER_WORD, help="what is said where the player's name goes")
     ap.add_argument("--bitrate", type=int, default=BITRATE, help="Opus kbit/s")
@@ -442,7 +496,11 @@ def main(argv=None):
 
     client = xidat.Client(args.client)
     rows = list(xievent.rov_lines(client, args.lsb, args.missions))
-    lines, skipped = corpus(rows, narration=not args.no_narration)
+    cast_as = cast_as_table(args.cast_as)
+    lines, skipped = corpus(rows, narration=not args.no_narration, cast_as=cast_as)
+
+    for warning in cast_as_warnings(cast_as, args.voice_map, args.census):
+        print(f"warning: {warning}", file=sys.stderr)
 
     backend_cls = sh.pick_backend(args.backend, args.voices)
     backend = backend_cls(args.voices, sh.load_voice_map(args.voice_map, backend_cls.name),

@@ -14,9 +14,9 @@ import build_pack as bp  # noqa: E402
 import spoken_helper as sh  # noqa: E402
 
 
-def row(speaker, variants, kind="say", zone=252, event=286, text_id=1, live_only=()):
+def row(speaker, variants, kind="say", zone=252, event=286, text_id=1, live_only=(), entity=None):
     return {"kind": kind, "speaker": speaker, "variants": list(variants), "live_only": list(live_only),
-            "zone": zone, "event": event, "text_id": text_id, "text": "raw"}
+            "zone": zone, "event": event, "text_id": text_id, "text": "raw", "speaker_id": entity}
 
 
 class Naming(unittest.TestCase):
@@ -64,6 +64,93 @@ class Corpus(unittest.TestCase):
                                                {"zone": 252, "event": 300, "text_id": 7}])
         self.assertEqual(skipped, {"menu": 1, "live-only: item, number": 1, "empty text": 1, "variable text id": 1})
         self.assertEqual(len(bp.corpus(rows, narration=False)[0]), 3)
+
+
+class CastAs(unittest.TestCase):
+    """A line whose shown name is "???" keeps that key but takes the voice
+    of whoever helper/cast_as.yaml says is speaking."""
+
+    def table(self, *entries):
+        import cast_as  # helper/, put on sys.path by build_pack
+        return cast_as.CastAs(list(entries))
+
+    def test_the_line_carries_who_says_it_and_the_voice_follows(self):
+        table = self.table({"zone": 84, "entity": 0x1054374, "lines": {8374: "Found ya at long last."},
+                            "as": "Larzos"},
+                           {"zone": 156, "entity": 0x109c071, "as": None})
+        rows = [row("???", ["Found ya at long last."], zone=84, event=7, text_id=8374, entity=0x1054374),
+                row("???", ["Found ya at long last."], zone=84, event=9, text_id=8374, entity=0x1054374),
+                row("???", ["Who goes there?"], zone=84, event=7, text_id=8375, entity=0x1054374),
+                row("2", ["Speak thy mind."], zone=156, event=8, text_id=8092, entity=0x109c071)]
+        lines, skipped = bp.corpus(rows, cast_as=table)
+        self.assertEqual([(ln["speaker"], ln["text"], ln.get("as")) for ln in lines],
+                         [("???", "Found ya at long last.", "Larzos"), ("???", "Who goes there?", None),
+                          ("2", "Speak thy mind.", None)])
+        self.assertEqual(len(lines[0]["sources"]), 2)
+        self.assertEqual(table.unused(), [])
+        builder = bp.Builder("/nonexistent", "p", "1", None, None, sh.Lexicon({}), lambda s: f"voice-of-{s}",
+                             "/nonexistent")
+        plan = builder.plan(lines)
+        self.assertEqual([(r["speaker"], r["voice"], r.get("as")) for r in plan],
+                         [("???", "voice-of-Larzos", "Larzos"), ("???", "voice-of-???", None), ("2", "voice-of-2", None)])
+        self.assertEqual(plan[0]["file"].split("/")[0], plan[1]["file"].split("/")[0])  # same speaker folder
+
+    def test_one_key_cast_two_ways_is_an_error(self):
+        table = self.table({"zone": 84, "entity": 0x1054374, "as": "Larzos"})
+        rows = [row("???", ["Found ya at long last."], zone=84, event=7, text_id=8374, entity=0x1054374),
+                row("???", ["Found ya at long last."], zone=91, event=702, text_id=8108, entity=0x105b334)]
+        with self.assertRaisesRegex(ValueError, "cast as Larzos .*zone 84 event 7 text 8374.* and as nobody "
+                                                ".*zone 91 event 702 text 8108"):
+            bp.corpus(rows, cast_as=table)
+
+    def test_warnings_name_unused_entries_and_unknown_names(self):
+        table = self.table({"zone": 84, "entity": 0x1054374, "as": "Larzos"},
+                           {"zone": 85, "entity": 0x10552f6, "as": "Nobody Known"})
+        bp.corpus([row("???", ["Found ya."], zone=84, event=7, text_id=1, entity=0x1054374)], cast_as=table)
+        with tempfile.TemporaryDirectory() as d:
+            census = Path(d) / "census.json"
+            census.write_text(json.dumps({"Larzos": {"race": 3}}), encoding="utf-8")
+            voices = Path(d) / "voices.json"
+            voices.write_text(json.dumps({"kokoro": {"Iroha": "jf_alpha"}, "moss": {"Iroha": "iroha"}}),
+                              encoding="utf-8")
+            # a build that never reached zone 85's entry is not told about it
+            warnings = bp.cast_as_warnings(table, voices, census)
+            self.assertEqual(len(warnings), 1)
+            self.assertIn("'Nobody Known' is in neither voices.json nor the census", warnings[0])
+            # once the build has come near it (its text id, said by another entity) without a match, it is
+            table.entries[1].lines = {8174: "Arrrgh!"}
+            bp.corpus([row("???", ["Arrrgh!"], zone=85, event=1, text_id=8174, entity=0x10552f7)], cast_as=table)
+            warnings = bp.cast_as_warnings(table, voices, census)
+            self.assertEqual(len(warnings), 2)
+            self.assertIn("matched no line: zone 85 entity 0x10552f6 lines [8174] as Nobody Known", warnings[0])
+            # a name any engine's section knows is known
+            table2 = self.table({"zone": 84, "entity": 0x1054374, "as": "Iroha"})
+            bp.corpus([row("???", ["Found ya."], zone=84, event=7, text_id=1, entity=0x1054374)], cast_as=table2)
+            self.assertEqual(bp.cast_as_warnings(table2, voices, census), [])
+        self.assertEqual(bp.cast_as_warnings(None, "/nonexistent", "/nonexistent"), [])
+
+    def test_summary_labels_a_recast_line(self):
+        out = []
+        bp.summarise([{"speaker": "???", "as": "Larzos", "voice": "larzos", "text": "Found ya."},
+                      {"speaker": "???", "voice": "narrator", "text": "Who goes there?"}], {}, log=out.append)
+        self.assertEqual(out[0], "2 lines from 2 speakers; skipped: nothing")
+        self.assertEqual([ln.split() for ln in out[1:]], [["1", "???", "narrator"], ["1", "???", "as", "Larzos", "larzos"]])
+
+
+class Directions(unittest.TestCase):
+    def test_direction_only_lines_are_skipped_and_directions_not_spoken(self):
+        rows = [row("Mayakov", ["<Sob>", "<Thniff> I mith her.", "Fine."], text_id=1)]
+        lines, skipped = bp.corpus(rows)
+        self.assertEqual([ln["text"] for ln in lines], ["<Thniff> I mith her.", "Fine."])
+        self.assertEqual(skipped, {"stage direction only": 1})
+        b = Build()
+        b.setUp()
+        try:
+            builder = b.builder()
+            self.assertEqual(builder.spoken("<Thniff> I mith her, <player>."), "I mith her, adventurer.")
+            self.assertEqual(builder.spoken("Go to Norg <sigh>."), "Go to [[nɔːɡ]].")
+        finally:
+            b.doCleanups()
 
 
 class Build(unittest.TestCase):

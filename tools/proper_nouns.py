@@ -29,8 +29,10 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent / "helper"))
 import xidat  # noqa: E402
 import xievent  # noqa: E402
+from spoken_helper import strip_directions  # noqa: E402
 
 WORD = re.compile(r"[A-Za-z][A-Za-z'\-]*[A-Za-z]|[A-Za-z]")
 JUNK = re.compile(r"[^\x20-\x7e]+")
@@ -56,7 +58,9 @@ STUTTER = re.compile(r"^[A-Za-z]{1,2}-[A-Za-z]")  # "Wh-what", "S-sorry": the wo
 
 
 def words_in(text):
-    for m in WORD.finditer(text.replace("--", " ")):
+    """The words of a line as spoken: stage directions ("<Sniff>") are not
+    said, so their words are not candidates."""
+    for m in WORD.finditer(strip_directions(text).replace("--", " ")):
         yield m.group(0)
 
 

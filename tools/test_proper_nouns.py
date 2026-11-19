@@ -19,6 +19,10 @@ class Words(unittest.TestCase):
     def test_double_hyphen_splits(self):
         self.assertEqual(list(pn.words_in("Vana'diel--is it? Wh-what")), ["Vana'diel", "is", "it", "Wh-what"])
 
+    def test_stage_directions_are_not_words(self):
+        self.assertEqual(list(pn.words_in("<Thniff> Lord Ragelise <Sniffle, sob> is gone.")),
+                         ["Lord", "Ragelise", "is", "gone"])
+
     def test_rov_words_counts_a_line_once_and_collects_speakers(self):
         rows = [say("Iroha", ["Go to Norg, Lion.", "Go to Norg, Lion."]),      # two variants, one line
                 say("Tenzen", ["Norg awaits."]),

@@ -109,7 +109,11 @@ occurs, the voice and lexicon version that produced it, and the hash of the
 game text at build time so a line the game has since changed is detected
 when the pack is rebuilt. One file per unique speaker and text within a
 pack collapses the cross-zone duplication; duplication between packs is
-accepted, and the core pack keeps it small.
+accepted, and the core pack keeps it small. A line whose shown name is
+blank, `???`, or a placeholder (every zone keeps a `???` actor that speaks
+for whoever is still off screen) keeps that name as its key, but
+`helper/cast_as.yaml`, keyed by zone and entity id, names who is really
+speaking; the row then carries `as` and the voice is that character's.
 
 Normalisation must match what the addon writes to its queue byte for
 byte, which is why a Python port of `text.clean` with the same tests is a
@@ -129,6 +133,12 @@ prerequisite (handoff step 5).
   word in the slot ("adventurer"; `--player-word` to change it) and keyed
   on the `<player>` token. Decided 2026-11-16 with the first build; see
   "What a line's key is".
+- Stage directions in the text ("<Sigh>", "<Sniffle, sob>", Mayakov's
+  "<Thniff>") stay in the key, which is the text as written, but are not
+  given to the engine (`strip_directions` in the helper, 2026-11-17); a
+  line that is nothing but a direction gets no file and is counted under
+  "stage direction only" in the manifest's skipped. The live helper marks
+  such a line done at once.
 - Narration lines (no speaker) are in: the first Rhapsodies pack has six.
   The addon only looks them up when narration is enabled.
 

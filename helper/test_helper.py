@@ -792,6 +792,35 @@ class RespellTest(unittest.TestCase):
         self.assertEqual(respell.respell(""), "")
 
 
+class DirectionsTest(unittest.TestCase):
+    def test_stage_directions_are_dropped_and_the_line_closed_up(self):
+        sd = sh.strip_directions
+        self.assertEqual(sd("<Sigh> Fine, I shall go."), "Fine, I shall go.")
+        self.assertEqual(sd("Oh, <sniff> I cannot bear it <Sniffle, sob>."), "Oh, I cannot bear it.")
+        self.assertEqual(sd("Yes <sob>, my lord."), "Yes, my lord.")
+        self.assertEqual(sd("<Thniff>I mith her tho."), "I mith her tho.")
+        self.assertEqual(sd("Welcome, <player>. <Cough> Sit."), "Welcome, <player>. Sit.", "the player token is a word")
+        self.assertEqual(sd("<Gasp>"), "", "a line that is only a direction says nothing")
+        self.assertEqual(sd("<Hack> <Cough>"), "")
+        self.assertEqual(sd("3 < 4 and 5 > 2"), "3 < 4 and 5 > 2", "not a direction")
+        self.assertEqual(sd("plain"), "plain")
+
+    def test_helper_does_not_say_directions(self):
+        with tempfile.TemporaryDirectory() as d:
+            data = Path(d) / "data"; data.mkdir()
+            backend = sh.NoneBackend(Path(d) / "voices", {"default": "n"})
+            spoken = []
+            backend.synthesise = lambda text, voice, out: spoken.append(text)
+            helper = sh.Helper(data, backend, Path(d) / "cache", player=None, lexicon=sh.Lexicon({"Norg": "Nawg"}))
+            with (data / "queue.jsonl").open("a") as f:
+                f.write(json.dumps({"seq": 1, "speaker": "", "text": "<Sigh> Off to Norg."}) + "\n")
+                f.write(json.dumps({"seq": 2, "speaker": "", "text": "<Sob>"}) + "\n")
+            helper.tick()
+            self.assertEqual(spoken, ["Off to Nawg."])
+            status = json.loads((data / "status.json").read_text())
+            self.assertEqual((status["seq"], status["state"], status["reason"]), (2, "done", "stage direction only"))
+
+
 class LexiconTest(unittest.TestCase):
     def test_ipa_entries_take_either_form(self):
         lex = sh.Lexicon({"Vana'diel": {"ipa": "vɑnədiˈɛl", "spell": "Vahna-dee-el"},

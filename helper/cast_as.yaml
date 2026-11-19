@@ -1,0 +1,241 @@
+# Who really says a line whose on-screen name is blank, "???", or a
+# placeholder. Read by tools/build_pack.py (helper/cast_as.py has the rules).
+#
+# A cutscene names its speaker by an entity in the zone's entity list, and
+# some entities have no usable name. Every zone keeps one or two actors
+# literally called "???", listed beside the scene's named cast, that speak
+# for whoever is still off screen: in most scenes the character's first
+# named line follows straight after. A few scenes have actors with an empty
+# name (Cait Sith through the Beaucedine traitor hunt) or a placeholder
+# ("1", "2", "4" in the Throne Room [S] finale). The addon sees only the
+# name the game shows, so the pack key keeps it; the voice is baked at
+# build time, and that is what this table decides.
+#
+#   zone     the zone number (tools/zone_dats.json)
+#   entity   the actor's id in that zone, as tools/xievent.py prints it
+#   lines    text id -> the line's first words. Narrows the entry to those
+#            lines, because a "???" slot is reused; the words are checked
+#            against the decoded text so a stale id is caught. `events`
+#            narrows to whole events instead. Neither: every line the
+#            entity says.
+#   as       the character whose voice to use (a name voices.json or the
+#            census knows). Blank: not decided yet; the line keeps the
+#            voice its shown name gets (the narrator for "" and "???").
+#   note     for the reader
+#
+# `make pack` warns about an entry that matched no line and about an `as`
+# name no casting knows, and stops if one line is cast two ways.
+
+# ---- Wings of the Goddess -------------------------------------------------
+
+# Beaucedine Glacier [S]: the traitor hunt. Cait Sith works nameless
+# through missions 13-20, 25, and 30; the doubled phrasing is hers
+# ("Searched for you for the longest time, I have! On your elusive trail!").
+- zone: 136
+  entity: 0x1088356
+  as: Cait Sith
+  note: nameless Cait Sith, 168 lines
+
+# The assembly of caits in mission 18: three nameless kin in chorus.
+- zone: 136
+  entity: 0x10882d8
+  as: Cait Sith
+  note: assembled cait ("Ceithir. At what turn did you go astray?")
+- zone: 136
+  entity: 0x10882d9
+  as: Cait Sith
+  note: assembled cait ("Do you realize the graveness of your actions?")
+- zone: 136
+  entity: 0x10882da
+  as: Cait Sith
+  note: assembled cait ("All in one, and one in all...")
+
+- zone: 136
+  entity: 0x10882cc
+  lines: {8579: "<player>!", 8580: "<player>! Lilisette! Can you hear me!?"}
+  as:
+  note: someone calling out to the player and Lilisette; Portia?
+
+# Grauberg [S]: the nameless matriarch of the sanctuary keeping Lilisette's
+# soul ("My kin and I shall watch over the child"), thee-and-thou, 23 lines;
+# also the one who imbues the item in event 39. No character to cast as
+# yet: give her a design under a name of your choosing, then name it here.
+- zone: 89
+  entity: 0x1059325
+  as:
+  note: sanctuary matriarch, 23 lines
+
+# Southern San d'Oria [S]
+- zone: 80
+  entity: 0x1050246
+  lines: {13473: "Excuse me, please pardon my interruption."}
+  as: Ragelise
+  note: Ragelise interrupting Mayakov, then named
+
+# Jugner Forest [S]
+- zone: 82
+  entity: 0x10523ae
+  lines: {8358: "Haha!!! You're mine now, you pompous crown-wearing"}
+  as: Lilisette
+  note: Lilisette catching Cait Sith, the first line of the scene
+- zone: 82
+  entity: 0x10523ae
+  lines: {8493: "...But, what's the", 8495: "Impressive! I'll be sure to keep that in mind!"}
+  as:
+  note: among the Cait Siths; Aquila is the next to be named
+
+# Batallia Downs [S]
+- zone: 84
+  entity: 0x105435d
+  lines: {8024: "Gwaaargh!"}
+  as:
+  note: an orc in the fight; One-eyed Gwajboj?
+- zone: 84
+  entity: 0x1054374
+  lines: {8374: "Found ya at long last."}
+  as: Larzos
+  note: Larzos arriving at the Maw; named on his next line
+- zone: 84
+  entity: 0x10543b3
+  lines: {8170: "..."}
+  as:
+  note: after two lines of Haudrale's
+
+# La Vaule [S]
+- zone: 85
+  entity: 0x10552f6
+  lines: {8174: "Arrrgh!"}
+  as:
+- zone: 85
+  entity: 0x10552f6
+  lines: {8220: "Portia!", 8224: "Here I aaam!"}
+  as:
+  note: Ragelise and Aquila are the next to be named
+- zone: 85
+  entity: 0x10552f6
+  lines:
+    8256: "Behold..."
+    8257: "For emptiness itself is not to be sustained."
+    8258: "And all realities..."
+    8261: "...Lilisette......"
+  as:
+  note: the voice from the void; Lady Lilith or Atomos, not the next named speaker
+
+# The Cavernous Maw scenes, the same cutscene in each of its zones.
+- zone: 91
+  entity: 0x105b334
+  lines: {8108: "Found ya at long last."}
+  as: Larzos
+- zone: 98
+  entity: 0x10622ea
+  lines: {8734: "Found ya at long last."}
+  as: Larzos
+- zone: 105
+  entity: 0x106923d
+  lines: {11389: "Found ya at long last."}
+  as: Larzos
+- zone: 110
+  entity: 0x106e256
+  lines: {11012: "Found ya at long last."}
+  as: Larzos
+- zone: 120
+  entity: 0x107820d
+  lines: {11051: "Found ya at long last."}
+  as: Larzos
+
+# The Maw's first opening, Regal Feline musing out of sight before stepping
+# into frame; the same scene in three zones.
+- zone: 105
+  entity: 0x1069234
+  as: Regal Feline
+  note: the "...so awfully busy...is spinning..." soliloquy and the four lines after
+- zone: 110
+  entity: 0x106e24d
+  as: Regal Feline
+- zone: 120
+  entity: 0x1078204
+  as: Regal Feline
+
+# Sauromugue Champaign [S]
+- zone: 98
+  entity: 0x10622d3
+  lines: {8682: "I, too, shall join you. Be in tow."}
+  as: Cait Sith
+  note: Cait Sith, named on her next line
+
+# Batallia Downs (present day)
+- zone: 105
+  entity: 0x1069257
+  as: Larzos
+  note: Larzos meeting Lilisette ("fiery red hair"), named on his next line
+
+# Xarcabard [S]: Flit, the Shadow Lord's imp herald, lisping and announcing
+# before she is named; and her "Awww. They noticed me."
+- zone: 137
+  entity: 0x108929b
+  events: [18]
+  as: Flit
+- zone: 137
+  entity: 0x108929b
+  lines: {8479: "Is...is someone there?"}
+  as:
+  note: Portia is the next to be named
+
+# Castle Zvahl Baileys [S]
+- zone: 138
+  entity: 0x108a2f5
+  lines: {7695: "...What is thy wish?"}
+  as:
+  note: the voice answering Count Bifrons's summons
+- zone: 138
+  entity: 0x108a2f5
+  lines: {7727: "Bereft of love and honor, a woman's life holds no"}
+  as: Noillurie
+  note: named on her next line
+
+# Throne Room [S]: the finale's placeholder actors, named "1" to "5".
+- zone: 156
+  entity: 0x109c071
+  as:
+  note: shown as "2"; a summoned being ("Art thou he who hast summoned me?")
+- zone: 156
+  entity: 0x109c070
+  as:
+  note: shown as "1"; the same being blessing Ragelise as its knight ("the quenchless flames of Asgarth")
+- zone: 156
+  entity: 0x109c073
+  as:
+  note: shown as "4"; a retainer ("Honored to stand before you again, Sir Ragelise.")
+
+# ---- Rhapsodies of Vana'diel ----------------------------------------------
+
+# Southern San d'Oria [S]
+- zone: 80
+  entity: 0x1050246
+  lines: {15791: "Something awful's happened! Not good at all!"}
+  as: Cait Sith
+  note: named on her next line
+
+# Qufim Island
+- zone: 126
+  entity: 0x107e205
+  lines: {12719: "...At last. There she is..."}
+  as:
+  note: after Iroha's five lines; Lion is listed beside her
+
+# Norg
+- zone: 252
+  entity: 0x10fc087
+  events: [276]
+  as: Iroha
+  note: Iroha calling the player Master, four lines before she is named
+- zone: 252
+  entity: 0x10fc087
+  events: [277]
+  as:
+  note: "...Holla...Dem...Mea... Seek...the crystal..."
+- zone: 252
+  entity: 0x10fc085
+  events: [278]
+  as:
+  note: the Warrior of the Crystal speech, ten lines; the Crystal or the Goddess

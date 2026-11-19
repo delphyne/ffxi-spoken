@@ -207,6 +207,21 @@ def lexicon_backends(key, value):
     return frozenset(names)
 
 
+# Stage directions in a line, "<Sigh>", "<Sniffle, sob>", "<Thniff>", are
+# shown and not said: dropped from what the engine is given, but left in
+# the line itself, since the addon looks audio up by the text as written.
+# `<player>` is the one span that is a word.
+DIRECTION = re.compile(r"<(?!player>)[A-Za-z][A-Za-z ,'\-]{0,39}>")
+
+
+def strip_directions(text):
+    """`text` without its stage directions, the spacing and punctuation
+    around them closed up; "" when it was nothing but directions."""
+    out = DIRECTION.sub(" ", text)
+    out = re.sub(r"\s+([,.!?;:…])", r"\1", out)
+    return re.sub(r"\s{2,}", " ", out).strip()
+
+
 def normalise_ipa(key, ipa):
     """Accept the common slips in hand-typed IPA and reject the rest.
     ASCII ' and , become the stress marks ˈ and ˌ and : the length mark ː;
@@ -688,7 +703,11 @@ class Helper:
         self.stop()
         seq = entry["seq"]
         speaker = entry.get("speaker", "")
-        text = self.lexicon.apply(entry.get("text", ""), phonemes=self.backend.phonemes)
+        text = strip_directions(entry.get("text", ""))
+        if not text:   # "<Sigh>": nothing to say, so the line is done at once
+            self.write_status(seq, "done", reason="stage direction only")
+            return
+        text = self.lexicon.apply(text, phonemes=self.backend.phonemes)
         voice = self.backend.voice_for(speaker)
         wav = self.cache_dir / f"{cache_key(speaker, text, voice)}.wav"
         cached = wav.exists()
@@ -776,10 +795,17 @@ def load_voice_map(path, backend_name):
 def say(backend, lexicon, player, text, speaker, cache_dir, fresh=False):
     """Speak one line the way the helper would, print what was sent to the
     engine, and wait for playback to finish."""
-    spoken = lexicon.apply(text, phonemes=backend.phonemes)
+    plain = strip_directions(text)
+    spoken = lexicon.apply(plain, phonemes=backend.phonemes)
     voice = backend.voice_for(speaker)
     print(f"speaker: {speaker or '<narrator>'}  voice: {voice}  backend: {backend.name}"
           f"  ({'takes phonemes' if backend.phonemes else 'respelling only'})")
+    if plain != text:
+        print(f"directions dropped: {text!r} -> {plain!r}")
+        if not plain:
+            print("nothing left to say")
+            return 0
+        text = plain
     if spoken != text:
         print(f"lexicon: {text!r} -> {spoken!r}")
         if backend.phonemes:
