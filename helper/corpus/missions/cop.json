@@ -1,0 +1,532 @@
+{
+ "source": "missions/cop",
+ "scripts": 34,
+ "scenes": {
+  "named": 195,
+  "with_lines": 189,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 4359,
+   "chars": 335552
+  },
+  "narration": {
+   "lines": 69,
+   "chars": 4046
+  },
+  "unattributed": {
+   "lines": 69,
+   "chars": 4038
+  },
+  "system": {
+   "lines": 57,
+   "chars": 3429
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 44,
+   "chars": 2201
+  },
+  "unvoiceable": {
+   "lines": 146,
+   "chars": 213
+  }
+ },
+ "voiced": {
+  "lines": 4428,
+  "chars": 339598
+ },
+ "reasons": {
+  "unattributed": {
+   "no speaker": 69
+  },
+  "system": {
+   "an instruction or prompt": 9,
+   "told to the player about the player": 48
+  },
+  "menu": {
+   "menu": 44
+  },
+  "unvoiceable": {
+   "empty text": 21,
+   "live-only: item": 22,
+   "live-only: number": 43,
+   "live-only: too many variants": 9,
+   "punctuation only": 50,
+   "stage direction only": 1
+  }
+ },
+ "speakers": {
+  "Prishe": {
+   "lines": 535,
+   "chars": 36266
+  },
+  "Tenzen": {
+   "lines": 469,
+   "chars": 35758
+  },
+  "Ulmia": {
+   "lines": 388,
+   "chars": 26374
+  },
+  "Nag'molada": {
+   "lines": 311,
+   "chars": 27123
+  },
+  "Louverance": {
+   "lines": 296,
+   "chars": 25736
+  },
+  "Cid": {
+   "lines": 283,
+   "chars": 27759
+  },
+  "Esha'ntarl": {
+   "lines": 175,
+   "chars": 15214
+  },
+  "Jabbos": {
+   "lines": 160,
+   "chars": 9673
+  },
+  "Makki-Chebukki": {
+   "lines": 119,
+   "chars": 4241
+  },
+  "Shikaree Z": {
+   "lines": 99,
+   "chars": 8441
+  },
+  "Wolfgang": {
+   "lines": 96,
+   "chars": 8636
+  },
+  "Kukki-Chebukki": {
+   "lines": 94,
+   "chars": 2794
+  },
+  "Cherukiki": {
+   "lines": 91,
+   "chars": 2498
+  },
+  "Despachiaire": {
+   "lines": 87,
+   "chars": 9005
+  },
+  "Diabolos": {
+   "lines": 73,
+   "chars": 6085
+  },
+  "Chasalvige": {
+   "lines": 69,
+   "chars": 7094
+  },
+  "Monberaux": {
+   "lines": 68,
+   "chars": 6482
+  },
+  "Mildaurion": {
+   "lines": 62,
+   "chars": 5488
+  },
+  "Selh'teus": {
+   "lines": 62,
+   "chars": 4575
+  },
+  "Yoran-Oran": {
+   "lines": 59,
+   "chars": 5107
+  },
+  "Hinaree": {
+   "lines": 56,
+   "chars": 5728
+  },
+  "Justinius": {
+   "lines": 47,
+   "chars": 4235
+  },
+  "Vukki-Chebukki": {
+   "lines": 43,
+   "chars": 2564
+  },
+  "Bahamut": {
+   "lines": 35,
+   "chars": 2930
+  },
+  "Fenrir": {
+   "lines": 30,
+   "chars": 2559
+  },
+  "Honoi-Gomoi": {
+   "lines": 30,
+   "chars": 2392
+  },
+  "Shikaree Y": {
+   "lines": 30,
+   "chars": 2135
+  },
+  "Shikaree X": {
+   "lines": 29,
+   "chars": 1986
+  },
+  "Yve'noile": {
+   "lines": 29,
+   "chars": 2107
+  },
+  "Carbuncle": {
+   "lines": 26,
+   "chars": 2448
+  },
+  "Meransarget": {
+   "lines": 26,
+   "chars": 2431
+  },
+  "Perih Vashai": {
+   "lines": 26,
+   "chars": 2445
+  },
+  "Aldo": {
+   "lines": 24,
+   "chars": 2686
+  },
+  "Pherimociel": {
+   "lines": 22,
+   "chars": 1981
+  },
+  "Tosuka-Porika": {
+   "lines": 22,
+   "chars": 1929
+  },
+  "Chekochuk": {
+   "lines": 21,
+   "chars": 1049
+  },
+  "Movamuq": {
+   "lines": 19,
+   "chars": 933
+  },
+  "Ghebi Damomohe": {
+   "lines": 14,
+   "chars": 1597
+  },
+  "Trikotrak": {
+   "lines": 14,
+   "chars": 549
+  },
+  "Arnau": {
+   "lines": 13,
+   "chars": 1263
+  },
+  "Magriffon": {
+   "lines": 13,
+   "chars": 841
+  },
+  "Shantotto": {
+   "lines": 13,
+   "chars": 1203
+  },
+  "Promathia": {
+   "lines": 12,
+   "chars": 423
+  },
+  "Kyume-Romeh": {
+   "lines": 11,
+   "chars": 999
+  },
+  "Sueleen": {
+   "lines": 10,
+   "chars": 940
+  },
+  "Guilloud": {
+   "lines": 9,
+   "chars": 509
+  },
+  "Cornelia": {
+   "lines": 8,
+   "chars": 675
+  },
+  "Kerutoto": {
+   "lines": 8,
+   "chars": 782
+  },
+  "Swipostik": {
+   "lines": 8,
+   "chars": 367
+  },
+  "Anoki": {
+   "lines": 7,
+   "chars": 763
+  },
+  "Brakobrik": {
+   "lines": 7,
+   "chars": 379
+  },
+  "Chipmy-Popmy": {
+   "lines": 6,
+   "chars": 721
+  },
+  "Mathilde": {
+   "lines": 6,
+   "chars": 349
+  },
+  "Grav'iton": {
+   "lines": 5,
+   "chars": 326
+  },
+  "Koru-Moru": {
+   "lines": 5,
+   "chars": 414
+  },
+  "Yujuju": {
+   "lines": 5,
+   "chars": 632
+  },
+  "Kareh'ayollio": {
+   "lines": 4,
+   "chars": 543
+  },
+  "Muchavatte": {
+   "lines": 4,
+   "chars": 417
+  },
+  "Ohbiru-Dohbiru": {
+   "lines": 4,
+   "chars": 380
+  },
+  "Pawnpix": {
+   "lines": 4,
+   "chars": 48
+  },
+  "Raibaht": {
+   "lines": 4,
+   "chars": 188
+  },
+  "Stufstix": {
+   "lines": 4,
+   "chars": 95
+  },
+  "Carey": {
+   "lines": 3,
+   "chars": 136
+  },
+  "Kapeh Myohrye": {
+   "lines": 3,
+   "chars": 116
+  },
+  "Mawl'gofaur": {
+   "lines": 3,
+   "chars": 226
+  },
+  "Muhk Johldy": {
+   "lines": 3,
+   "chars": 111
+  },
+  "Parelbriaux": {
+   "lines": 3,
+   "chars": 270
+  },
+  "Quasilumin": {
+   "lines": 3,
+   "chars": 110
+  },
+  "Tressia": {
+   "lines": 3,
+   "chars": 210
+  },
+  "Crooked Arrow": {
+   "lines": 2,
+   "chars": 116
+  },
+  "Kenapa-Keppa": {
+   "lines": 2,
+   "chars": 101
+  },
+  "Klaus": {
+   "lines": 2,
+   "chars": 76
+  },
+  "Mengrenaux": {
+   "lines": 2,
+   "chars": 88
+  },
+  "Neraf-Najiruf": {
+   "lines": 2,
+   "chars": 122
+  },
+  "Rakorok": {
+   "lines": 2,
+   "chars": 108
+  },
+  "Sattal-Mansal": {
+   "lines": 2,
+   "chars": 128
+  },
+  "Tarnotik": {
+   "lines": 2,
+   "chars": 197
+  },
+  "Adolie": {
+   "lines": 1,
+   "chars": 101
+  },
+  "Altiret": {
+   "lines": 1,
+   "chars": 78
+  },
+  "Answald": {
+   "lines": 1,
+   "chars": 100
+  },
+  "Ayame": {
+   "lines": 1,
+   "chars": 93
+  },
+  "Bellue": {
+   "lines": 1,
+   "chars": 84
+  },
+  "Bonarpant": {
+   "lines": 1,
+   "chars": 52
+  },
+  "Chapi Galepilai": {
+   "lines": 1,
+   "chars": 158
+  },
+  "Eaugouint": {
+   "lines": 1,
+   "chars": 83
+  },
+  "Felippe": {
+   "lines": 1,
+   "chars": 75
+  },
+  "Leillaine": {
+   "lines": 1,
+   "chars": 109
+  },
+  "Naji": {
+   "lines": 1,
+   "chars": 54
+  },
+  "Ondieulix": {
+   "lines": 1,
+   "chars": 40
+  },
+  "Prietta": {
+   "lines": 1,
+   "chars": 120
+  }
+ },
+ "unattributed": [
+  {
+   "zone": 4,
+   "event": 33,
+   "lines": 4
+  },
+  {
+   "zone": 9,
+   "event": 2,
+   "lines": 1
+  },
+  {
+   "zone": 13,
+   "event": 32001,
+   "lines": 1
+  },
+  {
+   "zone": 14,
+   "event": 155,
+   "lines": 1
+  },
+  {
+   "zone": 14,
+   "event": 160,
+   "lines": 2
+  },
+  {
+   "zone": 23,
+   "event": 32001,
+   "lines": 1
+  },
+  {
+   "zone": 25,
+   "event": 7,
+   "lines": 2
+  },
+  {
+   "zone": 25,
+   "event": 8,
+   "lines": 1
+  },
+  {
+   "zone": 25,
+   "event": 12,
+   "lines": 8
+  },
+  {
+   "zone": 28,
+   "event": 5,
+   "lines": 15
+  },
+  {
+   "zone": 33,
+   "event": 1,
+   "lines": 16
+  },
+  {
+   "zone": 34,
+   "event": 3,
+   "lines": 1
+  },
+  {
+   "zone": 35,
+   "event": 203,
+   "lines": 1
+  },
+  {
+   "zone": 35,
+   "event": 204,
+   "lines": 4
+  },
+  {
+   "zone": 36,
+   "event": 3,
+   "lines": 1
+  },
+  {
+   "zone": 36,
+   "event": 6,
+   "lines": 1
+  },
+  {
+   "zone": 107,
+   "event": 906,
+   "lines": 2
+  },
+  {
+   "zone": 184,
+   "event": 25,
+   "lines": 1
+  },
+  {
+   "zone": 184,
+   "event": 36,
+   "lines": 2
+  },
+  {
+   "zone": 237,
+   "event": 897,
+   "lines": 3
+  },
+  {
+   "zone": 239,
+   "event": 473,
+   "lines": 1
+  }
+ ]
+}
