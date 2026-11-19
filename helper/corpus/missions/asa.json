@@ -1,0 +1,98 @@
+{
+ "source": "missions/asa",
+ "scripts": 16,
+ "scenes": {
+  "named": 20,
+  "with_lines": 14,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 100,
+   "chars": 8657
+  },
+  "narration": {
+   "lines": 4,
+   "chars": 186
+  },
+  "unattributed": {
+   "lines": 7,
+   "chars": 490
+  },
+  "system": {
+   "lines": 2,
+   "chars": 163
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 6,
+   "chars": 238
+  },
+  "unvoiceable": {
+   "lines": 38,
+   "chars": 6
+  }
+ },
+ "voiced": {
+  "lines": 104,
+  "chars": 8843
+ },
+ "reasons": {
+  "unattributed": {
+   "no speaker": 7
+  },
+  "system": {
+   "an instruction or prompt": 1,
+   "told to the player about the player": 1
+  },
+  "menu": {
+   "menu": 6
+  },
+  "unvoiceable": {
+   "empty text": 11,
+   "live-only: 7f80, item": 1,
+   "live-only: item": 25,
+   "punctuation only": 1
+  }
+ },
+ "speakers": {
+  "Shantotto": {
+   "lines": 58,
+   "chars": 4698
+  },
+  "Moogle": {
+   "lines": 16,
+   "chars": 1125
+  },
+  "Andrause": {
+   "lines": 11,
+   "chars": 1018
+  },
+  "Yoran-Oran": {
+   "lines": 6,
+   "chars": 865
+  },
+  "Koru-Moru": {
+   "lines": 4,
+   "chars": 414
+  },
+  "9": {
+   "lines": 3,
+   "chars": 244
+  },
+  "10": {
+   "lines": 2,
+   "chars": 293
+  }
+ },
+ "unattributed": [
+  {
+   "zone": 126,
+   "event": 45,
+   "lines": 7
+  }
+ ]
+}
