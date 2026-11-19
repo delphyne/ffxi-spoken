@@ -39,7 +39,7 @@ calibration: >-
   road back to town and do not look behind you.
 
 races:
-  hume: "A plain, friendly, mid-pitched voice with a neutral American accent; easygoing and direct."
+  hume: ""
   elvaan: "A tall, proud, long-eared elf, with a faint french accent."
   tarutaru: "A tiny, child-sized person with a small, high voice, though not a child."
   mithra: "A lithe cat-woman who speaks with a gentle purrs."
@@ -203,12 +203,12 @@ cast:
       and disdainful.
   Arciela:
     gender: female
-    age: young adult
+    age: adult
     race: hume
     description: >-
-      A bright, refined, spirited young noblewoman's voice; quick, warm,
-      earnest, with an aristocratic polish.
-    seed: 1872625757
+      A refined, spirited noblewoman's voice; quick, warm, earnest, with an
+      aristocratic polish.
+    seed: 1821545054
   Cid:
     gender: male
     age: elderly
@@ -1333,7 +1333,7 @@ pools:
       description: "A light, easy, good-humoured young man's voice; relaxed, friendly, unhurried."
   hume_m_adult:
     - age: thirties
-      description: "A plain, friendly, mid-pitched voice with a neutral American accent; easygoing and direct."
+      description: "A plain, friendly, commoner with a mid-american accent."
     - age: forties
       description: "A steady, deep, confident merchant's voice with a Mediterranean accent; warm and persuasive."
   hume_m_elder:
