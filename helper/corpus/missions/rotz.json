@@ -1,0 +1,170 @@
+{
+ "source": "missions/rotz",
+ "scripts": 17,
+ "scenes": {
+  "named": 47,
+  "with_lines": 46,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 471,
+   "chars": 37433
+  },
+  "narration": {
+   "lines": 50,
+   "chars": 4965
+  },
+  "unattributed": {
+   "lines": 0,
+   "chars": 0
+  },
+  "system": {
+   "lines": 43,
+   "chars": 2761
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 18,
+   "chars": 414
+  },
+  "unvoiceable": {
+   "lines": 69,
+   "chars": 15
+  }
+ },
+ "voiced": {
+  "lines": 521,
+  "chars": 42398
+ },
+ "reasons": {
+  "system": {
+   "an instruction or prompt": 8,
+   "told to the player about the player": 35
+  },
+  "menu": {
+   "menu": 18
+  },
+  "unvoiceable": {
+   "empty text": 21,
+   "live-only: 7f80, item": 11,
+   "live-only: item": 12,
+   "live-only: number": 20,
+   "punctuation only": 5
+  }
+ },
+ "speakers": {
+  "Aldo": {
+   "lines": 79,
+   "chars": 5232
+  },
+  "Lion": {
+   "lines": 63,
+   "chars": 3987
+  },
+  "Gilgamesh": {
+   "lines": 51,
+   "chars": 4637
+  },
+  "Eald'narche": {
+   "lines": 48,
+   "chars": 4010
+  },
+  "Yve'noile": {
+   "lines": 41,
+   "chars": 4651
+  },
+  "Zeid": {
+   "lines": 34,
+   "chars": 1820
+  },
+  "Kam'lanaut": {
+   "lines": 33,
+   "chars": 2378
+  },
+  "Grav'iton": {
+   "lines": 24,
+   "chars": 2567
+  },
+  "Verena": {
+   "lines": 20,
+   "chars": 1058
+  },
+  "Maryoh Comyujah": {
+   "lines": 19,
+   "chars": 2526
+  },
+  "Raogrimm": {
+   "lines": 14,
+   "chars": 971
+  },
+  "Illusory Image": {
+   "lines": 13,
+   "chars": 1570
+  },
+  "Fickblix": {
+   "lines": 7,
+   "chars": 542
+  },
+  "Kamui": {
+   "lines": 4,
+   "chars": 303
+  },
+  "Geebeh": {
+   "lines": 3,
+   "chars": 97
+  },
+  "Koetsu": {
+   "lines": 3,
+   "chars": 95
+  },
+  "Jakoh Wahcondalo": {
+   "lines": 2,
+   "chars": 143
+  },
+  "Paya-Sabya": {
+   "lines": 2,
+   "chars": 153
+  },
+  "Shadow Lord": {
+   "lines": 2,
+   "chars": 116
+  },
+  "Yin Pocanakhu": {
+   "lines": 2,
+   "chars": 124
+  },
+  "Gadalar": {
+   "lines": 1,
+   "chars": 37
+  },
+  "Garnev": {
+   "lines": 1,
+   "chars": 84
+  },
+  "Mihli Aliapoh": {
+   "lines": 1,
+   "chars": 48
+  },
+  "Najelith": {
+   "lines": 1,
+   "chars": 93
+  },
+  "Rughadjeen": {
+   "lines": 1,
+   "chars": 136
+  },
+  "Sattal-Mansal": {
+   "lines": 1,
+   "chars": 5
+  },
+  "Zazarg": {
+   "lines": 1,
+   "chars": 50
+  }
+ },
+ "unattributed": []
+}
