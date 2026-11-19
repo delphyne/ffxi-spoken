@@ -1,0 +1,152 @@
+{
+ "source": "companions/mog-garden",
+ "scenes": {
+  "named": 182,
+  "with_lines": 160,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 1038,
+   "chars": 86515
+  },
+  "narration": {
+   "lines": 86,
+   "chars": 9294
+  },
+  "unattributed": {
+   "lines": 1,
+   "chars": 67
+  },
+  "system": {
+   "lines": 181,
+   "chars": 7843
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 193,
+   "chars": 12003
+  },
+  "unvoiceable": {
+   "lines": 439,
+   "chars": 49
+  }
+ },
+ "voiced": {
+  "lines": 1124,
+  "chars": 95809
+ },
+ "reasons": {
+  "unattributed": {
+   "no speaker": 1
+  },
+  "system": {
+   "a labelled readout": 92,
+   "an instruction or prompt": 4,
+   "battle message": 1,
+   "emote or a sentence missing its subject": 19,
+   "item, key item, or gil changing hands": 4,
+   "text the cleaner left damaged": 20,
+   "told to the player about the player": 41
+  },
+  "menu": {
+   "menu": 193
+  },
+  "unvoiceable": {
+   "empty text": 16,
+   "live-only: 7f80, item": 10,
+   "live-only: 7f80, item, number": 1,
+   "live-only: item": 247,
+   "live-only: item, number": 25,
+   "live-only: number": 130,
+   "live-only: number, too many variants": 3,
+   "live-only: too many variants": 2,
+   "punctuation only": 2,
+   "stage direction only": 3
+  }
+ },
+ "speakers": {
+  "Green Thumb Moogle": {
+   "lines": 507,
+   "chars": 49333
+  },
+  "Chacharoon": {
+   "lines": 208,
+   "chars": 11699
+  },
+  "Susuroon": {
+   "lines": 80,
+   "chars": 4232
+  },
+  "The Great Kupellion": {
+   "lines": 54,
+   "chars": 5201
+  },
+  "Atelloune": {
+   "lines": 35,
+   "chars": 4487
+  },
+  "Ephemeral Moogle": {
+   "lines": 29,
+   "chars": 2328
+  },
+  "Kupivolo": {
+   "lines": 24,
+   "chars": 1564
+  },
+  "Kuyin Hathdenna": {
+   "lines": 21,
+   "chars": 1208
+  },
+  "Monsieur Kupont": {
+   "lines": 21,
+   "chars": 1167
+  },
+  "Porter Moogle": {
+   "lines": 21,
+   "chars": 2339
+  },
+  "DIRECTOR2": {
+   "lines": 14,
+   "chars": 962
+  },
+  "Yeestog": {
+   "lines": 13,
+   "chars": 1127
+  },
+  "Ramblix": {
+   "lines": 6,
+   "chars": 633
+  },
+  "Breeding Monster": {
+   "lines": 1,
+   "chars": 47
+  },
+  "Breeding Monster00": {
+   "lines": 1,
+   "chars": 47
+  },
+  "Breeding Monster01": {
+   "lines": 1,
+   "chars": 47
+  },
+  "Breeding Monster02": {
+   "lines": 1,
+   "chars": 47
+  },
+  "Breeding Monster03": {
+   "lines": 1,
+   "chars": 47
+  }
+ },
+ "unattributed": [
+  {
+   "zone": 280,
+   "event": 2065,
+   "lines": 1
+  }
+ ]
+}
