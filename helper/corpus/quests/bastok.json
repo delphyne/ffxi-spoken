@@ -1,0 +1,585 @@
+{
+ "source": "quests/bastok",
+ "scripts": 81,
+ "scenes": {
+  "named": 278,
+  "with_lines": 278,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 2218,
+   "chars": 190722
+  },
+  "narration": {
+   "lines": 17,
+   "chars": 964
+  },
+  "unattributed": {
+   "lines": 19,
+   "chars": 1048
+  },
+  "system": {
+   "lines": 45,
+   "chars": 2123
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 68,
+   "chars": 3192
+  },
+  "unvoiceable": {
+   "lines": 255,
+   "chars": 75
+  }
+ },
+ "voiced": {
+  "lines": 2235,
+  "chars": 191686
+ },
+ "reasons": {
+  "unattributed": {
+   "no speaker": 19
+  },
+  "system": {
+   "emote or a sentence missing its subject": 17,
+   "told to the player about the player": 28
+  },
+  "menu": {
+   "menu": 68
+  },
+  "unvoiceable": {
+   "empty text": 3,
+   "live-only: 7f80, item": 22,
+   "live-only: item": 186,
+   "live-only: number": 18,
+   "live-only: too many variants": 1,
+   "punctuation only": 25
+  }
+ },
+ "speakers": {
+  "Ayame": {
+   "lines": 142,
+   "chars": 13907
+  },
+  "Valah Molkot": {
+   "lines": 133,
+   "chars": 7106
+  },
+  "Carmelo": {
+   "lines": 86,
+   "chars": 6662
+  },
+  "Oggbi": {
+   "lines": 75,
+   "chars": 8161
+  },
+  "Naji": {
+   "lines": 73,
+   "chars": 6796
+  },
+  "Iron Eater": {
+   "lines": 70,
+   "chars": 6456
+  },
+  "Ravorara": {
+   "lines": 53,
+   "chars": 4159
+  },
+  "Clarion Star": {
+   "lines": 50,
+   "chars": 5799
+  },
+  "Cornelia": {
+   "lines": 49,
+   "chars": 3829
+  },
+  "Jabbos": {
+   "lines": 49,
+   "chars": 2789
+  },
+  "Zeid": {
+   "lines": 48,
+   "chars": 5582
+  },
+  "Cid": {
+   "lines": 47,
+   "chars": 4682
+  },
+  "Gueravrel": {
+   "lines": 43,
+   "chars": 3284
+  },
+  "Gumbah": {
+   "lines": 43,
+   "chars": 3516
+  },
+  "Brygid": {
+   "lines": 42,
+   "chars": 4594
+  },
+  "Juroro": {
+   "lines": 39,
+   "chars": 3496
+  },
+  "Volker": {
+   "lines": 39,
+   "chars": 3642
+  },
+  "Deidogg": {
+   "lines": 36,
+   "chars": 3924
+  },
+  "Raibaht": {
+   "lines": 36,
+   "chars": 4120
+  },
+  "Zacc": {
+   "lines": 36,
+   "chars": 2150
+  },
+  "Ensetsu": {
+   "lines": 35,
+   "chars": 3485
+  },
+  "Magriffon": {
+   "lines": 35,
+   "chars": 2793
+  },
+  "Virnage": {
+   "lines": 33,
+   "chars": 3304
+  },
+  "Muckvix": {
+   "lines": 32,
+   "chars": 2461
+  },
+  "Alois": {
+   "lines": 29,
+   "chars": 2419
+  },
+  "Elki": {
+   "lines": 29,
+   "chars": 2829
+  },
+  "Kagetora": {
+   "lines": 29,
+   "chars": 2986
+  },
+  "Dariah": {
+   "lines": 27,
+   "chars": 1981
+  },
+  "Pawnpix": {
+   "lines": 27,
+   "chars": 989
+  },
+  "Hilda": {
+   "lines": 25,
+   "chars": 2412
+  },
+  "Pavvke": {
+   "lines": 25,
+   "chars": 2444
+  },
+  "Michea": {
+   "lines": 24,
+   "chars": 2479
+  },
+  "Stufstix": {
+   "lines": 23,
+   "chars": 764
+  },
+  "Brakobrik": {
+   "lines": 21,
+   "chars": 1138
+  },
+  "Tarnotik": {
+   "lines": 21,
+   "chars": 1303
+  },
+  "Detzo": {
+   "lines": 20,
+   "chars": 1657
+  },
+  "Viresefilant": {
+   "lines": 20,
+   "chars": 1055
+  },
+  "Babenn": {
+   "lines": 18,
+   "chars": 1495
+  },
+  "Enu": {
+   "lines": 18,
+   "chars": 736
+  },
+  "Ferrol": {
+   "lines": 18,
+   "chars": 1948
+  },
+  "Kaede": {
+   "lines": 18,
+   "chars": 1068
+  },
+  "Gwill": {
+   "lines": 17,
+   "chars": 1024
+  },
+  "Karababa": {
+   "lines": 17,
+   "chars": 684
+  },
+  "Phara": {
+   "lines": 16,
+   "chars": 1707
+  },
+  "Raogrimm": {
+   "lines": 16,
+   "chars": 1710
+  },
+  "Shamarhaan": {
+   "lines": 16,
+   "chars": 1226
+  },
+  "Gerwitz": {
+   "lines": 14,
+   "chars": 1410
+  },
+  "Parraggoh": {
+   "lines": 14,
+   "chars": 884
+  },
+  "Malene": {
+   "lines": 13,
+   "chars": 1303
+  },
+  "Nbu Latteh": {
+   "lines": 13,
+   "chars": 1527
+  },
+  "Chekochuk": {
+   "lines": 12,
+   "chars": 649
+  },
+  "Dalzakk": {
+   "lines": 12,
+   "chars": 1192
+  },
+  "Degga": {
+   "lines": 11,
+   "chars": 912
+  },
+  "Gudav": {
+   "lines": 11,
+   "chars": 1226
+  },
+  "Mighty Fist": {
+   "lines": 11,
+   "chars": 1246
+  },
+  "Powhatan": {
+   "lines": 11,
+   "chars": 1141
+  },
+  "Werei": {
+   "lines": 11,
+   "chars": 1233
+  },
+  "Ghebi Damomohe": {
+   "lines": 10,
+   "chars": 1148
+  },
+  "Movamuq": {
+   "lines": 10,
+   "chars": 534
+  },
+  "Romilda": {
+   "lines": 10,
+   "chars": 1032
+  },
+  "Alib-Mufalib": {
+   "lines": 9,
+   "chars": 1025
+  },
+  "Romualdo": {
+   "lines": 9,
+   "chars": 556
+  },
+  "Trikotrak": {
+   "lines": 9,
+   "chars": 328
+  },
+  "Wahid": {
+   "lines": 9,
+   "chars": 1055
+  },
+  "Raifa": {
+   "lines": 8,
+   "chars": 941
+  },
+  "Sniggnix": {
+   "lines": 8,
+   "chars": 449
+  },
+  "Evi": {
+   "lines": 7,
+   "chars": 1003
+  },
+  "King of Hearts": {
+   "lines": 7,
+   "chars": 169
+  },
+  "Louverance": {
+   "lines": 7,
+   "chars": 509
+  },
+  "Talib": {
+   "lines": 7,
+   "chars": 562
+  },
+  "Cochal-Monchal": {
+   "lines": 6,
+   "chars": 766
+  },
+  "Horatius": {
+   "lines": 6,
+   "chars": 517
+  },
+  "Hunting Bear": {
+   "lines": 6,
+   "chars": 626
+  },
+  "Izabele": {
+   "lines": 6,
+   "chars": 725
+  },
+  "Kurando": {
+   "lines": 6,
+   "chars": 706
+  },
+  "Makki-Chebukki": {
+   "lines": 6,
+   "chars": 267
+  },
+  "Otto": {
+   "lines": 6,
+   "chars": 448
+  },
+  "Agapito": {
+   "lines": 5,
+   "chars": 639
+  },
+  "Foss": {
+   "lines": 5,
+   "chars": 404
+  },
+  "Qiji": {
+   "lines": 5,
+   "chars": 238
+  },
+  "Roh Latteh": {
+   "lines": 5,
+   "chars": 287
+  },
+  "Ronan": {
+   "lines": 5,
+   "chars": 427
+  },
+  "Tami": {
+   "lines": 5,
+   "chars": 637
+  },
+  "Zelman": {
+   "lines": 5,
+   "chars": 370
+  },
+  "Benita": {
+   "lines": 4,
+   "chars": 426
+  },
+  "Cherukiki": {
+   "lines": 4,
+   "chars": 148
+  },
+  "Eperdur": {
+   "lines": 4,
+   "chars": 382
+  },
+  "Kukki-Chebukki": {
+   "lines": 4,
+   "chars": 165
+  },
+  "Swipostik": {
+   "lines": 4,
+   "chars": 228
+  },
+  "Yasin": {
+   "lines": 4,
+   "chars": 365
+  },
+  "Yazan": {
+   "lines": 4,
+   "chars": 413
+  },
+  "Zon-Fobun": {
+   "lines": 4,
+   "chars": 369
+  },
+  "Carbuncle": {
+   "lines": 3,
+   "chars": 110
+  },
+  "Corann": {
+   "lines": 3,
+   "chars": 302
+  },
+  "Degenhard": {
+   "lines": 3,
+   "chars": 427
+  },
+  "Evrain": {
+   "lines": 3,
+   "chars": 231
+  },
+  "Flit": {
+   "lines": 3,
+   "chars": 72
+  },
+  "Goraow": {
+   "lines": 3,
+   "chars": 278
+  },
+  "High Bear": {
+   "lines": 3,
+   "chars": 398
+  },
+  "Hungry Wolf": {
+   "lines": 3,
+   "chars": 299
+  },
+  "Lucius": {
+   "lines": 3,
+   "chars": 550
+  },
+  "Ryoma": {
+   "lines": 3,
+   "chars": 292
+  },
+  "Salimah": {
+   "lines": 3,
+   "chars": 344
+  },
+  "Arawn": {
+   "lines": 2,
+   "chars": 133
+  },
+  "Black Mud": {
+   "lines": 2,
+   "chars": 240
+  },
+  "Domien": {
+   "lines": 2,
+   "chars": 240
+  },
+  "Gerbaum": {
+   "lines": 2,
+   "chars": 202
+  },
+  "Matabe": {
+   "lines": 2,
+   "chars": 188
+  },
+  "Pagdako": {
+   "lines": 2,
+   "chars": 138
+  },
+  "Paujean": {
+   "lines": 2,
+   "chars": 251
+  },
+  "Quu Bokye": {
+   "lines": 2,
+   "chars": 168
+  },
+  "Rakorok": {
+   "lines": 2,
+   "chars": 48
+  },
+  "Steel Bones": {
+   "lines": 2,
+   "chars": 125
+  },
+  "Unlucky Rat": {
+   "lines": 2,
+   "chars": 181
+  },
+  "Aquillina": {
+   "lines": 1,
+   "chars": 72
+  },
+  "Baldric": {
+   "lines": 1,
+   "chars": 65
+  },
+  "Bartolomeo": {
+   "lines": 1,
+   "chars": 89
+  },
+  "Biggorf": {
+   "lines": 1,
+   "chars": 109
+  },
+  "Deadly Spider": {
+   "lines": 1,
+   "chars": 71
+  },
+  "Ehrhard": {
+   "lines": 1,
+   "chars": 75
+  },
+  "Elayne": {
+   "lines": 1,
+   "chars": 121
+  },
+  "Emrys": {
+   "lines": 1,
+   "chars": 18
+  },
+  "Latifah": {
+   "lines": 1,
+   "chars": 106
+  },
+  "Pavel": {
+   "lines": 1,
+   "chars": 102
+  },
+  "Rafaela": {
+   "lines": 1,
+   "chars": 36
+  },
+  "Tall Mountain": {
+   "lines": 1,
+   "chars": 187
+  },
+  "Tete": {
+   "lines": 1,
+   "chars": 116
+  }
+ },
+ "unattributed": [
+  {
+   "zone": 13,
+   "event": 32001,
+   "lines": 1
+  },
+  {
+   "zone": 236,
+   "event": 252,
+   "lines": 18
+  }
+ ]
+}
