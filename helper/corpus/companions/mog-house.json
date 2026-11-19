@@ -1,0 +1,58 @@
+{
+ "source": "companions/mog-house",
+ "scenes": {
+  "named": 10748,
+  "with_lines": 648,
+  "undecoded": 3
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 533,
+   "chars": 49754
+  },
+  "narration": {
+   "lines": 0,
+   "chars": 0
+  },
+  "unattributed": {
+   "lines": 0,
+   "chars": 0
+  },
+  "system": {
+   "lines": 0,
+   "chars": 0
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 0,
+   "chars": 0
+  },
+  "unvoiceable": {
+   "lines": 465,
+   "chars": 41
+  }
+ },
+ "voiced": {
+  "lines": 533,
+  "chars": 49754
+ },
+ "reasons": {
+  "unvoiceable": {
+   "live-only: 7f80, item": 1,
+   "live-only: item": 417,
+   "live-only: number": 42,
+   "live-only: too many variants": 3,
+   "punctuation only": 2
+  }
+ },
+ "speakers": {
+  "Moogle": {
+   "lines": 533,
+   "chars": 49754
+  }
+ },
+ "unattributed": []
+}
