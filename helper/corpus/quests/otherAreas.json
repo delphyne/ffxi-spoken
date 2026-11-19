@@ -1,0 +1,404 @@
+{
+ "source": "quests/otherAreas",
+ "scripts": 46,
+ "scenes": {
+  "named": 186,
+  "with_lines": 185,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 1651,
+   "chars": 148288
+  },
+  "narration": {
+   "lines": 23,
+   "chars": 1567
+  },
+  "unattributed": {
+   "lines": 36,
+   "chars": 2345
+  },
+  "system": {
+   "lines": 40,
+   "chars": 2472
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 64,
+   "chars": 4131
+  },
+  "unvoiceable": {
+   "lines": 172,
+   "chars": 103
+  }
+ },
+ "voiced": {
+  "lines": 1674,
+  "chars": 149855
+ },
+ "reasons": {
+  "unattributed": {
+   "no speaker": 36
+  },
+  "system": {
+   "told to the player about the player": 40
+  },
+  "menu": {
+   "menu": 64
+  },
+  "unvoiceable": {
+   "empty text": 12,
+   "live-only: 7f80, item": 9,
+   "live-only: item": 77,
+   "live-only: item, number": 1,
+   "live-only: number": 47,
+   "live-only: number, too many variants": 1,
+   "punctuation only": 24,
+   "stage direction only": 1
+  }
+ },
+ "speakers": {
+  "Enaremand": {
+   "lines": 97,
+   "chars": 9712
+  },
+  "Koblakiq": {
+   "lines": 82,
+   "chars": 6759
+  },
+  "Chemioue": {
+   "lines": 81,
+   "chars": 6663
+  },
+  "Maccus": {
+   "lines": 70,
+   "chars": 8258
+  },
+  "Parelbriaux": {
+   "lines": 52,
+   "chars": 3640
+  },
+  "Shikaree X": {
+   "lines": 48,
+   "chars": 3552
+  },
+  "Tressia": {
+   "lines": 48,
+   "chars": 3829
+  },
+  "Elysia": {
+   "lines": 45,
+   "chars": 3649
+  },
+  "Fardimant": {
+   "lines": 45,
+   "chars": 3868
+  },
+  "Rycharde": {
+   "lines": 45,
+   "chars": 4023
+  },
+  "Frescheque": {
+   "lines": 44,
+   "chars": 3815
+  },
+  "Despachiaire": {
+   "lines": 43,
+   "chars": 3878
+  },
+  "Ondieulix": {
+   "lines": 43,
+   "chars": 4135
+  },
+  "Anteurephiaux": {
+   "lines": 41,
+   "chars": 2806
+  },
+  "Leporaitceau": {
+   "lines": 39,
+   "chars": 2391
+  },
+  "Pradiulot": {
+   "lines": 38,
+   "chars": 2948
+  },
+  "Equette": {
+   "lines": 36,
+   "chars": 3202
+  },
+  "Fyi Chalmwoh": {
+   "lines": 35,
+   "chars": 3972
+  },
+  "Oswald": {
+   "lines": 33,
+   "chars": 2963
+  },
+  "Mevreauche": {
+   "lines": 28,
+   "chars": 3226
+  },
+  "Odeya": {
+   "lines": 26,
+   "chars": 2298
+  },
+  "Uran-Mafran": {
+   "lines": 26,
+   "chars": 2487
+  },
+  "Carbuncle": {
+   "lines": 25,
+   "chars": 1692
+  },
+  "Vera": {
+   "lines": 24,
+   "chars": 2758
+  },
+  "Raminey": {
+   "lines": 21,
+   "chars": 1835
+  },
+  "Valgeir": {
+   "lines": 21,
+   "chars": 1940
+  },
+  "Isacio": {
+   "lines": 20,
+   "chars": 2261
+  },
+  "Zeelozok": {
+   "lines": 20,
+   "chars": 1530
+  },
+  "Albanus": {
+   "lines": 19,
+   "chars": 1327
+  },
+  "Celestina": {
+   "lines": 19,
+   "chars": 1289
+  },
+  "Numi Adaligo": {
+   "lines": 19,
+   "chars": 1938
+  },
+  "Quelveuiat": {
+   "lines": 19,
+   "chars": 1531
+  },
+  "Rouva": {
+   "lines": 19,
+   "chars": 2082
+  },
+  "Abelard": {
+   "lines": 18,
+   "chars": 1935
+  },
+  "Ildy-Goldy": {
+   "lines": 18,
+   "chars": 1572
+  },
+  "Reinberta": {
+   "lines": 18,
+   "chars": 1745
+  },
+  "Shikaree Y": {
+   "lines": 17,
+   "chars": 1219
+  },
+  "Zaldon": {
+   "lines": 17,
+   "chars": 1493
+  },
+  "Cheupirudaux": {
+   "lines": 16,
+   "chars": 3035
+  },
+  "Epinolle": {
+   "lines": 16,
+   "chars": 1896
+  },
+  "Keshab-Menjab": {
+   "lines": 16,
+   "chars": 1535
+  },
+  "Nivorajean": {
+   "lines": 16,
+   "chars": 1790
+  },
+  "Wazozo": {
+   "lines": 16,
+   "chars": 1053
+  },
+  "Devean": {
+   "lines": 15,
+   "chars": 1648
+  },
+  "Justinius": {
+   "lines": 15,
+   "chars": 1948
+  },
+  "Sunny-Pabonny": {
+   "lines": 15,
+   "chars": 1393
+  },
+  "Thunder Hawk": {
+   "lines": 15,
+   "chars": 1078
+  },
+  "Shikaree Z": {
+   "lines": 14,
+   "chars": 1086
+  },
+  "Bahamut": {
+   "lines": 11,
+   "chars": 1108
+  },
+  "Jonette": {
+   "lines": 10,
+   "chars": 1055
+  },
+  "Take": {
+   "lines": 10,
+   "chars": 1033
+  },
+  "Shemmie": {
+   "lines": 9,
+   "chars": 259
+  },
+  "Swikastoq": {
+   "lines": 9,
+   "chars": 559
+  },
+  "Buffalostalker Dodzbraz": {
+   "lines": 8,
+   "chars": 318
+  },
+  "Ekokoko": {
+   "lines": 8,
+   "chars": 736
+  },
+  "Blandine": {
+   "lines": 7,
+   "chars": 567
+  },
+  "Ramona": {
+   "lines": 7,
+   "chars": 1122
+  },
+  "Suspicious Hume": {
+   "lines": 7,
+   "chars": 824
+  },
+  "Mengrenaux": {
+   "lines": 6,
+   "chars": 275
+  },
+  "Daa Bola the Seer": {
+   "lines": 4,
+   "chars": 267
+  },
+  "Noam": {
+   "lines": 4,
+   "chars": 214
+  },
+  "Tenzen": {
+   "lines": 4,
+   "chars": 470
+  },
+  "Zadant": {
+   "lines": 4,
+   "chars": 402
+  },
+  "Femitte": {
+   "lines": 3,
+   "chars": 407
+  },
+  "Fenrir": {
+   "lines": 3,
+   "chars": 159
+  },
+  "Fouagine": {
+   "lines": 3,
+   "chars": 271
+  },
+  "Ulmia": {
+   "lines": 3,
+   "chars": 106
+  },
+  "Aengus": {
+   "lines": 2,
+   "chars": 172
+  },
+  "Felisa": {
+   "lines": 2,
+   "chars": 236
+  },
+  "Grimr": {
+   "lines": 2,
+   "chars": 168
+  },
+  "Jimaida": {
+   "lines": 2,
+   "chars": 178
+  },
+  "Miledo-Shiraddo": {
+   "lines": 2,
+   "chars": 61
+  },
+  "Teyrnon": {
+   "lines": 2,
+   "chars": 230
+  },
+  "Ge'Fhu Yagudoeye": {
+   "lines": 1,
+   "chars": 10
+  },
+  "Oleg": {
+   "lines": 1,
+   "chars": 114
+  },
+  "Prishe": {
+   "lines": 1,
+   "chars": 9
+  },
+  "Suibhne": {
+   "lines": 1,
+   "chars": 68
+  },
+  "Yaya": {
+   "lines": 1,
+   "chars": 97
+  },
+  "Zexu": {
+   "lines": 1,
+   "chars": 110
+  }
+ },
+ "unattributed": [
+  {
+   "zone": 11,
+   "event": 26,
+   "lines": 1
+  },
+  {
+   "zone": 30,
+   "event": 101,
+   "lines": 20
+  },
+  {
+   "zone": 30,
+   "event": 102,
+   "lines": 11
+  },
+  {
+   "zone": 30,
+   "event": 103,
+   "lines": 4
+  }
+ ]
+}
