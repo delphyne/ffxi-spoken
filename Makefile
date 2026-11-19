@@ -23,7 +23,9 @@
 #                    with a table of every word, new and in the lexicon, filtered by status,
 #                    storyline, and speaker (CLI=1 for the terminal loop instead; ENTRIES=1
 #                    reviews the existing entries, ENTRY=Word starts at one)
-#   make pack VERSION=0.1 [PACK=rhapsodies] [MISSIONS=rov] [LIMIT=N] [DRY=1] [FORCE=1] [BACKEND=moss]
+#   make pack VERSION=0.1 [PACK=rhapsodies] [MISSIONS=rov | SOURCE="quests/jeuno ..."] [LIMIT=N] [DRY=1] [FORCE=1] [BACKEND=moss]
+#                    (SOURCE names tools/corpus.py sources in place of a mission folder; a line of
+#                    dialogue with no speaker stops the build, and DRY=1 says where they are)
 #                    (BACKEND=moss runs under .venv-moss; MOSS_TEMPERATURE, MOSS_N_VQ, MOSS_INT8,
 #                    MOSS_CODEC=cpu32|gpu16 tune it, see helper/moss.py)
 #                    build an audio pack: audio/<pack>/<version>/, the zip beside it,
@@ -200,7 +202,7 @@ MISSIONS ?= rov
 GH_REPO ?= delphyne/ffxi-spoken
 pack:
 	@if [ -z "$(VERSION)" ]; then echo 'usage: make pack VERSION=0.1 [PACK=rhapsodies] [MISSIONS=rov] [LIMIT=N] [DRY=1] [FORCE=1]' >&2; exit 1; fi; \
-	$(ENGINE_PY) -I tools/build_pack.py $(PACK) $(VERSION) --missions $(MISSIONS) --backend $(BACKEND) --lsb "$(LSB)" \
+	$(ENGINE_PY) -I tools/build_pack.py $(PACK) $(VERSION) --missions $(MISSIONS) $(foreach s,$(SOURCE),--source $(s)) --backend $(BACKEND) --lsb "$(LSB)" \
 		--repo $(GH_REPO) $(if $(LIMIT),--limit $(LIMIT)) $(if $(DRY),--dry-run) $(if $(FORCE),--force)
 
 release:

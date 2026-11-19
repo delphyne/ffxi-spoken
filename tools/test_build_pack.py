@@ -56,14 +56,39 @@ class Corpus(unittest.TestCase):
                 row("Iroha", [], text_id=5, live_only=["item", "number"]),
                 row("Iroha", [], text_id=6),
                 {"kind": "say", "speaker": "Iroha", "text_id": None, "variants": [], "zone": 1, "event": 1}]
-        lines, skipped = bp.corpus(rows)
+        lines, skipped, blocked = bp.corpus(rows)
+        self.assertEqual(blocked, [])
         self.assertEqual([(ln["speaker"], ln["text"]) for ln in lines],
                          [("Iroha", "Go to Norg."), ("Tenzen", "Take his hand."), ("Tenzen", "Take her hand."),
                           ("", "The ship departs.")])
         self.assertEqual(lines[0]["sources"], [{"zone": 252, "event": 286, "text_id": 1},
                                                {"zone": 252, "event": 300, "text_id": 7}])
         self.assertEqual(skipped, {"menu": 1, "live-only: item, number": 1, "empty text": 1, "variable text id": 1})
-        self.assertEqual(len(bp.corpus(rows, narration=False)[0]), 3)
+        lines, skipped, _ = bp.corpus(rows, narration=False)
+        self.assertEqual((len(lines), skipped["narration"]), (3, 1))
+
+    def test_what_the_exclude_rules_drop_is_skipped_under_its_class(self):
+        import corpus
+        rules = corpus.Exclude([corpus.Rule({"class": "system", "reason": "told to the player", "kind": "narration",
+                                             "text": "^You\\b"}, "rule 1"),
+                                corpus.Rule({"class": "boilerplate", "reason": "shop", "speaker": "Clerk"}, "rule 2")])
+        rows = [row("Iroha", ["Go to Norg."], text_id=1), row("", ["You obtain a fish."], kind="narration", text_id=2),
+                row("Clerk", ["Anything else?"], text_id=3), row("Iroha", ["...!?"], text_id=4)]
+        lines, skipped, blocked = bp.corpus(rows, exclude=rules)
+        self.assertEqual([ln["text"] for ln in lines], ["Go to Norg."])
+        self.assertEqual(skipped, {"system: told to the player": 1, "boilerplate: shop": 1, "punctuation only": 1})
+
+    def test_dialogue_with_no_speaker_blocks_the_pack_and_is_reported_without_its_text(self):
+        rows = [row("Iroha", ["Go to Norg."], text_id=1), row("???", ["Who goes there?"], zone=84, event=7, text_id=2),
+                row("", ["Stop!"], zone=84, event=7, text_id=3), row("", ["Run!"], zone=91, event=2, text_id=4)]
+        lines, skipped, blocked = bp.corpus(rows)
+        self.assertEqual([ln["text"] for ln in lines], ["Go to Norg."])
+        self.assertEqual([b["text"] for b in blocked], ["Who goes there?", "Stop!", "Run!"])
+        report = bp.blocked_report(blocked)
+        self.assertEqual(report[0], "3 lines of dialogue have no speaker, in 2 scenes; "
+                                    "helper/cast_as.yaml must say who speaks them")
+        self.assertEqual(report[1:], ["  zone 84 event 7: 2", "  zone 91 event 2: 1"])
+        self.assertNotIn("Stop", "".join(report))
 
 
 class CastAs(unittest.TestCase):
@@ -82,7 +107,10 @@ class CastAs(unittest.TestCase):
                 row("???", ["Found ya at long last."], zone=84, event=9, text_id=8374, entity=0x1054374),
                 row("???", ["Who goes there?"], zone=84, event=7, text_id=8375, entity=0x1054374),
                 row("2", ["Speak thy mind."], zone=156, event=8, text_id=8092, entity=0x109c071)]
-        lines, skipped = bp.corpus(rows, cast_as=table)
+        lines, skipped, blocked = bp.corpus(rows, cast_as=table)
+        self.assertEqual([(b["speaker"], b["text"]) for b in blocked], [("???", "Who goes there?")],
+                         "an uncast ??? line is nobody's, and blocks")
+        lines.insert(1, {"speaker": "???", "text": "Who goes there?", "sources": blocked[0]["sources"]})
         self.assertEqual([(ln["speaker"], ln["text"], ln.get("as")) for ln in lines],
                          [("???", "Found ya at long last.", "Larzos"), ("???", "Who goes there?", None),
                           ("2", "Speak thy mind.", None)])
@@ -140,7 +168,7 @@ class CastAs(unittest.TestCase):
 class Directions(unittest.TestCase):
     def test_direction_only_lines_are_skipped_and_directions_not_spoken(self):
         rows = [row("Mayakov", ["<Sob>", "<Thniff> I mith her.", "Fine."], text_id=1)]
-        lines, skipped = bp.corpus(rows)
+        lines, skipped, _ = bp.corpus(rows)
         self.assertEqual([ln["text"] for ln in lines], ["<Thniff> I mith her.", "Fine."])
         self.assertEqual(skipped, {"stage direction only": 1})
         b = Build()
@@ -178,7 +206,7 @@ class Build(unittest.TestCase):
 
     def lines(self):
         rows = [row("Iroha", ["Go to Norg, <player>."], text_id=1), row("Tenzen", ["Yes."], text_id=2)]
-        return bp.corpus(rows)
+        return bp.corpus(rows)[:2]
 
     def test_build_writes_files_and_manifest(self):
         lines, skipped = self.lines()

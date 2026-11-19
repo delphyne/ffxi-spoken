@@ -237,11 +237,23 @@ def classify(row, text, exclude, who=None):
     return "dialogue", "dialogue"
 
 
+def classed(rows, exclude=None, cast_as=None):
+    """The rows again, each with `class` (that of its first variant to be
+    voiced, else of its first variant) and `as` (who cast_as.yaml says
+    speaks it, or None): what the counters of whole rows go by."""
+    for row in rows:
+        who = spoken_by(row, cast_as)
+        found = [classify(row, text, exclude, who)[0] for text in (row.get("variants") or [None])]
+        yield {**row, "class": next((c for c in found if c in VOICED), found[0]), "as": who}
+
+
 def extract(rows, exclude=None, cast_as=None):
     """Decoder rows to (lines, counts). `lines` holds one record per unique
     (class, speaker, text) in first-seen order; `counts` is what gets
-    committed and holds no text."""
+    committed and holds no text. One (speaker, text) cast two ways is an
+    error, because a pack holds one file for it."""
     lines, order = {}, []
+    cast = {}        # (speaker, text) -> (who, its first source), for lines a pack could hold
     reasons = {c: {} for c in CLASSES}
     where = {}       # (zone, event) -> unattributed lines
     for row in rows:
@@ -249,7 +261,15 @@ def extract(rows, exclude=None, cast_as=None):
         for text in (row.get("variants") or [None]):
             cls, reason = classify(row, text, exclude, who)
             source = {"zone": row["zone"], "event": row["event"], "text_id": row.get("text_id")}
-            key = (cls, row["speaker"], text if text is not None else (row["zone"], row["event"], row["offset"]))
+            key = (cls, row["speaker"], text if text is not None
+                   else (row["zone"], row["event"], row.get("offset"), row.get("text_id")))
+            if cls in VOICED or cls == "unattributed":
+                was, first = cast.setdefault((row["speaker"], text), (who, source))
+                if was != who:
+                    raise ValueError(
+                        f"{row['speaker'] or '(no name)'!r} {text!r} is cast as {was or 'nobody'} "
+                        f"(zone {first['zone']} event {first['event']} text {first['text_id']}) and as {who or 'nobody'} "
+                        f"(zone {row['zone']} event {row['event']} text {row['text_id']}); cast_as.yaml must cover both")
             if key not in lines:
                 lines[key] = {"class": cls, "reason": reason, "speaker": row["speaker"], "text": text, "sources": []}
                 if who:
@@ -300,8 +320,10 @@ def decoded(client, found, undecoded):
                     undecoded.append((zone, cs))
 
 
-def run(client, lsb, source, exclude, cast_as, companions_path=COMPANIONS):
-    """Extract one source from the client: (lines, counts)."""
+def rows_of(client, lsb, source, companions_path=COMPANIONS):
+    """The decoder's rows for one source, and its counts' head: what
+    extract and classed are given, and what the pack builder and the story
+    counter read."""
     found, scripts = targets(client, lsb, source, companions_path)
     kind, _, name = source.partition("/")
     only = companions(companions_path)[name]["speakers"] if kind == "companions" else None
@@ -313,11 +335,17 @@ def run(client, lsb, source, exclude, cast_as, companions_path=COMPANIONS):
             continue   # a companion kept by name: the zone's other events are someone else's
         present.add((row["zone"], row["event"]))
         rows.append(row)
-    lines, counts = extract(rows, exclude, cast_as)
     head = {"source": source}
     if scripts is not None:
         head["scripts"] = scripts
     head["scenes"] = {"named": len(found), "with_lines": len(present), "undecoded": len(set(undecoded))}
+    return rows, head
+
+
+def run(client, lsb, source, exclude, cast_as, companions_path=COMPANIONS):
+    """Extract one source from the client: (lines, counts)."""
+    rows, head = rows_of(client, lsb, source, companions_path)
+    lines, counts = extract(rows, exclude, cast_as)
     return lines, {**head, **counts}
 
 

@@ -145,13 +145,15 @@ class Session:
     def __init__(self, designs_path=designs_module.DEFAULT_PATH, refs=dv.REFS,
                  voices_json=REPO / "helper" / "voices.json", census=REPO / "helper" / "census.json",
                  stories=REPO / "helper" / "voice_stories.json", engine_factory=None, rng=None,
-                 worker_factory=None, lexicon=REPO / "helper" / "lexicon.yaml"):
+                 worker_factory=None, lexicon=REPO / "helper" / "lexicon.yaml",
+                 lines=REPO / "data" / "voice_lines.json"):
         self.designs_path, self.refs = Path(designs_path), Path(refs)
         self.voices_json = Path(voices_json)
         self.census = load_json(census, {})
         data = load_json(stories, {"stories": {}, "speakers": {}})
         self.story_names, self.speaker_stories = data["stories"], data["speakers"]
-        self.lines = data.get("lines", {})   # speaker -> a few lines they say, to hear a voice say
+        # speaker -> a few lines they say, to hear a voice say: the game's text, so kept in data/
+        self.lines = load_json(lines, {})
         self.cast_groups = cast_groups()
         self.engine_factory = engine_factory or (lambda: dv.Qwen())
         self.worker_factory = worker_factory or MossWorker

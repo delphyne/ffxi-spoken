@@ -2,10 +2,12 @@
 """Build an audio pack: docs/Audio-Packs.md made real.
 
     .venv/bin/python -I tools/build_pack.py rhapsodies 0.1 [--missions rov] [--dry-run] [--limit N]
+    .venv/bin/python -I tools/build_pack.py jeuno 0.1 --source quests/jeuno --source missions/rotz
 
-Takes every line a storyline's cutscenes can show (tools/xievent.py over
-LandSandBoat's mission scripts), cleans it the way the addon will
-(tools/ffxitext.py), and renders one file per unique speaker and text:
+Takes every line its sources can show and a pack may voice (tools/corpus.py:
+a mission folder, a quest region, or a companion, decoded by
+tools/xievent.py, minus what helper/exclude.yaml drops), cleaned the way
+the addon will (tools/ffxitext.py), and renders one file per unique speaker and text:
 lexicon applied, the speaker's cast voice (voices.json, else the census
 race pool), synthesised through the helper's backend into the helper's WAV
 cache, then encoded to Opus. Writes
@@ -25,7 +27,10 @@ records the engine and the hashes of its model files, the repo commit,
 the lexicon hash, and what was skipped. Audio is a build product, so it
 is never committed: the manifest and index are, and the archive goes to
 a Release (`make release`). Lines with an item name or a number cannot
-be enumerated and are skipped; a line naming the player is rendered with
+be enumerated and are skipped, as are menus, system text, stock speech,
+and lines with nothing to say; a line of dialogue nobody is named for
+stops the build until helper/cast_as.yaml says who speaks it (a dry run
+lists them and goes on). A line naming the player is rendered with
 --player-word in that slot and keyed on the `<player>` token the addon
 substitutes. The WAV cache makes a rebuild cost only what changed. Needs
 opusenc (opus-tools) or ffmpeg.
@@ -46,6 +51,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "helper"))
+import corpus as extraction  # noqa: E402
 import ffxitext  # noqa: E402
 import spoken_helper as sh  # noqa: E402
 import xidat  # noqa: E402
@@ -88,46 +94,51 @@ def file_name(speaker, text, taken):
     raise RuntimeError(f"cannot name {speaker!r} {text!r}")
 
 
-def corpus(rows, narration=True, cast_as=None):
-    """Unique (speaker, text) keys from decoder rows, in first-seen order,
-    each with its sources; plus counts of what was left out and why.
-    `cast_as` (helper/cast_as.py) names who really says a line whose shown
-    name is blank, "???", or a placeholder: the line then carries `as`, and
-    one key cast two ways is an error, because a pack holds one file for it."""
-    lines, order, skipped = {}, [], {}
-    for row in rows:
-        if row["kind"] == "menu" or (row["kind"] == "narration" and not narration):
-            skipped[row["kind"]] = skipped.get(row["kind"], 0) + 1
-            continue
-        if row.get("text_id") is None:
-            skipped["variable text id"] = skipped.get("variable text id", 0) + 1
-            continue
-        if not row.get("variants"):
-            live = sorted(set(row.get("live_only") or []))
-            why = "live-only: " + ", ".join(live) if live else "empty text"
-            skipped[why] = skipped.get(why, 0) + 1
-            continue
-        source = {"zone": row["zone"], "event": row["event"], "text_id": row["text_id"]}
-        who = cast_as.who(row) if cast_as else None
-        for text in row["variants"]:
-            if not sh.strip_directions(text):   # "<Sigh>" alone: nothing to render
-                skipped["stage direction only"] = skipped.get("stage direction only", 0) + 1
-                continue
-            key = (row["speaker"], text)
+def corpus(rows, narration=True, cast_as=None, exclude=None):
+    """(lines, skipped, blocked) from decoder rows, through tools/corpus.py.
+    `lines` are the unique (speaker, text) keys a pack may voice, in
+    first-seen order, each with its sources; `skipped` counts what was left
+    out by reason; `blocked` are lines of dialogue nobody is named for,
+    which a pack must not ship. `cast_as` (helper/cast_as.py) names who
+    really says a line whose shown name is blank, "???", or a placeholder:
+    the line then carries `as`, and one key cast two ways is an error."""
+    records, _ = extraction.extract(rows, exclude, cast_as)
+    lines, order, skipped, blocked = {}, [], {}, []
+
+    def skip(why):
+        skipped[why] = skipped.get(why, 0) + 1
+
+    for r in records:
+        cls = r["class"]
+        if cls == "unattributed":
+            blocked.append(r)
+        elif cls == "narration" and not narration:
+            skip("narration")
+        elif cls in extraction.VOICED:
+            key = (r["speaker"], r["text"])
             if key not in lines:
-                lines[key] = {"speaker": row["speaker"], "text": text, "sources": []}
-                if who:
-                    lines[key]["as"] = who
+                lines[key] = {"speaker": r["speaker"], "text": r["text"], "sources": []}
+                if r.get("as"):
+                    lines[key]["as"] = r["as"]
                 order.append(key)
-            elif lines[key].get("as") != who:
-                first = lines[key]["sources"][0]
-                raise ValueError(
-                    f"{row['speaker'] or '(no name)'!r} {text!r} is cast as {lines[key].get('as') or 'nobody'} "
-                    f"(zone {first['zone']} event {first['event']} text {first['text_id']}) and as {who or 'nobody'} "
-                    f"(zone {row['zone']} event {row['event']} text {row['text_id']}); cast_as.yaml must cover both")
-            if source not in lines[key]["sources"]:
-                lines[key]["sources"].append(source)
-    return [lines[k] for k in order], skipped
+            lines[key]["sources"] += [s for s in r["sources"] if s not in lines[key]["sources"]]
+        else:
+            skip(f"{cls}: {r['reason']}" if cls in extraction.EXCLUDED else r["reason"])
+    return [lines[k] for k in order], skipped, blocked
+
+
+def blocked_report(blocked, limit=10):
+    """Where the unattributed lines are, without their text."""
+    where = {}
+    for r in blocked:
+        at = r["sources"][0]
+        where[(at["zone"], at["event"])] = where.get((at["zone"], at["event"]), 0) + 1
+    out = [f"{len(blocked)} lines of dialogue have no speaker, in {len(where)} scenes; "
+           "helper/cast_as.yaml must say who speaks them"]
+    out += [f"  zone {z} event {e}: {n}" for (z, e), n in sorted(where.items())[:limit]]
+    if len(where) > limit:
+        out.append(f"  and {len(where) - limit} more scenes (make audit-corpus SOURCE=... SHOW=unattributed)")
+    return out
 
 
 def sha256_file(path):
@@ -465,6 +476,11 @@ def main(argv=None):
     ap.add_argument("pack", help="pack name, e.g. rhapsodies")
     ap.add_argument("version", help="pack version, e.g. 0.1")
     ap.add_argument("--missions", default="rov", help="LandSandBoat scripts/missions folder the pack covers")
+    ap.add_argument("--source", action="append", default=[],
+                    help="a source the pack covers instead: missions/<folder>, quests/<region>, companions/<name> "
+                         "(tools/corpus.py list); repeat for several")
+    ap.add_argument("--exclude", default=str(here / "helper/exclude.yaml"), help="what is never voiced")
+    ap.add_argument("--companions", default=str(here / "helper/companions.yaml"))
     ap.add_argument("--out", default=str(here / "audio"), help="where <pack>/<version>/ goes")
     ap.add_argument("--client", default=str(xidat.CLIENT_DEFAULT))
     ap.add_argument("--lsb", default=str(xievent.LSB_DEFAULT))
@@ -495,9 +511,12 @@ def main(argv=None):
         return 0
 
     client = xidat.Client(args.client)
-    rows = list(xievent.rov_lines(client, args.lsb, args.missions))
+    rows = []
+    for source in args.source or [f"missions/{args.missions}"]:
+        rows += extraction.rows_of(client, args.lsb, source, args.companions)[0]
     cast_as = cast_as_table(args.cast_as)
-    lines, skipped = corpus(rows, narration=not args.no_narration, cast_as=cast_as)
+    lines, skipped, blocked = corpus(rows, narration=not args.no_narration, cast_as=cast_as,
+                                     exclude=extraction.Exclude.load(args.exclude))
 
     for warning in cast_as_warnings(cast_as, args.voice_map, args.census):
         print(f"warning: {warning}", file=sys.stderr)
@@ -518,7 +537,11 @@ def main(argv=None):
         summarise(plan, skipped)
         for r in plan[:10]:
             print(f"  {r['file']}  <- {r['spoken']!r}")
+        for line in blocked_report(blocked) if blocked else []:
+            print(line)
         return 0
+    if blocked:
+        sys.exit("\n".join(blocked_report(blocked)))
     if backend_cls.name == "none":
         sys.exit("no engine available (make venv, make voices); --dry-run lists the lines without one")
     warm = getattr(backend, "warm_up", None)

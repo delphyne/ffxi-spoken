@@ -105,9 +105,22 @@ stage direction alone, or punctuation alone. Found on the way:
   they start no events the lister can see.
 - A few lines come out of the cleaner with their first letter or a control
   code wrong (`tools/ffxitext.py`); the first exclude rule holds them back.
-- `tools/build_pack.py` and `tools/voice_stories.py` still read mission
-  folders through `xievent.rov_lines` and know nothing of classes or the
-  deny-list. Moving them onto `corpus.py` is the next piece of this step.
+- `tools/build_pack.py` and `tools/voice_stories.py` read the same
+  extraction. A pack names its sources (`make pack SOURCE="quests/jeuno
+  ..."`, a mission folder by default), skips what the classes say is never
+  voiced, and stops on unattributed dialogue, telling where it is without
+  its text; a dry run lists it and goes on. `helper/voice_stories.json`
+  counts, per speaker and storyline, the unique lines a pack would voice,
+  under whoever `cast_as.yaml` says speaks them, over missions, quests, and
+  companions; the sample lines the review window hears moved to
+  `data/voice_lines.json`, out of the repo. Lines of punctuation alone
+  ("...") are no longer rendered: in game they are a miss, which stops
+  whatever was playing.
+- `helper/census.py` and `tools/proper_nouns.py` still read mission folders
+  through `xievent.rov_lines`.
+- Counted this way, 480 names have twenty lines or more, 223 have fifty,
+  103 have a hundred, and 40 have two hundred. The threshold for a voice of
+  one's own has to rise well above twenty to fit 160 slots.
 
 ### Attribution gate
 

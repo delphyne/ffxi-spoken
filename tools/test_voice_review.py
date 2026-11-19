@@ -97,17 +97,18 @@ class SessionTest(unittest.TestCase):
         stories.write_text(json.dumps({"stories": {"rov": "Rhapsodies of Vana'diel", "cop": "Chains of Promathia"},
                                        "speakers": {"Iroha": {"rov": 300}, "Numi Adaligo": {"rov": 19},
                                                     "Tonasav": {"rov": 3, "cop": 2}, "Prishe": {"cop": 400},
-                                                    "": {"rov": 6}},
-                                       "lines": {"Iroha": ["Master, Vana'diel needs you.", "<Sigh> Follow me, <player>."],
-                                                 "Numi Adaligo": ["Welcome to Windurst Waters."],
-                                                 "Tonasav": ["The guards are asleep again."]}}))
+                                                    "": {"rov": 6}}}))
+        lines = root / "lines.json"   # data/voice_lines.json: kept apart, never committed
+        lines.write_text(json.dumps({"Iroha": ["Master, Vana'diel needs you.", "<Sigh> Follow me, <player>."],
+                                     "Numi Adaligo": ["Welcome to Windurst Waters."],
+                                     "Tonasav": ["The guards are asleep again."]}))
         self.engine = FakeEngine()
         self.worker = FakeWorker()
         lexicon = root / "lexicon.yaml"
         lexicon.write_text("Vana'diel:\n    ipa: \"vɑnədiˈɛl\"\n", encoding="utf-8")
         self.ses = vr.Session(self.yaml, self.refs, self.voices_json, census, stories,
                               engine_factory=lambda: self.engine, rng=random.Random(4),
-                              worker_factory=lambda: self.worker.start(), lexicon=lexicon)
+                              worker_factory=lambda: self.worker.start(), lexicon=lexicon, lines=lines)
 
     def tearDown(self):
         self.dir.cleanup()
@@ -429,6 +430,35 @@ class StoriesTest(unittest.TestCase):
         data = voice_stories.build(lambda code: lines[code], {"rov": "R", "cop": "C", "tvr": "T"})
         self.assertEqual(data["stories"], {"rov": "R", "cop": "C"}, "a storyline with no lines is left out")
         self.assertEqual(data["speakers"], {"": {"rov": 1}, "Iroha": {"cop": 1, "rov": 2}, "Prishe": {"cop": 1}})
+
+    def test_only_what_a_pack_would_voice_counts_under_who_says_it(self):
+        say = "Found you, " + "x" * 60 + "."
+        lines = {"q-jeuno": [{"speaker": "Iroha", "class": "dialogue", "as": None},
+                             {"speaker": "???", "class": "dialogue", "as": "Larzos", "kind": "say", "variants": [say]},
+                             {"speaker": "", "class": "narration", "as": None, "kind": "narration", "variants": [say]},
+                             {"speaker": "???", "class": "unattributed", "as": None},
+                             {"speaker": "Clerk", "class": "boilerplate", "as": None, "kind": "say", "variants": [say]},
+                             {"speaker": "", "class": "system", "as": None}, {"speaker": "", "class": "menu", "as": None},
+                             {"speaker": "Iroha", "class": "unvoiceable", "as": None}],
+                 "mog-house": [{"speaker": "Clerk", "class": "boilerplate", "as": None}]}
+        data = voice_stories.build(lambda code: lines[code], {"q-jeuno": "J", "mog-house": "M"})
+        self.assertEqual(data["speakers"], {"": {"q-jeuno": 1}, "Iroha": {"q-jeuno": 1}, "Larzos": {"q-jeuno": 1}})
+        self.assertEqual(data["stories"], {"q-jeuno": "J"}, "a storyline with nothing to voice is left out")
+        self.assertEqual(data["lines"], {"Larzos": [say]}, "samples are dialogue, under who says it")
+        again = {"mog-house": [{"speaker": "Moogle", "variants": ["Kupo!"]}, {"speaker": "Moogle", "variants": ["Kupo!"]},
+                               {"speaker": "Moogle", "variants": ["Kupo?"]}]}
+        self.assertEqual(voice_stories.build(lambda code: again[code], {"mog-house": "M"})["speakers"],
+                         {"Moogle": {"mog-house": 2}}, "the same line in two zones is one line")
+        words = voice_stories.build_words(lambda code: lines[code], {"q-jeuno": "J"})
+        self.assertEqual(words["Found"]["speakers"], {"Larzos": 1})
+
+    def test_every_storyline_code_names_one_source(self):
+        named = [voice_stories.source_of(code) for code in voice_stories.STORIES]
+        self.assertEqual(len(named), len(set(named)))
+        self.assertEqual(voice_stories.source_of("rov"), "missions/rov")
+        self.assertEqual(voice_stories.source_of("q-toau"), "quests/ahtUrhgan")
+        self.assertEqual(voice_stories.source_of("mog-house"), "companions/mog-house")
+        self.assertLessEqual(set(voice_stories.SOURCES), set(voice_stories.STORIES))
 
     def test_sample_lines_are_whole_middling_sentences_longest_first(self):
         texts = ["Hi.", "<Sigh> " + "a" * 70 + ".", "B" * 65 + "!", "C" * 80 + "?", "C" * 80 + "?",
