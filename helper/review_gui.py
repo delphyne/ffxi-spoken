@@ -134,8 +134,9 @@ def next_visible(context, shown, rows, step):
 def available():
     """True when a window can open: a display, and tkinter importable."""
     import os
-    if not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
-        return False
+    import sys
+    if sys.platform != "darwin" and not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
+        return False   # macOS always has a display for Tk
     try:
         import tkinter  # noqa: F401
     except ImportError:

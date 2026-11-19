@@ -486,7 +486,8 @@ class StoriesTest(unittest.TestCase):
 class GuiTest(unittest.TestCase):
     def test_available_needs_a_display(self):
         import voice_review_gui
-        with unittest.mock.patch.dict(os.environ, {"DISPLAY": "", "WAYLAND_DISPLAY": ""}):
+        with unittest.mock.patch.dict(os.environ, {"DISPLAY": "", "WAYLAND_DISPLAY": ""}), \
+                unittest.mock.patch.object(sys, "platform", "linux"):
             self.assertFalse(voice_review_gui.available())
 
     def test_window_opens_and_filters(self):

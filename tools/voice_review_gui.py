@@ -47,11 +47,14 @@ Ctrl+T the take, Ctrl+H hears the line.
 
 import os
 import subprocess
+import sys
 import threading
 
 
 def available():
-    if not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
+    """True when a window can open: a display (macOS always has one for
+    Tk), and tkinter importable."""
+    if sys.platform != "darwin" and not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
         return False
     try:
         import tkinter  # noqa: F401

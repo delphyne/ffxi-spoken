@@ -39,6 +39,10 @@
 #   make spike-qwen [LIMIT=N] [RAW=1] [FRESH=1]
 #                    render a fixed set of Rhapsodies lines through Kokoro and Qwen3-TTS into
 #                    data/spike/listen.html, to judge a Qwen3 backend by ear (tools/spike_qwen3.py)
+#   make elevenlabs-key   store the ElevenLabs API key in the keyring (macOS Keychain or secret-tool); the
+#                    keyring prompts for it, unseen. ELEVENLABS_API_KEY overrides it (helper/elevenlabs.py)
+#   make elevenlabs-check   read the account, spending nothing: plan, characters left, voice slots, voices,
+#                    models; says which permissions a restricted key still lacks
 #   make voice-prompts [ONLY=Name] [QUALITY=high]
 #                    print each own voice's prompt from helper/voice_designs.yaml in the form ElevenLabs
 #                    asks for, to paste into its voice design. QUALITY is the level the prompt asks for
@@ -128,7 +132,7 @@ NATIVE_CFLAGS := -O2 -Wall -Wextra -D_WIN32_WINNT=0x0600 -I$(DEPS)/include -I$(D
 # the Wine prefix two levels above drive_c/Windower4, for running the test exe
 WINEPREFIX := $(abspath $(WINDOWER)/../..)
 
-.PHONY: install uninstall where test lint check helper say venv venv-cuda venv-qwen spike-qwen voice-prompts design-voices audit-voices listen-voices review-voices voice-stories corpus audit-corpus venv-moss spike-moss voices census nouns review-lexicon pack release deps native native-test
+.PHONY: install uninstall where test lint check helper say venv venv-cuda venv-qwen spike-qwen elevenlabs-key elevenlabs-check voice-prompts design-voices audit-voices listen-voices review-voices voice-stories corpus audit-corpus venv-moss spike-moss voices census nouns review-lexicon pack release deps native native-test
 
 # Each recipe below is one shell command, so an exit inside it ends the target.
 
@@ -168,10 +172,13 @@ uninstall:
 	elif [ -e "$(LINK)" ]; then echo "$(LINK) is not a symlink; leaving it." >&2; exit 1; \
 	else echo "Nothing installed at $(LINK)."; fi
 
+# The system python3 when it has PyYAML (Fedora's does), else the venv's
+# (Homebrew's python3 has none and will not take one).
+TEST_PY ?= $(shell python3 -c 'import yaml' 2>/dev/null && echo python3 || echo "$(PY)")
 test:
 	luajit test/test_$(NAME).lua
-	python3 -I -m unittest discover -s helper -p 'test_*.py'
-	python3 -I -m unittest discover -s tools -p 'test_*.py'
+	$(TEST_PY) -I -m unittest discover -s helper -p 'test_*.py'
+	$(TEST_PY) -I -m unittest discover -s tools -p 'test_*.py'
 
 # Run the host-side helper against this checkout's data folder.
 helper:
@@ -256,6 +263,13 @@ spike-qwen:
 	HF_HOME="$(VOICES)/qwen3/hf" PYTORCH_ALLOC_CONF=expandable_segments:True \
 		"$(VENV_QWEN)/bin/python" -I tools/spike_qwen3.py \
 		$(if $(LIMIT),--limit $(LIMIT)) $(if $(RAW),--also-raw) $(if $(FRESH),--fresh)
+
+# Standard library only, so the system python3 will do (docs/ElevenLabs-Handoff.md).
+elevenlabs-key:
+	@python3 -I helper/elevenlabs.py key
+
+elevenlabs-check:
+	@python3 -I helper/elevenlabs.py check
 
 # The prompts ElevenLabs' voice design is given by hand (docs/ElevenLabs-Handoff.md).
 voice-prompts:

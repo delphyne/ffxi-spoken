@@ -1,6 +1,7 @@
 # ElevenLabs backend: handoff
 
-Status: **agreed in outline on 2026-11-19; the extraction (build order step 2) is built, nothing else.** This
+Status: **agreed in outline on 2026-11-19; built so far: the key, the client, and the account check (build
+order step 1), the extraction (step 2), and the voice prompts.** This
 records the decision to move voice creation and pack synthesis to ElevenLabs,
 what was decided, how each piece is meant to work, and what is still open.
 Facts about ElevenLabs marked *unverified* come from their docs and help
@@ -21,18 +22,19 @@ only (`docs/Audio-Packs.md`). ElevenLabs is developer-side generation.
 
 | Topic | Decision |
 |---|---|
-| Model | `eleven_v4`, no listening spike; the model is a setting |
+| Model | `eleven_v4`; the model is a setting. `eleven_v4_turbo` bills at half the rate and is worth hearing beside it |
 | Auditions | Mostly in the ElevenLabs UI and app, not in our tools |
 | Voice matching | Voices named `ffxi/<voice key>`; a sync command resolves names into a committed lock file |
 | Voice creation | Named characters are made by hand in the UI from `voice_designs.yaml`'s prompts; pools are stock voices |
-| Voice ceiling | Pro's 160 custom slots; Voice Library voices for pools where they work; fewer individual voices |
+| Voice ceiling | Pro's 160 custom slots (confirmed by the account check); Voice Library voices for pools where they work; fewer individual voices |
 | Individual voices | By importance across all storylines, not per storyline (Shantotto keeps one voice everywhere) |
 | Missing voice in a slice | The run stops before any request is sent |
 | Releases | Complete storylines only; no partial packs |
 | Stage directions | Mapped to audio tags; interjections too, where the tags are expressive enough |
 | Re-takes | One take per line; a hand-kept file flags lines to redo |
-| API key | Desktop keyring (`secret-tool`); `ELEVENLABS_API_KEY` overrides |
-| Plan tier | Pro: $99 a month, about 1.24 M characters, 10 concurrent requests *(unverified for v4)* |
+| API key | Desktop keyring (macOS Keychain or `secret-tool`); `ELEVENLABS_API_KEY` overrides |
+| Plan tier | Pro: $99 a month. The account read 639,758 characters for the month on 2026-11-19, not the 1.24 M first assumed. 10 concurrent requests *(unverified for v4)* |
+| Pronunciation | Our lexicon, applied before sending, as inline slash IPA; ElevenLabs' pronunciation dictionaries only as a file generated from it, if at all |
 | MOSS, Qwen, review window | Kept; `voice_designs.yaml` stays the casting record and holds each named character's prompt |
 | Scope | Storylines, quests, and constant companions only |
 | Story narration | Voiced by the narrator voice |
@@ -276,9 +278,20 @@ stays on disk, and deleting the entry reverts to it.
 
 ## The API key
 
-- `make elevenlabs-key` prompts without echo and stores the key with
-  `secret-tool` (already installed), encrypted at rest and unlocked with the
-  login. `ELEVENLABS_API_KEY` overrides it for other machines.
+- `make elevenlabs-key` stores the key in the desktop keyring, encrypted at
+  rest and unlocked with the login: the login Keychain on macOS
+  (`security`), the Secret Service on Linux (`secret-tool`), as service
+  `ffxi-spoken-elevenlabs`, account `api-key`, on both. The keyring's own
+  tool prompts for it without echo, so the key never passes through our
+  code on the way in. `ELEVENLABS_API_KEY` overrides it. Any process
+  running as the user can read the keyring entry, which is why the key is
+  a restricted one.
+- `make elevenlabs-check` reads the account and spends nothing: plan,
+  characters left, voice slots, the voices and how many are `ffxi/`, and
+  the speech models. A read the key has no permission for is reported in
+  its place. Built 2026-11-19 (`helper/elevenlabs.py`); the first run
+  showed restricted keys do have per-endpoint permissions: the check
+  needs `user_read`, `voices_read`, and `models_read`.
 - The key is sent only in the `xi-api-key` header. It never appears in
   command arguments, logs, error text, the manifest, cache keys, the ledger,
   or test fixtures.
@@ -290,16 +303,64 @@ stays on disk, and deleting the entry reverts to it.
 
 ## Cost
 
-Measured from the committed Rhapsodies manifest and `voice_stories.json`:
+Characters are measured from the committed Rhapsodies manifest and
+`voice_stories.json`. The allowance is what `make elevenlabs-check` read on
+2026-11-19: 639,758 characters for the month, 146 used, resetting on
+2026-12-19. Why it is that figure and not the 1,238,000 this plan first
+assumed is not known (the plan page, a rollover, or a change of terms);
+the check is the number to trust.
 
-| Scope | Characters | At $0.08 per 1,000 |
+| Scope | Characters | Share of a month's allowance |
 |---|---|---|
-| Rhapsodies (1,193 lines, 32 speakers) | 80,000 | $6.40 |
-| The twelve mission storylines (about 27,000 lines) | about 1.8 M | about $145 |
-| Pro's monthly allowance | 1,238,000 | $99 |
+| Rhapsodies (1,193 lines, 32 speakers) | 80,000 | about an eighth |
+| The twelve mission storylines (about 27,000 lines) | about 1.8 M | about 2.8 months |
+| One month on Pro ($99) | 639,758 | |
+
+At $99 for that allowance a thousand characters cost about $0.155, so the
+twelve storylines are about $280 on `eleven_v4`, over three months unless
+more characters are bought. The models' own figures, from the same check:
+
+| Model | Characters a request | Cost multiplier |
+|---|---|---|
+| `eleven_v4` | 10,000 | 1.0 |
+| `eleven_v4_turbo` | 10,000 | 0.5 |
+| `eleven_v3` | 5,000 | 1.0 |
+| `eleven_multilingual_v2` | 10,000 | 1.0 |
+| `eleven_flash_v2_5` | 40,000 | 0.5 |
+
+`eleven_v4_turbo` would halve all of the above if it sounds good enough;
+it goes into the listening pass.
 
 Quests and companions are not in these numbers and cannot be sized until
 they are decoded. Re-takes are extra.
+
+## Pronunciation dictionaries
+
+ElevenLabs keeps pronunciation dictionaries that a request can attach
+(`pronunciation_dictionary_locators`, at most three, each with an optional
+`version_id`; made with `POST /v1/pronunciation-dictionaries/add-from-rules`).
+A rule is an alias (a respelling) or a phoneme (IPA or CMU Arpabet);
+matching is case-sensitive and whole-word by default, and only the first
+matching rule is used. Looked at on 2026-11-19 and not adopted as the main
+mechanism:
+
+- v4 is documented to read IPA inline between slashes, which is what the
+  backend already plans to send from `helper/lexicon.yaml`.
+- The docs do not say which models honour a dictionary's phoneme rules;
+  the only model they name for phoneme tags is `eleven_flash_v2`, and
+  alias rules are what they suggest elsewhere.
+- A dictionary applied on their side is not in the text we send, so the
+  cache key would have to carry its version as well.
+- Ours does more: the longest phrase wins, entries can be limited to
+  engines, and `<player>` and stage directions are handled in the same pass.
+
+It stays in reserve for two uses, in both as a file generated from our
+lexicon and never edited there: a fallback of alias rules if v4's inline
+IPA proves unreliable, and hand auditions in the ElevenLabs UI, if the UI
+applies a dictionary *(unverified)*. The listening pass settles it: a few
+names said three ways, inline IPA, a respelling, and a dictionary phoneme
+rule. That needs a key allowed to write dictionaries; the docs name no
+permission for it.
 
 ## Tests
 
@@ -311,7 +372,7 @@ offline assembly's refusal; the deny-list and line classes; the key scan.
 
 ## Build order
 
-1. Key storage, the client, and a no-spend account check.
+1. Key storage, the client, and a no-spend account check. *(built)*
 2. Quest and companion decoding, line classes, the deny-list and its audit.
 3. Attribution fixes for the storylines wanted first.
 4. Cast audit over the full corpus, then the threshold decision.
@@ -329,8 +390,12 @@ through steps 5 to 8 while 2 to 4 are in progress. Along the way: update
 
 - Whether v4 wants stress marks in slash IPA (MOSS mispronounces with
   them), and which audio tags it honours on designed voices.
-- Custom voice slots per plan: Creator 30, Pro 160, Scale 660 comes from an
-  old help article.
+- Custom voice slots on the other plans (Creator 30, Scale 660 comes from
+  an old help article). Pro's 160 is confirmed.
+- Why the month's allowance read 639,758 characters.
+- Whether `eleven_v4_turbo` reads slash IPA and audio tags as v4 does; the
+  docs speak only of v4.
+- Whether a dictionary's phoneme rules work on v4 at all.
 - That library voices can be called by the API without using slots, whether
   they must first be added to the account, and what happens to a locked
   voice when its owner withdraws it.
@@ -339,7 +404,8 @@ through steps 5 to 8 while 2 to 4 are in progress. Along the way: update
   Flash).
 - The billed-characters header: the docs show both `character-cost` and
   `x-character-count`.
-- That restricted keys support scopes and a credit cap.
+- That restricted keys support a credit cap. (Scopes they do: a key
+  without `user_read` is refused the subscription read by name.)
 - That designed voices (Voice Design) behave well on v4.
 
 ## Open
@@ -348,8 +414,10 @@ through steps 5 to 8 while 2 to 4 are in progress. Along the way: update
 - Companion lines with item names or numbers filled in at run time have no
   fixed text and stay silent under the pack design. Accept, or find the
   fixed subset worth voicing.
-- Whether to commit the finished "Hear (MOSS)" review-window work before
-  this starts, so the tree is clean.
+- `eleven_v4` or `eleven_v4_turbo`: half the cost against whatever is lost
+  in the voice. Decided by ear in the listening pass.
+- Whether to buy characters beyond the month's allowance, or let the
+  storylines take the months they take.
 - Redistribution: packs ship ElevenLabs output. Paid plans license
   generated audio, but Voice Library voices carry their own terms; read
   them before a pool voice goes into a released pack.
@@ -362,5 +430,6 @@ through steps 5 to 8 while 2 to 4 are in progress. Along the way: update
 - Voice slots: https://help.elevenlabs.io/hc/en-us/articles/24351056337937-How-many-voice-slots-do-I-get-per-tier-and-how-can-I-increase-it
 - List voices: https://elevenlabs.io/docs/api-reference/voices/search
 - Design a voice: https://elevenlabs.io/docs/api-reference/text-to-voice/design
+- Pronunciation dictionaries: https://elevenlabs.io/docs/api-reference/pronunciation-dictionaries/create-from-rules
 - Best practices (tags, phonemes, dictionaries): https://elevenlabs.io/docs/overview/capabilities/text-to-speech/best-practices
 - API introduction (response headers): https://elevenlabs.io/docs/api-reference/introduction
