@@ -1,0 +1,458 @@
+{
+ "source": "missions/toau",
+ "scripts": 48,
+ "scenes": {
+  "named": 92,
+  "with_lines": 54,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 3265,
+   "chars": 172717
+  },
+  "narration": {
+   "lines": 16,
+   "chars": 704
+  },
+  "unattributed": {
+   "lines": 45,
+   "chars": 2247
+  },
+  "system": {
+   "lines": 20,
+   "chars": 1177
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 38,
+   "chars": 1920
+  },
+  "unvoiceable": {
+   "lines": 163,
+   "chars": 325
+  }
+ },
+ "voiced": {
+  "lines": 3281,
+  "chars": 173421
+ },
+ "reasons": {
+  "unattributed": {
+   "no speaker": 45
+  },
+  "system": {
+   "told to the player about the player": 20
+  },
+  "menu": {
+   "menu": 38
+  },
+  "unvoiceable": {
+   "empty text": 29,
+   "live-only: 7f80, item": 3,
+   "live-only: item": 42,
+   "live-only: item, number": 3,
+   "live-only: number": 12,
+   "punctuation only": 74
+  }
+ },
+ "speakers": {
+  "Aphmau": {
+   "lines": 268,
+   "chars": 9657
+  },
+  "Gessho": {
+   "lines": 252,
+   "chars": 16773
+  },
+  "Naja Salaheem": {
+   "lines": 245,
+   "chars": 12302
+  },
+  "Luzaf": {
+   "lines": 235,
+   "chars": 11027
+  },
+  "Razfahd": {
+   "lines": 228,
+   "chars": 12482
+  },
+  "Karababa": {
+   "lines": 155,
+   "chars": 8809
+  },
+  "Ghatsad": {
+   "lines": 115,
+   "chars": 8875
+  },
+  "Pieuje": {
+   "lines": 113,
+   "chars": 8503
+  },
+  "Flit": {
+   "lines": 112,
+   "chars": 6098
+  },
+  "Nashmeira": {
+   "lines": 107,
+   "chars": 3945
+  },
+  "Rishfee": {
+   "lines": 93,
+   "chars": 3772
+  },
+  "Ovjang": {
+   "lines": 92,
+   "chars": 2906
+  },
+  "Abquhbah": {
+   "lines": 86,
+   "chars": 3615
+  },
+  "King of Hearts": {
+   "lines": 85,
+   "chars": 3054
+  },
+  "Mnejing": {
+   "lines": 74,
+   "chars": 2417
+  },
+  "Amnaf": {
+   "lines": 59,
+   "chars": 3042
+  },
+  "Halver": {
+   "lines": 58,
+   "chars": 3821
+  },
+  "Travialce": {
+   "lines": 58,
+   "chars": 4369
+  },
+  "Shantotto": {
+   "lines": 55,
+   "chars": 4468
+  },
+  "Raubahn": {
+   "lines": 53,
+   "chars": 2919
+  },
+  "Volker": {
+   "lines": 47,
+   "chars": 3513
+  },
+  "Naji": {
+   "lines": 43,
+   "chars": 2973
+  },
+  "Nadeey": {
+   "lines": 42,
+   "chars": 2443
+  },
+  "Abda-Lurabda": {
+   "lines": 40,
+   "chars": 1775
+  },
+  "Megomak": {
+   "lines": 39,
+   "chars": 2018
+  },
+  "Wolfgang": {
+   "lines": 28,
+   "chars": 1792
+  },
+  "Wawaroon": {
+   "lines": 27,
+   "chars": 856
+  },
+  "Gulool Ja Ja": {
+   "lines": 26,
+   "chars": 963
+  },
+  "Fhu Madihmin": {
+   "lines": 21,
+   "chars": 767
+  },
+  "Jazaraat": {
+   "lines": 18,
+   "chars": 820
+  },
+  "Pyopyoroon": {
+   "lines": 17,
+   "chars": 691
+  },
+  "Rahal": {
+   "lines": 17,
+   "chars": 1048
+  },
+  "Nahshib": {
+   "lines": 16,
+   "chars": 1238
+  },
+  "Nareema": {
+   "lines": 16,
+   "chars": 1362
+  },
+  "Vavaroon": {
+   "lines": 16,
+   "chars": 620
+  },
+  "Ayame": {
+   "lines": 15,
+   "chars": 908
+  },
+  "Meyaada": {
+   "lines": 15,
+   "chars": 752
+  },
+  "Molaal Ja": {
+   "lines": 15,
+   "chars": 625
+  },
+  "Daswil": {
+   "lines": 14,
+   "chars": 1340
+  },
+  "Gogoroon": {
+   "lines": 14,
+   "chars": 507
+  },
+  "Valkeng": {
+   "lines": 14,
+   "chars": 1119
+  },
+  "Falzum": {
+   "lines": 13,
+   "chars": 512
+  },
+  "Tateeya": {
+   "lines": 13,
+   "chars": 496
+  },
+  "Waudeen": {
+   "lines": 13,
+   "chars": 1205
+  },
+  "Alexander": {
+   "lines": 12,
+   "chars": 279
+  },
+  "Gaheel Ja": {
+   "lines": 12,
+   "chars": 406
+  },
+  "Rodin-Comidin": {
+   "lines": 12,
+   "chars": 794
+  },
+  "Curilla": {
+   "lines": 11,
+   "chars": 647
+  },
+  "Trion": {
+   "lines": 11,
+   "chars": 925
+  },
+  "Gurfurlur": {
+   "lines": 9,
+   "chars": 327
+  },
+  "Odin": {
+   "lines": 9,
+   "chars": 387
+  },
+  "Pherimociel": {
+   "lines": 9,
+   "chars": 585
+  },
+  "Guilerme": {
+   "lines": 8,
+   "chars": 472
+  },
+  "Uran-Mafran": {
+   "lines": 8,
+   "chars": 520
+  },
+  "Arzizah": {
+   "lines": 7,
+   "chars": 441
+  },
+  "Salabwahn": {
+   "lines": 7,
+   "chars": 183
+  },
+  "Shamarhaan": {
+   "lines": 7,
+   "chars": 600
+  },
+  "Awoken Vampyr Jarl": {
+   "lines": 6,
+   "chars": 255
+  },
+  "Bacherume": {
+   "lines": 6,
+   "chars": 376
+  },
+  "Mishhar": {
+   "lines": 5,
+   "chars": 148
+  },
+  "Odin Prime": {
+   "lines": 5,
+   "chars": 175
+  },
+  "Qultada": {
+   "lines": 5,
+   "chars": 279
+  },
+  "Ratol Ja": {
+   "lines": 5,
+   "chars": 151
+  },
+  "Amkeen": {
+   "lines": 4,
+   "chars": 170
+  },
+  "Minfram": {
+   "lines": 4,
+   "chars": 401
+  },
+  "Wahboud": {
+   "lines": 3,
+   "chars": 179
+  },
+  "Bakool Ja": {
+   "lines": 2,
+   "chars": 111
+  },
+  "Bataumnalle": {
+   "lines": 2,
+   "chars": 145
+  },
+  "Foudeel": {
+   "lines": 2,
+   "chars": 67
+  },
+  "Harbuhl": {
+   "lines": 2,
+   "chars": 99
+  },
+  "Horand": {
+   "lines": 2,
+   "chars": 56
+  },
+  "Wharudu": {
+   "lines": 2,
+   "chars": 26
+  },
+  "Kalgahn": {
+   "lines": 1,
+   "chars": 5
+  },
+  "Nasshawan": {
+   "lines": 1,
+   "chars": 29
+  },
+  "Nizahluf": {
+   "lines": 1,
+   "chars": 76
+  },
+  "Tiyaash": {
+   "lines": 1,
+   "chars": 12
+  },
+  "Whafael": {
+   "lines": 1,
+   "chars": 79
+  },
+  "Yazhaal": {
+   "lines": 1,
+   "chars": 115
+  }
+ },
+ "unattributed": [
+  {
+   "zone": 50,
+   "event": 3092,
+   "lines": 2
+  },
+  {
+   "zone": 50,
+   "event": 3093,
+   "lines": 2
+  },
+  {
+   "zone": 51,
+   "event": 22,
+   "lines": 1
+  },
+  {
+   "zone": 54,
+   "event": 8,
+   "lines": 1
+  },
+  {
+   "zone": 54,
+   "event": 14,
+   "lines": 1
+  },
+  {
+   "zone": 54,
+   "event": 34,
+   "lines": 3
+  },
+  {
+   "zone": 64,
+   "event": 1,
+   "lines": 6
+  },
+  {
+   "zone": 67,
+   "event": 4,
+   "lines": 3
+  },
+  {
+   "zone": 67,
+   "event": 32001,
+   "lines": 1
+  },
+  {
+   "zone": 68,
+   "event": 10,
+   "lines": 2
+  },
+  {
+   "zone": 68,
+   "event": 11,
+   "lines": 5
+  },
+  {
+   "zone": 72,
+   "event": 1,
+   "lines": 9
+  },
+  {
+   "zone": 72,
+   "event": 6,
+   "lines": 1
+  },
+  {
+   "zone": 79,
+   "event": 21,
+   "lines": 1
+  },
+  {
+   "zone": 243,
+   "event": 10094,
+   "lines": 3
+  },
+  {
+   "zone": 243,
+   "event": 10097,
+   "lines": 4
+  }
+ ]
+}
