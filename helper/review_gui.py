@@ -10,18 +10,22 @@ storyline, and speaker (data/word_stories.json, from make voice-stories);
 a column header sorts by that column, again to reverse.
 
 Right, the word in hand: the engine's reading, the lexicon's, an IPA field
-to edit, a button for each of the terminal loop's commands (which keep
-their keys), and a palette of every IPA glyph the lexicon accepts, each
-with a word that shows its sound. Accept writes the IPA (a new entry, or
-the existing one in place), skip leaves the word, d deletes an entry; each
-then moves to the next row of the table as filtered and sorted, and back
-to the previous one.
+to edit, a check box per engine for the entry's `backends:` limit (all
+checked is no limit; the Interjection button keeps it from moss and qwen),
+a button for each of the terminal loop's commands (which keep their keys),
+and a palette of every IPA glyph the lexicon accepts, each with a word that
+shows its sound. Accept writes the IPA and the limit (a new entry, or the
+existing one in place), skip leaves the word, d deletes an entry; each then
+moves to the next row of the table as filtered and sorted. Up and Down
+move through the table without choosing anything; Back returns to the
+word looked at before, even one the filters now hide, and a choice made
+on a hidden word still moves on to the row after where it stood.
 
 Keys outside the IPA field and the search: a accept, r repeat, e example,
-s skip, b back, d delete, q quit, j jump to the IPA field. In the field:
-Enter tries what is typed, Escape goes back to the keys. Clicking a glyph
-inserts it at the cursor. The field shows ᵻ as a blue ɨ (IpaField): no font
-the venv's Tk can see draws ᵻ at that size.
+s skip, b back, d delete, q quit, j jump to the IPA field, Up and Down the
+table. In the field: Enter tries what is typed, Escape goes back to the
+keys. Clicking a glyph inserts it at the cursor. The field shows ᵻ as a
+blue ɨ (IpaField): no font the venv's Tk can see draws ᵻ at that size.
 
 A key acts once per press (KeyGate): X autorepeat turns a held key into
 tens of presses a second, and since accept moves to the next row, a key
@@ -108,6 +112,25 @@ class KeyGate:
         self.held.discard(key)
 
 
+def next_visible(context, shown, rows, step):
+    """The row to move to from `shown`, `step` rows along `rows` (the table
+    as filtered and sorted now). A word the filters hide, after a choice or
+    coming back to it, is placed by `context`, the table as it stood when
+    the word was opened: the nearest word in `rows` on that side of it.
+    None at either end."""
+    if shown in rows:
+        i = rows.index(shown) + step
+        return rows[i] if 0 <= i < len(rows) else None
+    if shown not in context:
+        return (rows[0] if step > 0 else rows[-1]) if rows else None
+    i = context.index(shown) + step
+    while 0 <= i < len(context):
+        if context[i] in rows:
+            return context[i]
+        i += step
+    return None
+
+
 def available():
     """True when a window can open: a display, and tkinter importable."""
     import os
@@ -163,8 +186,14 @@ def catalogue(ses, word_stories):
         rows.append({"word": w, "status": ses.status_of(w, entries, covered),
                      "uses": int(uses) if str(uses or "").isdigit() else None,
                      "stories": info["stories"], "speakers": info["speakers"],
-                     "ipa": (e["ipa_marked"] if e and e["ipa_marked"] else (c.get("kokoro_ipa") or ""))})
+                     "ipa": (e["ipa_marked"] if e and e["ipa_marked"] else (c.get("kokoro_ipa") or "")),
+                     "for": " ".join(sorted(e["backends"], key=backend_rank)) if e and e["backends"] else ""})
     return rows
+
+
+def backend_rank(name):
+    import review
+    return (review.BACKEND_ORDER.index(name) if name in review.BACKEND_ORDER else 99, name)
 
 
 def filter_rows(rows, query="", status="all", story="all", speaker="all"):
@@ -393,13 +422,13 @@ class Window:
         speaker_choices = [("all", "all speakers")] + [(s, s or "(narration)") for s, _ in
                                                        sorted(speakers.items(), key=lambda kv: -kv[1])]
         self.add_filter(filters, "speaker", speaker_choices, 18, typing=True)
-        cols = ("status", "uses", "stories", "speakers", "ipa")
+        cols = ("status", "uses", "stories", "speakers", "ipa", "for")
         tree = self.tree = ttk.Treeview(left, columns=cols, selectmode="browse")
         self.sort = None
         self.columns = ("#0",) + cols
         tree.heading("#0", text="word", command=lambda: self.sort_by("#0"))
         tree.column("#0", width=px(150))
-        for col, width in zip(cols, (75, 55, 120, 140, 140)):
+        for col, width in zip(cols, (75, 55, 120, 140, 140, 90)):
             tree.heading(col, text=col, command=lambda c=col: self.sort_by(c))
             tree.column(col, width=px(width), anchor="e" if col == "uses" else "w")
         scroll = ttk.Scrollbar(left, orient="vertical", command=tree.yview)
@@ -438,6 +467,19 @@ class Window:
         ttk.Label(main, textvariable=self.v_respell, foreground="#555").pack(anchor="w")
         self.v_ipa.trace_add("write", lambda *_: self.show_respell())
 
+        import review
+        limit = ttk.Frame(main)
+        limit.pack(fill="x", pady=(px(6), 0))
+        ttk.Label(limit, text="for:").pack(side="left")
+        self.v_backends = {}
+        for name in review.BACKEND_ORDER:
+            var = tk.BooleanVar(value=True)
+            ttk.Checkbutton(limit, text=name, variable=var, takefocus=0,
+                            command=self.set_backends).pack(side="left", padx=(px(6), 0))
+            self.v_backends[name] = var
+        ttk.Button(limit, text="Interjection", command=self.interjection, takefocus=0).pack(side="left", padx=(px(12), 0))
+        ttk.Label(limit, text="(all: every engine)", foreground="#555").pack(side="left", padx=(px(8), 0))
+
         buttons = ttk.Frame(main)
         buttons.pack(fill="x", pady=px(10))
         self.buttons = {}
@@ -470,7 +512,12 @@ class Window:
         height = min(px(820), int(root.winfo_screenheight() * 0.9))
         root.geometry(f"{width}x{height}")
         self.gate = KeyGate()
+        self.history = []   # words looked at, for Back
+        self.context = []   # the table as it stood when the shown word was opened
+        self.play_gen = 0
         root.bind("<Key>", self.on_key)
+        root.bind("<Up>", lambda e: self.arrow(-1))
+        root.bind("<Down>", lambda e: self.arrow(1))
         root.bind("<KeyRelease>", lambda e: root.after_idle(self.gate.release, e.keysym))
         root.bind("<Map>", lambda e: self.gate.arm() if e.widget is root else None)
         self.entry.bind("<Return>", lambda e: self.try_ipa())
@@ -519,7 +566,7 @@ class Window:
             speakers = ", ".join(s or "(narration)" for s in top) + ("…" if len(r["speakers"]) > 2 else "")
             self.tree.insert("", "end", iid=r["word"], text=r["word"],
                              values=(r["status"], r["uses"] if r["uses"] is not None else "",
-                                     " ".join(sorted(r["stories"])), speakers, r["ipa"]))
+                                     " ".join(sorted(r["stories"])), speakers, r["ipa"], r["for"]))
         self.v_count.set(f"{len(rows)} of {len(self.rows)}")
         if keep and self.tree.exists(keep):
             self.tree.selection_set(keep)
@@ -540,25 +587,41 @@ class Window:
         if sel and sel[0] != self.shown:
             self.open(sel[0])
 
-    def open(self, word):
+    def open(self, word, remember=True):
         self.ses.open_word(word)
         self.shown = word
+        if remember and (not self.history or self.history[-1] != word):
+            self.history.append(word)
+        rows = [r["word"] for r in self.visible()]
+        if word in rows:
+            self.context = rows
         if self.tree.exists(word):
             self.tree.selection_set(word)
             self.tree.see(word)
+        else:
+            self.tree.selection_remove(*self.tree.selection())   # hidden by the filters: no row claims it
         self.show()
 
     def move(self, step):
-        """To the next (or previous) row of the table as it stands; False at
-        the end."""
-        rows = [r["word"] for r in self.visible()]
-        if not rows:
+        """To the next (or previous) row of the table as it stands, from
+        the shown word even when the filters now hide it; False at the
+        end. Looking is not choosing: nothing is recorded."""
+        target = next_visible(self.context, self.shown, [r["word"] for r in self.visible()], step)
+        if target is None:
             return False
-        i = rows.index(self.shown) + step if self.shown in rows else (0 if step > 0 else len(rows) - 1)
-        if not 0 <= i < len(rows):
-            return False
-        self.open(rows[i])
+        self.open(target)
         return True
+
+    def arrow(self, step):
+        """Up and Down from the keys: the table's own when it has the focus,
+        else move; typing in the fields is left alone."""
+        focus = self.root.focus_get()
+        if focus is self.tree or self.entry.has_focus() or focus is self.search \
+                or any(focus is box for _, box, _ in self.filters.values()):
+            return None
+        if not self.move(step):
+            self.status("this is the first row" if step < 0 else "that was the last row")
+        return "break"
 
     def update_row(self, word):
         """Recompute one word's row after it changed (status, IPA)."""
@@ -590,8 +653,12 @@ class Window:
             self.v_saved.set(f"in the lexicon: the respelling {ses.saved_spelling()!r}; accept turns it into IPA")
         else:
             self.v_saved.set("not in the lexicon")
+        if ses.in_entry and ses.saved_backends:
+            self.v_saved.set(self.v_saved.get() + "   for " + ", ".join(sorted(ses.saved_backends, key=backend_rank)))
         self.v_ipa.set(ses.current)
         self.entry.icursor("end")
+        for name, var in self.v_backends.items():
+            var.set(ses.backends is None or name in ses.backends)
         self.buttons["delete"].state(["!disabled"] if ses.in_entry else ["disabled"])
         if self.root.focus_get() not in (self.search,):
             self.root.focus_set()
@@ -624,10 +691,27 @@ class Window:
     def accept(self):
         if not self.ready():
             return
-        word, ipa, existed = self.ses.word, self.ses.current, self.ses.in_entry
-        changed = ipa != self.ses.saved_ipa
-        self.ses.accept()
-        self.after(f"{'updated' if existed and changed else 'kept' if existed else 'added'} {word}: {ipa}")
+        ses = self.ses
+        word, ipa, existed = ses.word, ses.current, ses.in_entry
+        changed = ipa != ses.saved_ipa or ses.backends != ses.saved_backends
+        limit = f"  for {', '.join(sorted(ses.backends, key=backend_rank))}" if ses.backends else ""
+        ses.accept()
+        self.after(f"{'updated' if existed and changed else 'kept' if existed else 'added'} {word}: {ipa}{limit}")
+
+    def set_backends(self):
+        """The check boxes into the session; all checked is no limit."""
+        if not self.ready():
+            return
+        self.ses.set_backends([n for n, v in self.v_backends.items() if v.get()])
+        self.status("for every engine" if self.ses.backends is None
+                    else "for " + ", ".join(sorted(self.ses.backends, key=backend_rank)) + "; accept writes it")
+
+    def interjection(self):
+        """The limit for a laugh or a grunt: the engines that read it as a
+        word; moss and qwen say it right unaided."""
+        for name, var in self.v_backends.items():
+            var.set(name in ("kokoro", "piper", "espeak"))
+        self.set_backends()
 
     def skip(self):
         if not self.ready():
@@ -644,8 +728,15 @@ class Window:
         self.after(f"deleted {word}; the engine's reading stands")
 
     def back(self):
-        if not self.move(-1):
-            self.status("this is the first row")
+        """To the word looked at before this one, hidden by the filters or
+        not; nothing is undone."""
+        while self.history and self.history[-1] == self.shown:
+            self.history.pop()
+        if not self.history:
+            self.history.append(self.shown)   # the first word stays the floor
+            self.status("nothing to go back to")
+            return
+        self.open(self.history[-1], remember=False)   # it stays on top: Back again goes further
 
     def repeat(self):
         if self.ready():
@@ -708,8 +799,13 @@ class Window:
     # --- audio off the Tk thread ---
 
     def play(self, fn):
+        self.play_gen += 1
+        gen = self.play_gen
+
         def work():
             with self.audio:
+                if gen != self.play_gen:   # a newer word is in hand; skip this one
+                    return
                 self.root.after(0, self.status, "playing…")
                 try:
                     fn()

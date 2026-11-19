@@ -81,8 +81,18 @@ def append_entry(lexicon_path, word, ipa, note="", backends=None):
     comment = f"   # {note}" if note else ""
     text += f"{lexicon_key(word)}:\n    ipa: {json.dumps(ipa, ensure_ascii=False)}{comment}\n"
     if backends:
-        text += f"    backends: [{', '.join(backends)}]\n"
+        text += backends_line(backends)
     p.write_text(text, encoding="utf-8")
+
+
+# the order `backends:` lines are written in: the engines that read an
+# interjection as a word first, the ones that need no help last
+BACKEND_ORDER = ("kokoro", "piper", "espeak", "moss", "qwen", "none")
+
+
+def backends_line(backends):
+    names = sorted(backends, key=lambda n: (BACKEND_ORDER.index(n) if n in BACKEND_ORDER else 99, n))
+    return f"    backends: [{', '.join(names)}]\n"
 
 
 def lexicon_key(word):
@@ -128,13 +138,17 @@ def find_stanza(lines, word):
 
 
 IPA_LINE = re.compile(r"^(?P<lead>\s+ipa:\s*)(?P<value>.*?)(?P<comment>\s+#.*)?$")
+BACKENDS_LINE = re.compile(r"^\s+backends:")
 INLINE = re.compile(r"^(?P<key>[^#]*?:)\s*(?P<value>.*?)(?P<comment>\s+#.*)?$")
+KEEP = object()   # replace_entry: leave the entry's backends as they are
 
 
-def replace_entry(lexicon_path, word, ipa):
+def replace_entry(lexicon_path, word, ipa, backends=KEEP):
     """Give an existing entry new IPA in place, keeping its position, its
     comment, and any `spell:` line. A respelling-only entry ("Word: Spell")
-    becomes ipa plus that spell. False when the word has no entry."""
+    becomes ipa plus that spell. `backends` sets the entry's limit: names
+    write or replace its `backends:` line, None removes it, left out keeps
+    it. False when the word has no entry."""
     p = Path(lexicon_path)
     lines = p.read_text(encoding="utf-8").splitlines(keepends=True)
     span = find_stanza(lines, word)
@@ -146,6 +160,7 @@ def replace_entry(lexicon_path, word, ipa):
         m = IPA_LINE.match(lines[k].rstrip("\n"))
         if m:
             lines[k] = f"{m['lead']}{value}{m['comment'] or ''}\n"
+            ipa_at = k
             break
     else:
         m = INLINE.match(lines[i].rstrip("\n"))
@@ -154,6 +169,13 @@ def replace_entry(lexicon_path, word, ipa):
         if spell:
             stanza.append(f"    spell: {spell}\n")
         lines[i:i + 1] = stanza
+        ipa_at, j = i + 1, i + len(stanza)
+    if backends is not KEEP:
+        old = [k for k in range(i + 1, j) if BACKENDS_LINE.match(lines[k])]
+        for k in reversed(old):
+            del lines[k]
+        if backends:
+            lines.insert(ipa_at + 1, backends_line(backends))
     p.write_text("".join(lines), encoding="utf-8")
     return True
 
@@ -245,6 +267,7 @@ class Session:
         self.by_word = {c["word"]: c for c in candidates}
         self.mode, self.queue_state, self.entry_words, self.entry_pos, self.saved_ipa = "queue", None, [], -1, None
         self.in_entry = False
+        self.backends = self.saved_backends = None   # the limit in hand, and the entry's (None: every engine)
         entries = sh.Lexicon.load(lexicon_path).entries
         existing = covered_words(entries)
         self.todo = [c for c in candidates if c["word"] in progress or c["word"] not in existing]
@@ -332,7 +355,16 @@ class Session:
         self.engine_ipa = engine or self.saved_ipa or ""
         self.current = self.saved_ipa or self.engine_ipa
         self.mine = self.current != self.engine_ipa
+        self.backends = self.saved_backends = e["backends"] if e else None
         return True
+
+    def set_backends(self, names):
+        """Limit the entry in hand to these engines (names from
+        sh.LEXICON_BACKENDS); None, or all of them, is no limit. Raises
+        ValueError for a name that is not an engine."""
+        limit = sh.lexicon_backends(self.word, list(names)) if names is not None else None
+        self.backends = None if limit is not None and limit >= sh.LEXICON_BACKENDS else limit
+        return self.backends
 
     def status_of(self, word, entries=None, covered=None):
         """new, lexicon, skipped, deleted, or covered (part of a longer
@@ -414,6 +446,7 @@ class Session:
             ipa = self.candidate_ipa(cand)
             if ipa:
                 self.cand, self.engine_ipa, self.current, self.mine = cand, ipa, ipa, False
+                self.backends = self.saved_backends = None
                 return True
             self.out(f"{cand['word']}: no IPA available, skipping")
 
@@ -444,10 +477,11 @@ class Session:
     def accept(self):
         if self.mode == "word":
             if self.in_entry:
-                if self.current != self.saved_ipa:
-                    replace_entry(self.lexicon_path, self.word, self.current)
+                if self.current != self.saved_ipa or self.backends != self.saved_backends:
+                    replace_entry(self.lexicon_path, self.word, self.current, backends=self.backends)
             else:
-                append_entry(self.lexicon_path, self.word, self.current, note=f"{self.cand.get('uses', '?')} uses")
+                append_entry(self.lexicon_path, self.word, self.current, note=f"{self.cand.get('uses', '?')} uses",
+                             backends=self.backends)
                 self.progress[self.word] = {"status": "accepted", "ipa": self.current,
                                             "engine_ipa": self.engine_ipa, "t": int(time.time())}
                 self.in_lexicon += 1
@@ -459,7 +493,8 @@ class Session:
                 replace_entry(self.lexicon_path, self.word, self.current)
             self.covered += 1
             return self.next_entry()
-        append_entry(self.lexicon_path, self.word, self.current, note=f"{self.cand.get('uses', '?')} uses")
+        append_entry(self.lexicon_path, self.word, self.current, note=f"{self.cand.get('uses', '?')} uses",
+                     backends=self.backends)
         self.progress[self.word] = {"status": "accepted", "ipa": self.current, "engine_ipa": self.engine_ipa,
                                     "t": int(time.time())}
         self._covered()

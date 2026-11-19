@@ -168,11 +168,16 @@ surprised in play:
    it. `a` accepts the pronunciation (a new entry, or the existing one in
    place, its comment kept), `r` repeats it, `s` skips a word the engine
    already says right, `d` deletes an entry, `e` plays the example line;
-   each then moves to the next row of the table, `b` back to the previous
-   one, and `q` quits. Each has a button too. To replace a reading, type IPA in the
-   field (`j` jumps there) or click glyphs from the palette below it, which
-   shows every symbol the lexicon accepts with a word that has that sound;
-   Enter plays what you built, and `a` then accepts it. Without a display,
+   each then moves to the next row of the table, `b` back to the word
+   looked at before (even one the filters now hide), Up and Down move
+   through the table without choosing, and `q` quits. Each has a button
+   too. To replace a reading, type IPA in the field (`j` jumps there) or
+   click glyphs from the palette below it, which shows every symbol the
+   lexicon accepts with a word that has that sound; Enter plays what you
+   built, and `a` then accepts it. A check box per engine sets the entry's
+   `backends:` limit (all checked is none; the Interjection button keeps a
+   laugh or grunt from moss and qwen), written with the accept; the table's
+   `for` column shows it. Without a display,
    or with `make review-lexicon CLI=1`, the same keys work in the terminal,
    one word at a time (`ENTRIES=1` walks the existing entries instead).
    Progress is kept in `data/review_progress.json`.

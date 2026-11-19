@@ -525,3 +525,195 @@ Ohoho:
 Gahahaha:
     ipa: "ɡɑː hɑː hɑː hɑː"   # 54 uses
     backends: [kokoro, piper, espeak]
+Hahahaha:
+    ipa: "hɑː hɑː hɑː hɑː"   # 13 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Hahahahahaha:
+    ipa: "hɑː hɑː hɑː hɑː hɑː hɑː"   # 4 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Ahahahahahaha:
+    ipa: "ɑː hɑː hɑː hɑː hɑː hɑː hɑː"   # 12 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Gahaha:
+    ipa: "ɡɑː hɑː hɑː"   # 8 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Gahahahaha:
+    ipa: "ɡɑː hɑː hɑː hɑː hɑː"   # 29 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Bwahahaha:
+    ipa: "bwɑː hɑː hɑː hɑː"   # 28 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Nyahaha:
+    ipa: "njɑː hɑː hɑː"   # 7 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Nyahahaha:
+    ipa: "njɑː hɑː hɑː hɑː"   # 13 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Nyahahahaha:
+    ipa: "njɑː hɑː hɑː hɑː hɑː"   # 5 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Heheheheheh:
+    ipa: "hɛ hɛ hɛ hɛ hɛ"   # 5 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Hehehehehehe:
+    ipa: "hɛ hɛ hɛ hɛ hɛ hɛ"   # 4 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Nyehehehe:
+    ipa: "njɛ hɛ hɛ hɛ"   # 1 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Ohohohohoho:
+    ipa: "oʊ hoʊ hoʊ hoʊ hoʊ hoʊ"   # 25 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Heehee:
+    ipa: "hiː hiː"   # 19 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Heeheehee:
+    ipa: "hiː hiː hiː"   # 1 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Teehee:
+    ipa: "tiː hiː"   # 18 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Nyanananana:
+    ipa: "njɑː nɑː nɑː nɑː nɑː"   # 1 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Nyah:
+    ipa: "njɑː"   # 2 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Nyaaa:
+    ipa: "njɑː"   # 5 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Nyaaah:
+    ipa: "njɑː"   # 4 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Nyaaaaaa:
+    ipa: "njɑː"   # 1 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Nyaaaaaah:
+    ipa: "njɑː"   # 4 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Gnyaaaaaa:
+    ipa: "njɑː"   # 1 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Gyaaaaaah:
+    ipa: "ɡjɑː"   # 2 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Nyow-ow-owww:
+    ipa: "njaʊ aʊ aʊ"   # 1 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Meow-ow-ow-ow-ow:
+    ipa: "miːˈaʊ aʊ aʊ aʊ aʊ"   # 1 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Aaah:
+    ipa: "ɑː"   # 49 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Aaaah:
+    ipa: "ɑː"   # 2 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Uwaaah:
+    ipa: "uːwˈɑː"   # 24 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Uwaaaaaah:
+    ipa: "uːwˈɑː"   # 6 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Owww:
+    ipa: "aʊ"   # 11 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Ewww:
+    ipa: "juː"   # 6 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Noooooo:
+    ipa: "nˈoʊː"   # 21 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Waaait:
+    ipa: "wˈeɪːt"   # 14 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Sooorry:
+    ipa: "sˈɔːɹi"   # 6 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Hallooo:
+    ipa: "hælˈoʊː"   # 3 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Portiaaa:
+    ipa: "pˈɔːɹʃə"   # 2 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Aroo-aroooooo:
+    ipa: "əɹˈuː əɹˈuːː"   # 1 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Eeeeeek:
+    ipa: "iːk"   # 4 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Hiyah:
+    ipa: "haɪjˈɑː"   # 1 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Hmph:
+    ipa: "hʊmf"   # 808 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Hrmmmmmm:
+    ipa: "hɚm"   # 9 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Erhm:
+    ipa: "ɜːm"   # 2 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Ermmm:
+    ipa: "ɜːm"   # 1 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Urgh:
+    ipa: "ɜːɡ"   # 24 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Urrrgh:
+    ipa: "ɜːɡ"   # 3 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Arrrgh:
+    ipa: "ɑːɹɡ"   # 17 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Aaargh:
+    ipa: "ɑːɹɡ"   # 12 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Aaarrrgh:
+    ipa: "ɑːɹɡ"   # 2 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Uhngh:
+    ipa: "ʌŋ"   # 5 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Unnngh:
+    ipa: "ʌŋ"   # 4 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Uhnnngh:
+    ipa: "ʌŋ"   # 2 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Uhhhngh:
+    ipa: "ʌŋ"   # 1 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Pssst:
+    ipa: "psːt"   # 9 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Tsk-tsk:
+    ipa: "tɪsk tɪsk"   # 9 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+GraAaAaaa:
+    ipa: "ɡɹɑː ɑː ɑː"   # 1 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+GraAaAaaaAA:
+    ipa: "ɡɹɑː ɑː ɑː"   # 1 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+GraAaAaaaAAgh:
+    ipa: "ɡɹɑː ɑː ɑːɡ"   # 9 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+GraAaAaaaAAaaAgh:
+    ipa: "ɡɹɑː ɑː ɑː ɑːɡ"   # 17 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+AAaaAgh:
+    ipa: "ɑː ɑːɡ"   # 2 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Graaawgh:
+    ipa: "ɡɹɔːɡ"   # 1 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Growrrr:
+    ipa: "ɡɹaʊɹ"   # 1 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Gwaaargh:
+    ipa: "ɡwɑːɹɡ"   # 1 uses, unheard guess
+    backends: [kokoro, piper, espeak]
+Gwaaaaaaaaarggghhh:
+    ipa: "ɡwɑːɹɡ"   # 1 uses, unheard guess
+    backends: [kokoro, piper, espeak]

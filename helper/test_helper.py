@@ -373,6 +373,13 @@ class ReviewTest(unittest.TestCase):
             self.assertTrue(review.replace_entry(lex, "Hrm", "hɜːm"))
             self.assertEqual(sh.Lexicon.load(lex).entries["Hrm"]["backends"], frozenset({"kokoro", "piper"}),
                              "replacing the IPA keeps the limit")
+            self.assertTrue(review.replace_entry(lex, "Hrm", "hɜːm", backends=["espeak", "kokoro"]))
+            self.assertIn('Hrm:\n    ipa: "hɜːm"   # 70 uses\n    backends: [kokoro, espeak]\n', lex.read_text())
+            self.assertTrue(review.replace_entry(lex, "Norg", "nˈɔːɹɡ", backends={"moss"}))
+            self.assertIn('Norg:\n    ipa: "nˈɔːɹɡ"\n    backends: [moss]\n', lex.read_text())
+            self.assertTrue(review.replace_entry(lex, "Hrm", "hɜːm", backends=None))
+            self.assertNotIn("kokoro", lex.read_text())
+            self.assertEqual(lex.read_text().count("backends:"), 1)
 
     def test_append_entry_quotes_awkward_keys(self):
         import review
@@ -547,6 +554,48 @@ class ReviewTableTest(unittest.TestCase):
         ses.open_word("Gustaberg")  # neither incoming nor an entry
         ses.skip()
         self.assertEqual(ses.progress["Gustaberg"]["status"], "skipped")
+
+    def test_backends_limit_in_hand(self):
+        ses, lex = self.ses, self.t.lex
+        ses.open_word("Altana")
+        self.assertIsNone(ses.backends)
+        self.assertEqual(ses.set_backends(["kokoro", "piper", "espeak"]), frozenset({"kokoro", "piper", "espeak"}))
+        ses.accept()
+        self.assertIn('Altana:\n    ipa: "ɔːltˈɑːnə"   # 1048 uses\n    backends: [kokoro, piper, espeak]\n',
+                      lex.read_text())
+        self.assertEqual(ses.saved_backends, frozenset({"kokoro", "piper", "espeak"}), "re-opened after accept")
+        ses.open_word("Jeuno")      # an entry with no limit
+        self.assertIsNone(ses.backends)
+        ses.set_backends(["moss"])
+        ses.accept()                # the IPA unchanged, the limit added
+        self.assertIn('Jeuno:\n    ipa: "dʒjˈuːnoʊ"   # 1739 uses\n    backends: [moss]\n', lex.read_text())
+        self.assertIsNone(ses.set_backends(list(sh.LEXICON_BACKENDS)), "every engine is no limit")
+        ses.accept()
+        self.assertIn('Jeuno:\n    ipa: "dʒjˈuːnoʊ"   # 1739 uses\n', lex.read_text())
+        self.assertNotIn("backends: [moss]", lex.read_text())
+        with self.assertRaises(ValueError):
+            ses.set_backends(["kokro"])
+        ses.open_word("Altana")
+        ses.set_ipa("ɔl.tˈɑː.nə")
+        ses.accept()                # a new IPA keeps the limit (and, as an entry now, its dots)
+        self.assertIn('    ipa: "ɔl.tˈɑː.nə"   # 1048 uses\n    backends: [kokoro, piper, espeak]\n', lex.read_text())
+        rows = {r["word"]: r for r in self.gui.catalogue(ses, self.STORIES)}
+        self.assertEqual((rows["Altana"]["for"], rows["Jeuno"]["for"]), ("kokoro piper espeak", ""))
+
+    def test_next_visible(self):
+        nv = self.gui.next_visible
+        rows = ["a", "b", "c", "d"]
+        self.assertEqual(nv(rows, "b", rows, 1), "c")
+        self.assertEqual(nv(rows, "b", rows, -1), "a")
+        self.assertIsNone(nv(rows, "d", rows, 1))
+        # b was accepted and the "new" filter hides it: on to c, back to a
+        self.assertEqual(nv(rows, "b", ["a", "c", "d"], 1), "c")
+        self.assertEqual(nv(rows, "b", ["a", "c", "d"], -1), "a")
+        self.assertEqual(nv(rows, "b", ["d"], 1), "d", "skips hidden neighbours")
+        self.assertIsNone(nv(rows, "b", ["a"], 1))
+        self.assertEqual(nv([], "zz", rows, 1), "a", "a word from nowhere starts at the top")
+        self.assertEqual(nv([], "zz", rows, -1), "d")
+        self.assertIsNone(nv([], "zz", [], 1))
 
     def test_status_of(self):
         ses = self.ses
