@@ -21,6 +21,10 @@ meta (gender, age, race) and description, and
     Show prompt     a window with the exact instruction Qwen will be given,
                     composed from the fields as they stand, kept up to date
                     while it is open, beside what the saved clip was made with
+    Hear (MOSS)     the line picked or typed below, said by this voice the way
+                    a pack line is: MOSS continues the take, else the saved
+                    clip (helper/moss_say.py under .venv-moss). The picker
+                    offers the speaker's own lines from voice_stories.json.
 
 Whatever is typed is kept until it is accepted or reset: moving to another
 row and back shows it again, and the tree's state column says "edited",
@@ -33,9 +37,11 @@ phrase. A phrase alone cannot be auditioned, so its draft is heard by
 auditioning any voice of the race; Accept on the race row saves it with no
 take, accepting a take of such a voice saves it too, and Reset on the race
 row drops it.
-Designing runs off the Tk thread; the first take loads Qwen3, which takes a
-while, and a finished take does not move the selection. Ctrl+Enter
-auditions, Ctrl+P plays the saved clip, Ctrl+T the take.
+Designing and hearing run off the Tk thread; the first take loads Qwen3
+and the first line loads MOSS, each a while, and the card holds one at a
+time, so the window lets go of the other first. A finished take does not
+move the selection. Ctrl+Enter auditions, Ctrl+P plays the saved clip,
+Ctrl+T the take, Ctrl+H hears the line.
 """
 
 import os
@@ -203,12 +209,26 @@ class Window:
                 self.buttons[name] = b
         self.calibration = ttk.Label(right, text="", wraplength=px(480), justify="left", foreground="#666")
         self.calibration.grid(row=8, column=0, sticky="w", pady=(px(10), 0))
+        # hearing a line through MOSS, the way a pack would say it
+        hear = ttk.Frame(right)
+        hear.grid(row=9, column=0, sticky="ew", pady=(px(10), 0))
+        hear.columnconfigure(1, weight=1)
+        self.hear_label = ttk.Label(hear, text="Hear a line")
+        self.hear_label.grid(row=0, column=0, sticky="w", padx=(0, px(6)))
+        self.line_var = tk.StringVar()
+        self.line_box = ttk.Combobox(hear, textvariable=self.line_var, values=(), width=60)
+        self.line_box.grid(row=0, column=1, sticky="ew")
+        self.buttons["hear"] = ttk.Button(hear, text="Hear (MOSS)", command=self.hear)
+        self.buttons["hear"].grid(row=0, column=2, sticky="e", padx=(px(6), 0))
+        self.hear_note = ttk.Label(right, text="", wraplength=px(480), justify="left", foreground="#666")
+        self.hear_note.grid(row=10, column=0, sticky="w", pady=(px(2), 0))
         self.status_line = ttk.Label(root, text="", padding=px(6), anchor="w")
         self.status_line.grid(row=2, column=0, columnspan=2, sticky="ew")
 
         root.bind("<Control-Return>", lambda e: (self.audition(), "break")[1])
         root.bind("<Control-p>", lambda e: self.play_saved())
         root.bind("<Control-t>", lambda e: self.play_take())
+        root.bind("<Control-h>", lambda e: self.hear())
         root.protocol("WM_DELETE_WINDOW", self.quit)
         search.focus_set()
         self.refresh()
@@ -330,7 +350,21 @@ class Window:
         self.seed_line(st)
         self.update_prompt()
         self.calibration.configure(text=f"Every clip says: {st['calibration']}")
+        self.fill_lines(r)
         self.enable()
+
+    def fill_lines(self, r):
+        """The line picker: the row's speaker's lines first, then the
+        voice's other speakers'; a line typed by hand stays while it is
+        not one of the picker's."""
+        lines = self.ses.lines_of(self.voice, r["name"])
+        self.line_box.configure(values=lines)
+        if self.line_var.get() not in lines and (lines or not self.line_var.get().strip()):
+            self.line_var.set(lines[0] if lines else "")
+        self.hear_note.configure(text="MOSS says the line continuing the take, else the saved clip, as a pack would; "
+                                      "<player> becomes the pack's word, directions are dropped, the lexicon applies. "
+                                      "Pick one of the speaker's lines or type any text."
+                                 if lines else "No lines of this voice's speakers on record; type any text to hear.")
 
     def seed_line(self, st=None):
         st = st or self.ses.state(self.voice)
@@ -374,6 +408,9 @@ class Window:
         self.seed.configure(text="edited, not saved yet" if st["pending"] else "")
         self.update_prompt()
         self.calibration.configure(text="")
+        self.line_box.configure(values=())
+        self.line_var.set("")
+        self.hear_note.configure(text="")
         self.enable()
 
     # -- actions ------------------------------------------------------
@@ -490,7 +527,8 @@ class Window:
             return
         self.busy = True
         self.enable()
-        self.status("designing… (the first take loads Qwen3)" if self.ses._engine is None else "designing…")
+        self.status("designing… (the first take loads Qwen3" + (", letting MOSS go" if self.ses._worker else "")
+                    + ", which takes a while)" if self.ses._engine is None else "designing…")
         voice, key = self.voice, self.row["key"]
 
         def work():
@@ -501,6 +539,38 @@ class Window:
             else:
                 self.root.after(0, self.done, f"take for {voice} ready", key, take)
         threading.Thread(target=work, daemon=True).start()
+
+    def hear(self):
+        """The picked or typed line, said by this voice through MOSS, in
+        the background like a take. The first line swaps Qwen out for
+        MOSS, which takes a while; later lines are quick, and a line heard
+        before plays at once."""
+        if self.voice is None or self.busy:
+            return
+        text = self.line_var.get().strip()
+        if not text:
+            return self.status("pick or type a line to hear")
+        self.busy = True
+        self.enable()
+        self.status("rendering through MOSS… (the first line loads MOSS, letting Qwen go, which takes a while)"
+                    if self.ses._worker is None else "rendering through MOSS…")
+        voice = self.voice
+
+        def work():
+            try:
+                wav, how = self.ses.hear(voice, text)
+            except Exception as e:  # noqa: BLE001 - shown in the status line
+                self.root.after(0, self.heard, f"MOSS could not say it: {e}")
+            else:
+                self.root.after(0, self.heard, f"{voice} says it, continuing the {how}", wav)
+        threading.Thread(target=work, daemon=True).start()
+
+    def heard(self, message, wav=None):
+        self.busy = False
+        self.status(message)
+        if wav:
+            self.play(wav)
+        self.enable()
 
     def done(self, message, key=None, take=None):
         self.busy = False
@@ -576,7 +646,7 @@ class Window:
             st = self.ses.race_state(self.row["race"])
             edited = st["editable"] and (st["pending"] or self.description() != (st["phrase"] or ""))
             can = {"play_saved": False, "audition": False, "regenerate": False, "play_take": False,
-                   "accept": edited, "reset": edited, "show_prompt": False}
+                   "accept": edited, "reset": edited, "show_prompt": False, "hear": False}
             for name, b in self.buttons.items():
                 b.state(["!disabled"] if can[name] else ["disabled"])
             return
@@ -588,6 +658,7 @@ class Window:
             "accept": bool(st and st["candidate"] and not st["edited_since_take"]) and not self.busy,
             "reset": bool(st and st["pending"]) and not self.busy,
             "show_prompt": True,
+            "hear": bool(st and (st["clip"] or (st["candidate"] and not st["edited_since_take"]))) and not self.busy,
         }
         for name, b in self.buttons.items():
             b.state(["!disabled"] if can[name] else ["disabled"])
@@ -597,6 +668,7 @@ class Window:
 
     def quit(self):
         self.stop()
+        self.ses.close()
         pending = [v for v, d in self.ses.drafts.items() if d.get("candidate")]
         if pending:
             print("takes not accepted (still in refs/.candidates/): " + ", ".join(sorted(pending)))

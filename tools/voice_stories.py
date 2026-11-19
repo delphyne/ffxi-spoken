@@ -9,8 +9,9 @@ Each storyline is a folder under LandSandBoat's scripts/missions; its
 cutscenes go through the event decoder (tools/xievent.py) the way the pack
 build does. Two files come out:
 
-    helper/voice_stories.json  speaker -> {storyline: lines}, for the voice
-                               review (committed; small)
+    helper/voice_stories.json  speaker -> {storyline: lines}, and a few of
+                               each speaker's lines for the voice review to
+                               hear a voice say (committed; small)
     data/word_stories.json     capitalised word -> {"stories": {storyline:
                                lines}, "speakers": {speaker: lines}}, for
                                the lexicon review (data/, like the noun list)
@@ -31,6 +32,9 @@ sys.path.insert(0, str(HERE))
 import xidat  # noqa: E402
 import xievent  # noqa: E402
 
+sys.path.insert(0, str(HERE.parent / "helper"))
+import spoken_helper as sh  # noqa: E402
+
 OUT = HERE.parent / "helper" / "voice_stories.json"
 WORDS_OUT = HERE.parent / "data" / "word_stories.json"
 
@@ -44,11 +48,37 @@ STORIES = {
 }
 
 
+SAMPLE_LINES = 4          # lines kept per speaker, for the voice review to hear a voice say
+SAMPLE_LENGTH = (60, 200)  # characters: long enough to hear a voice, short enough to render quickly
+
+
+def sample_lines(texts, count=SAMPLE_LINES, length=SAMPLE_LENGTH):
+    """Up to `count` of a speaker's lines worth hearing a voice say: whole
+    sentences of a middling length with no stage direction left in them,
+    the longest first, each once; the first lines seen when none is."""
+    lo, hi = length
+    seen, good, fallback = set(), [], []
+    for text in texts:
+        if text in seen:
+            continue
+        seen.add(text)
+        plain = " ".join(text.split())
+        if plain and plain == " ".join(sh.strip_directions(plain).split()) and lo <= len(plain) <= hi \
+                and plain[-1] in ".!?":
+            good.append(plain)
+        elif plain:
+            fallback.append(plain)
+    good.sort(key=len, reverse=True)
+    return (good or fallback)[:count]
+
+
 def build(lines_for, stories=STORIES):
-    """{"stories": {code: name}, "speakers": {speaker: {code: lines}}}.
-    `lines_for(code)` yields the decoder's line dicts for one storyline;
-    storylines with no lines are left out."""
+    """{"stories": {code: name}, "speakers": {speaker: {code: lines}},
+    "lines": {speaker: [sample lines]}}. `lines_for(code)` yields the
+    decoder's line dicts for one storyline; storylines with no lines are
+    left out."""
     speakers = collections.defaultdict(dict)
+    texts = collections.defaultdict(list)
     found = {}
     for code, name in stories.items():
         counts = collections.Counter(line["speaker"] for line in lines_for(code))
@@ -57,8 +87,12 @@ def build(lines_for, stories=STORIES):
         found[code] = name
         for speaker, n in counts.items():
             speakers[speaker][code] = n
+        for line in lines_for(code):
+            if line.get("kind", "say") == "say" and line.get("variants"):
+                texts[line["speaker"]].append(line["variants"][0])
     return {"stories": found,
-            "speakers": {s: dict(sorted(v.items())) for s, v in sorted(speakers.items())}}
+            "speakers": {s: dict(sorted(v.items())) for s, v in sorted(speakers.items())},
+            "lines": {s: sample_lines(t) for s, t in sorted(texts.items()) if sample_lines(t)}}
 
 
 def build_words(lines_for, stories=STORIES):

@@ -57,6 +57,28 @@ class FakeEngine:
         return [0.25] * 2400, 24000
 
 
+class FakeWorker:
+    """Stands in for the MOSS worker: records requests and writes a WAV."""
+
+    def __init__(self):
+        self.requests, self.starts, self.closed = [], 0, False
+
+    def start(self):
+        self.starts += 1
+        self.closed = False
+        return self
+
+    def say(self, request):
+        self.requests.append(request)
+        out = Path(request["out"])
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_bytes(b"RIFF")
+        return out
+
+    def close(self):
+        self.closed = True
+
+
 class SessionTest(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.TemporaryDirectory()
@@ -75,10 +97,17 @@ class SessionTest(unittest.TestCase):
         stories.write_text(json.dumps({"stories": {"rov": "Rhapsodies of Vana'diel", "cop": "Chains of Promathia"},
                                        "speakers": {"Iroha": {"rov": 300}, "Numi Adaligo": {"rov": 19},
                                                     "Tonasav": {"rov": 3, "cop": 2}, "Prishe": {"cop": 400},
-                                                    "": {"rov": 6}}}))
+                                                    "": {"rov": 6}},
+                                       "lines": {"Iroha": ["Master, Vana'diel needs you.", "<Sigh> Follow me, <player>."],
+                                                 "Numi Adaligo": ["Welcome to Windurst Waters."],
+                                                 "Tonasav": ["The guards are asleep again."]}}))
         self.engine = FakeEngine()
+        self.worker = FakeWorker()
+        lexicon = root / "lexicon.yaml"
+        lexicon.write_text("Vana'diel:\n    ipa: \"vɑnədiˈɛl\"\n", encoding="utf-8")
         self.ses = vr.Session(self.yaml, self.refs, self.voices_json, census, stories,
-                              engine_factory=lambda: self.engine, rng=random.Random(4))
+                              engine_factory=lambda: self.engine, rng=random.Random(4),
+                              worker_factory=lambda: self.worker.start(), lexicon=lexicon)
 
     def tearDown(self):
         self.dir.cleanup()
@@ -347,6 +376,47 @@ class SessionTest(unittest.TestCase):
         self.ses.reset("mithra_f_adult-0")
         self.assertFalse(self.ses.state("mithra_f_adult-0")["pending"])
 
+    def test_hear_renders_a_line_through_moss_continuing_the_take_else_the_clip(self):
+        self.assertEqual(self.ses.lines_of("iroha"), ["Master, Vana'diel needs you.", "<Sigh> Follow me, <player>."])
+        self.assertEqual(self.ses.lines_of("mithra_f_adult-0", "Tonasav"),
+                         ["The guards are asleep again.", "Welcome to Windurst Waters."],
+                         "the row's speaker first, then everyone else on the voice")
+        with self.assertRaisesRegex(ValueError, "nothing to continue"):
+            self.ses.hear("iroha", "Hello.")
+        take = self.ses.audition("iroha", "Warmer.", age="thirties")
+        self.assertIs(self.ses._engine, self.engine)
+        wav, how = self.ses.hear("iroha", "<Sigh> Follow me, <player>.")
+        self.assertEqual(how, "take")
+        self.assertIsNone(self.ses._engine, "Qwen is let go before MOSS loads")
+        self.assertEqual(self.worker.starts, 1)
+        self.assertEqual(self.worker.requests, [{"ref": str(take), "ref_text": "Wait here.", "seed": 7,
+                                                 "text": "Follow me, adventurer.", "out": str(wav)}])
+        self.assertEqual(wav.parent, self.refs / ".candidates" / "hear")
+        self.ses.hear("iroha", "<Sigh> Follow me, <player>.")
+        self.assertEqual(len(self.worker.requests), 1, "a line heard before is not made twice")
+        wav2, _ = self.ses.hear("iroha", "Master, Vana'diel needs you.")
+        self.assertEqual(self.worker.requests[-1]["text"], "Master, [[vɑnədiˈɛl]] needs you.", "the lexicon applies")
+        self.assertNotEqual(wav, wav2)
+        with self.assertRaisesRegex(ValueError, "nothing to say"):
+            self.ses.hear("iroha", "<Sigh>")
+        # a take edited since cannot be what is heard; the saved clip can
+        self.ses.edit_voice("iroha", "Warmest.", age="thirties")
+        with self.assertRaisesRegex(ValueError, "nothing to continue"):
+            self.ses.hear("iroha", "Hello.")
+        self.ses.edit_voice("iroha", "Warmer.", age="thirties")
+        self.ses.accept("iroha")
+        wav3, how = self.ses.hear("iroha", "Hello.")
+        self.assertEqual((how, self.worker.requests[-1]["ref"]), ("saved clip", str(self.refs / "iroha.wav")))
+        self.assertEqual(self.worker.requests[-1]["ref_text"], "Wait here.", "the clip's own sentence, from the index")
+        # the next take lets MOSS go, and the next line lets Qwen go again
+        self.ses.audition("iroha", "Warmer still.")
+        self.assertTrue(self.worker.closed)
+        self.assertIs(self.ses._engine, self.engine)
+        self.ses.hear("iroha", "Hello again.")
+        self.assertEqual((self.worker.starts, self.ses._engine), (2, None))
+        self.ses.close()
+        self.assertTrue(self.worker.closed)
+
     def test_empty_description_is_refused(self):
         with self.assertRaises(ValueError):
             self.ses.audition("iroha", "   ")
@@ -359,6 +429,21 @@ class StoriesTest(unittest.TestCase):
         data = voice_stories.build(lambda code: lines[code], {"rov": "R", "cop": "C", "tvr": "T"})
         self.assertEqual(data["stories"], {"rov": "R", "cop": "C"}, "a storyline with no lines is left out")
         self.assertEqual(data["speakers"], {"": {"rov": 1}, "Iroha": {"cop": 1, "rov": 2}, "Prishe": {"cop": 1}})
+
+    def test_sample_lines_are_whole_middling_sentences_longest_first(self):
+        texts = ["Hi.", "<Sigh> " + "a" * 70 + ".", "B" * 65 + "!", "C" * 80 + "?", "C" * 80 + "?",
+                 "d" * 300 + ".", "E" * 70, "F" * 90 + ".", "G" * 61 + ".", "H" * 62 + "."]
+        self.assertEqual(voice_stories.sample_lines(texts),
+                         ["F" * 90 + ".", "C" * 80 + "?", "B" * 65 + "!", "H" * 62 + "."],
+                         "no direction, 60 to 200 characters, ending a sentence, each once, four at most")
+        self.assertEqual(voice_stories.sample_lines(["Hi.", "Hi.", "Yo"]), ["Hi.", "Yo"],
+                         "when none qualifies, the first lines seen")
+        self.assertEqual(voice_stories.sample_lines([]), [])
+        lines = {"rov": [{"kind": "say", "speaker": "Iroha", "variants": ["Master, " + "x" * 60 + "."]},
+                         {"kind": "menu", "speaker": "Iroha", "variants": ["Menu " + "x" * 60 + "."]},
+                         {"kind": "say", "speaker": "Tenzen", "variants": []}]}
+        data = voice_stories.build(lambda code: lines[code], {"rov": "R"})
+        self.assertEqual(data["lines"], {"Iroha": ["Master, " + "x" * 60 + "."]}, "spoken lines with text only")
 
     def test_word_index_counts_storylines_and_speakers(self):
         lines = {"rov": [{"kind": "say", "speaker": "Iroha", "text": "Master, Vana'diel needs you.",
@@ -432,6 +517,7 @@ class GuiTest(unittest.TestCase):
         w.tree.selection_set("speaker:Numi Adaligo")
         w.select()
         self.assertEqual(w.title.cget("text"), "Pool voice: mithra female adult 1 of 1", "the pane names what it edits")
+        self.assertEqual(w.line_box.cget("values"), ("Welcome to Windurst Waters.",), "Numi's own lines first")
         self.assertIn("Editing here changes every speaker on mithra_f_adult-0", w.info.cget("text"))
         self.assertIn("cast.py puts Numi Adaligo in group mithra_f_adult", w.info.cget("text"))
         self.assertTrue(w.own.winfo_manager(), "a pool speaker gets the own-voice button")
@@ -455,11 +541,17 @@ class GuiTest(unittest.TestCase):
         self.assertEqual(str(w.meta["race"][1].cget("state")), "readonly", "an own voice's race can change")
         self.assertEqual(w.prompt_text.get("1.0", "end").strip(), "Gender: female. Age: young adult. Warm.")
         self.assertEqual(w.title.cget("text"), "Own voice iroha")
+        self.assertEqual(w.line_box.cget("values"), ("Master, Vana'diel needs you.", "<Sigh> Follow me, <player>."),
+                         "the speaker's own lines to hear the voice say")
+        self.assertEqual(w.line_var.get(), "Master, Vana'diel needs you.")
+        self.assertIn("disabled", w.buttons["hear"].state(), "nothing to continue yet: no take, no clip")
         # a race row edits its phrase, saved without a take
         w.tree.selection_set("race:mithra")
         w.root.update()
         self.assertEqual(w.title.cget("text"), "Race mithra")
         self.assertEqual(w.field_label.cget("text"), "Race phrase")
+        self.assertEqual((w.line_box.cget("values"), w.line_var.get()), ("", ""), "a race says nothing")
+        self.assertIn("disabled", w.buttons["hear"].state())
         self.assertEqual(w.text.get("1.0", "end").strip(), "A cat-woman.")
         self.assertEqual(str(w.meta["age"][1].cget("state")), "disabled")
         self.assertFalse(w.own.winfo_manager())

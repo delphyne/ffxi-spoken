@@ -71,6 +71,10 @@ quick checks.
   Qwen is given `designs.compose`: "Gender: …. Age: …. <race phrase>
   <description>". `make review-voices` edits all three layers (race phrase,
   pool voice, own voice) with auditions, and shows the composed instruction in a popout.
+  It can also play a voice saying one of its speaker's own game lines the way
+  a pack would (`helper/moss_say.py`, a worker under `.venv-moss` that keeps
+  MOSS loaded between lines; the window lets Qwen go first, and ends the
+  worker before the next take, since the two do not fit on the card together).
 - **`tools/design_voices.py`** runs under `.venv-qwen` and renders each
   description into `helper/voices/moss/refs/<voice>.wav`, then encodes the
   clip's MOSS codes beside it as `<voice>.codes.pt` under `.venv-moss`. A

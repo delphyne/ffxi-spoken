@@ -26,7 +26,12 @@ before a later edit cannot be accepted until the voice is auditioned
 again. A speaker on a shared pool voice can be given a voice of their own,
 starting from the pool's design. A race row edits the race's phrase, which
 is saved straight to the YAML: it cannot be auditioned alone, since a take
-needs a gender and an age too.
+needs a gender and an age too. A voice with a take or a saved clip can be
+heard saying one of its speakers' own lines (helper/voice_stories.json
+keeps a few per speaker) or anything typed, rendered by MOSS the way a
+pack line is: that runs helper/moss_say.py under .venv-moss, and since
+Qwen and MOSS do not share the card, the window lets go of one before it
+loads the other.
 
 Accepting writes the clip to helper/voices/moss/refs/, its record to the
 clips' index, and the description and seed to voice_designs.yaml; a new
@@ -45,9 +50,12 @@ logic and has no Tk in it; voice_review_gui.py is the window.
 """
 
 import argparse
+import hashlib
 import json
+import os
 import random
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -61,6 +69,9 @@ import designs as designs_module  # noqa: E402
 import spoken_helper as sh  # noqa: E402
 
 NARRATION = "(narration)"
+PLAYER_WORD = "adventurer"   # what a pack says for <player> (tools/build_pack.py)
+MOSS_PYTHON = REPO / ".venv-moss" / "bin" / "python"
+MOSS_HF = REPO / "helper" / "voices" / "moss" / "hf"
 # a row's kind: a race, a pool voice, a speaker with a voice of their own, a speaker on a pool voice
 KINDS = ("all", "race", "pool voice", "own voice", "on a pool voice")
 
@@ -81,24 +92,73 @@ def load_json(path, default):
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else default
 
 
+class MossWorker:
+    """helper/moss_say.py running under .venv-moss: one line at a time,
+    rendered by MOSS continuing a clip, the model kept loaded in between.
+    `say(request)` returns the WAV path; `close()` ends the process."""
+
+    def __init__(self, python=MOSS_PYTHON, hf_home=MOSS_HF, script=REPO / "helper" / "moss_say.py"):
+        if not Path(python).exists():
+            raise RuntimeError(f"{python} is missing: run make venv-moss to hear lines through MOSS")
+        env = {k: v for k, v in os.environ.items() if k != "MOSS_CODEC"}   # one-off lines decode on the CPU
+        env.update(HF_HOME=str(hf_home), PYTORCH_ALLOC_CONF="expandable_segments:True")
+        self.proc = subprocess.Popen([str(python), "-I", str(script)], stdin=subprocess.PIPE,
+                                     stdout=subprocess.PIPE, text=True, encoding="utf-8", env=env)
+        if not self._read().get("ready"):
+            raise RuntimeError("the MOSS worker did not start; see the terminal")
+
+    def _read(self):
+        line = self.proc.stdout.readline()
+        if not line:
+            code = self.proc.wait()
+            raise RuntimeError(f"the MOSS worker ended (exit {code}); see the terminal")
+        return json.loads(line)
+
+    def say(self, request):
+        self.proc.stdin.write(json.dumps(request, ensure_ascii=False) + "\n")
+        self.proc.stdin.flush()
+        reply = self._read()
+        if not reply.get("ok"):
+            raise RuntimeError(reply.get("error", "MOSS failed"))
+        return Path(reply["out"])
+
+    def close(self):
+        if self.proc.poll() is None:
+            try:
+                self.proc.stdin.close()
+                self.proc.wait(timeout=15)
+            except (OSError, subprocess.TimeoutExpired):
+                self.proc.kill()
+                self.proc.wait()
+
+
 class Session:
     """Everything the window shows and does, without the window.
 
     `engine` designs a clip: `manual_seed(seed)` then `design(text,
     description) -> (samples, rate)`; it is made on first use by
-    `engine_factory`, because loading Qwen takes a while."""
+    `engine_factory`, because loading Qwen takes a while. `worker_factory`
+    makes the MOSS worker that `hear` renders a line through; the card
+    holds one of the two at a time, so each is let go before the other
+    loads."""
 
     def __init__(self, designs_path=designs_module.DEFAULT_PATH, refs=dv.REFS,
                  voices_json=REPO / "helper" / "voices.json", census=REPO / "helper" / "census.json",
-                 stories=REPO / "helper" / "voice_stories.json", engine_factory=None, rng=None):
+                 stories=REPO / "helper" / "voice_stories.json", engine_factory=None, rng=None,
+                 worker_factory=None, lexicon=REPO / "helper" / "lexicon.yaml"):
         self.designs_path, self.refs = Path(designs_path), Path(refs)
         self.voices_json = Path(voices_json)
         self.census = load_json(census, {})
         data = load_json(stories, {"stories": {}, "speakers": {}})
         self.story_names, self.speaker_stories = data["stories"], data["speakers"]
+        self.lines = data.get("lines", {})   # speaker -> a few lines they say, to hear a voice say
         self.cast_groups = cast_groups()
         self.engine_factory = engine_factory or (lambda: dv.Qwen())
+        self.worker_factory = worker_factory or MossWorker
+        self.lexicon_path = Path(lexicon)
+        self._lexicon = None
         self._engine = None
+        self._worker = None
         self.rng = rng or random.Random()
         self.drafts = {}   # voice -> {"meta", "description", "seed", "candidate", "new": speaker or None}
         self.race_drafts = {}   # race -> a phrase typed and not saved yet; auditions of that race use it
@@ -373,8 +433,82 @@ class Session:
 
     def engine(self):
         if self._engine is None:
+            self.close_worker()   # the card holds one engine at a time
             self._engine = self.engine_factory()
         return self._engine
+
+    def free_engine(self):
+        """Let go of Qwen, so MOSS can have the card."""
+        if self._engine is None:
+            return
+        self._engine = None
+        import gc
+        gc.collect()
+        try:
+            import torch
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+        except ImportError:
+            pass
+
+    def worker(self):
+        if self._worker is None:
+            self.free_engine()
+            self._worker = self.worker_factory()
+        return self._worker
+
+    def close_worker(self):
+        if self._worker is not None:
+            self._worker.close()
+            self._worker = None
+
+    def close(self):
+        self.close_worker()
+
+    # -- hearing a line through MOSS --------------------------------------
+
+    def lines_of(self, voice, name=None):
+        """Lines to hear the voice say: the speaker `name`'s first, then
+        those of everyone the voice belongs to."""
+        names = [name] if name else []
+        names += self.designs.voices.get(voice, {}).get("names") or []
+        names += self.users.get(voice, [])
+        out = []
+        for n in names:
+            for line in self.lines.get(n, []):
+                if line not in out:
+                    out.append(line)
+        return out
+
+    def lexicon(self):
+        if self._lexicon is None:
+            self._lexicon = sh.Lexicon.load(self.lexicon_path, backend="moss")
+        return self._lexicon
+
+    def hear(self, voice, text):
+        """`text` said by the voice: MOSS continues its clip, the take when
+        there is one the fields still match, else the saved clip, the way a
+        pack line is made (directions dropped, the player named, the
+        lexicon applied). Returns (wav path, what was continued); the WAV
+        is kept under refs/.candidates/hear/ and not made twice."""
+        st = self.state(voice)
+        if st["candidate"] and not st["edited_since_take"]:
+            ref, ref_text, how = st["candidate"], self.designs.calibration, "take"
+        elif st["clip"]:
+            ref, how = st["clip"], "saved clip"
+            ref_text = (self.index.get(voice) or {}).get("calibration") or self.designs.calibration
+        else:
+            raise ValueError("nothing to continue: audition a take, or accept one, first")
+        plain = " ".join(sh.strip_directions(text.replace("<player>", PLAYER_WORD)).split())
+        if not plain:
+            raise ValueError("nothing to say")
+        spoken = self.lexicon().apply(plain, phonemes=True)
+        tag = hashlib.sha1(f"{dv.sha256_file(ref)}|{ref_text}|{spoken}|{st['seed']}".encode("utf-8")).hexdigest()[:10]
+        out = self.refs / ".candidates" / "hear" / f"{voice}.{tag}.wav"
+        if not out.exists():
+            self.worker().say({"ref": str(ref), "ref_text": ref_text, "seed": st["seed"], "text": spoken,
+                               "out": str(out)})
+        return out, how
 
     def audition(self, voice, description, seed=None, gender=None, age=None, race=None):
         """Design a take from `description` and the meta (each, when None,

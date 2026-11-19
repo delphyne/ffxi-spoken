@@ -46,8 +46,9 @@
 #   make listen-voices   a page with every designed voice and its description, to listen to
 #   make review-voices   a window to edit the voices in their three layers: each race's phrase, each pool voice
 #                    (shared by the speakers hashed onto it), and each own voice; audition, regenerate,
-#                    accept, or reset, filtered by race, gender, storyline, or a partial name (tools/voice_review.py)
-#   make voice-stories   rebuild helper/voice_stories.json: each speaker's lines per storyline
+#                    accept, or reset, filtered by race, gender, storyline, or a partial name, and hear a
+#                    voice say one of its speaker's lines through MOSS (needs .venv-moss) (tools/voice_review.py)
+#   make voice-stories   rebuild helper/voice_stories.json: each speaker's lines per storyline, and a few to hear
 #   make venv-moss   build .venv-moss with MOSS-TTS from a checkout (MOSS_DIR=~/scm/github/OpenMOSS/MOSS-TTS)
 #   make spike-moss [LIMIT=N] [FRESH=1] [INT8=1]
 #                    the same lines through MOSS-TTS-Local, cloned from the Qwen-designed clips, with
