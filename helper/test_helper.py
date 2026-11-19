@@ -133,9 +133,9 @@ class CensusCastingTest(unittest.TestCase):
     def test_race_picks_pool_deterministically(self):
         import casting
         v = casting.census_voice(self.census, "Numi Adaligo", "kokoro")
-        self.assertIn(v, casting.POOLS["mithra"][0])
+        self.assertIn(v, casting.POOLS["mithra_f_adult"][0])
         self.assertEqual(v, casting.census_voice(self.census, "Numi Adaligo", "kokoro"))
-        self.assertEqual(casting.census_voice(self.census, "Hyria", "piper"), casting.POOLS["hume_f"][1])
+        self.assertEqual(casting.census_voice(self.census, "Hyria", "piper"), casting.POOLS["hume_f_adult"][1])
         self.assertIsNone(casting.census_voice(self.census, "Iroha", "kokoro"), "no race, no guess")
         self.assertIsNone(casting.census_voice(self.census, "Nobody", "kokoro"))
         self.assertIsNone(casting.census_voice(self.census, "Hyria", "espeak"))
@@ -145,7 +145,7 @@ class CensusCastingTest(unittest.TestCase):
         backend = sh.NoneBackend("voices", {"default": "narrator", "Iroha": "iroha"},
                                  fallback=lambda name: casting.census_voice(self.census, name, "kokoro"))
         self.assertEqual(backend.voice_for("Iroha"), "iroha")
-        self.assertIn(backend.voice_for("Hyria"), casting.POOLS["hume_f"][0])
+        self.assertIn(backend.voice_for("Hyria"), casting.POOLS["hume_f_adult"][0])
         self.assertEqual(backend.voice_for("Nobody"), "narrator")
         self.assertEqual(backend.voice_for(""), "narrator")
 
@@ -168,7 +168,7 @@ class CensusCastingTest(unittest.TestCase):
             path = Path(d) / "census.json"
             path.write_text(json.dumps(self.census))
             fb = sh.census_fallback(path, "kokoro")
-            self.assertIn(fb("Hyria"), sh.BACKENDS and __import__("casting").POOLS["hume_f"][0])
+            self.assertIn(fb("Hyria"), sh.BACKENDS and __import__("casting").POOLS["hume_f_adult"][0])
 
 
 class CensusBuildTest(unittest.TestCase):

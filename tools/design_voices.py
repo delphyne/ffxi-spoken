@@ -5,8 +5,9 @@ sentence with the design's composed instruction (designs.compose: gender,
 age, the race's phrase, the description).
 
     make design-voices [ONLY=Name] [CHANGED=1] [FRESH=1]
-    make review-voices                           a page with every clip to listen to
-    make voice-review                            edit, audition, and accept one at a time
+    make audit-voices [ONLY=Name] [CHANGED=1] [FRESH=1]   what that run would design, and why
+    make listen-voices                           a page with every clip to listen to
+    make review-voices                           edit, audition, and accept one at a time
     .venv-qwen/bin/python -I tools/design_voices.py --help
 
 Clips go to helper/voices/moss/refs/<voice>.wav (gitignored; audio is never
@@ -203,6 +204,76 @@ def stale(d, index, refs, voices):
             if (Path(refs) / f"{v}.wav").exists() and v in index and is_changed(d, v, index[v])]
 
 
+def why_changed(d, voice, rec):
+    """What differs between the clip on record and the design as it stands:
+    a list of short phrases, empty when nothing does."""
+    v = d.voices[voice]
+    out = []
+    if made_with(rec) != d.compose(voice):
+        out.append("instruction")
+    if rec.get("seed") != v["seed"]:
+        out.append(f"seed {rec.get('seed')} -> {v['seed']}")
+    if rec.get("calibration") != d.calibration:
+        out.append("calibration sentence")
+    return out
+
+
+def who_is(d, voice):
+    """The speakers a voice belongs to, or the pool voice's readable name."""
+    v = d.voices[voice]
+    if v.get("names"):
+        return ", ".join(v["names"])
+    pool = d.pools[v["group"]]
+    return "pool " + designs_module.pool_label(v["group"], pool.index(voice), len(pool))
+
+
+def audit(d, index, refs, voices, fresh=False, changed=False):
+    """Every voice's standing against the clips on disk: (voice, status,
+    detail), status one of missing, changed, fresh (will be designed) and
+    stale, current (will not). The flags are design-voices' own, so the
+    audit says what that run would do."""
+    rows = []
+    for voice in voices:
+        rec = index.get(voice)
+        clip = Path(refs) / f"{voice}.wav"
+        if not clip.exists() or rec is None:
+            rows.append((voice, "missing", "no clip" if not clip.exists() else "clip has no record in index.json"))
+            continue
+        why = why_changed(d, voice, rec)
+        if fresh:
+            rows.append((voice, "fresh", "FRESH=1" + ("; " + ", ".join(why) if why else "")))
+        elif why:
+            rows.append((voice, "changed" if changed else "stale", ", ".join(why)))
+        else:
+            rows.append((voice, "current", rec.get("how", "")))
+    return rows
+
+
+def print_audit(d, index, refs, rows):
+    """The audit as a report: what will be designed and why, what is stale
+    but kept, what is current, and clips with no design."""
+    by = {}
+    for voice, status, detail in rows:
+        by.setdefault(status, []).append((voice, detail))
+    own = sum(1 for v in d.voices.values() if v["kind"] == "cast")
+    clips = sum(1 for p in Path(refs).glob("*.wav"))
+    print(f"{len(d.voices)} voices ({own} own, {len(d.voices) - own} pool); {clips} clips in {refs}")
+    todo = [(v, s, dt) for v, s, dt in rows if s in ("missing", "changed", "fresh")]
+    print(f"\nWill design {len(todo)}:" if todo else "\nNothing to design.")
+    for voice, status, detail in todo:
+        print(f"  {voice:22} {status:8} {detail:40} {who_is(d, voice)}")
+    if by.get("stale"):
+        print(f"\nStale, kept ({len(by['stale'])}; CHANGED=1 redesigns them):")
+        for voice, detail in by["stale"]:
+            print(f"  {voice:22} {detail:49} {who_is(d, voice)}")
+    print(f"\nCurrent: {len(by.get('current', []))}")
+    for voice, detail in by.get("current", []):
+        print(f"  {voice:22} {detail:49} {who_is(d, voice)}")
+    orphans = sorted(p.stem for p in Path(refs).glob("*.wav") if p.stem not in d.voices)
+    if orphans:
+        print(f"\nClips with no design ({len(orphans)}, left in place): " + ", ".join(orphans))
+
+
 def record(d, voice, clip, how):
     v = d.voices[voice]
     rec = {k: v[k] for k in ("kind", "gender", "age", "race", "description", "seed") if k in v}
@@ -270,12 +341,19 @@ def main(argv=None):
     ap.add_argument("--adopt", metavar="DIR", help="copy missing clips from DIR/<voice>.wav instead of designing")
     ap.add_argument("--dry-run", action="store_true", help="list what would be designed")
     ap.add_argument("--review", action="store_true", help="only write refs/review.html")
+    ap.add_argument("--audit", action="store_true",
+                    help="report which voices lack a clip, which a run with these flags would design and why, "
+                         "and which are stale or current; designs nothing")
     ap.add_argument("--cpu", action="store_true")
     ap.add_argument("--codec-gpu", action="store_true", help="keep Qwen's speech codec on the GPU")
     args = ap.parse_args(argv)
 
     d = designs_module.Designs.load(args.designs, groups=set(casting.POOLS))
     index = load_index(args.refs)
+    if args.audit:
+        chosen = selected(d, args.only)
+        print_audit(d, index, args.refs, audit(d, index, args.refs, chosen, fresh=args.fresh, changed=args.changed))
+        return 0
     if not args.review:
         chosen = selected(d, args.only)
         todo = plan(d, index, args.refs, chosen, fresh=args.fresh, changed=args.changed)

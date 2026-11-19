@@ -12,7 +12,7 @@ import design_voices as dv  # noqa: E402
 import designs  # noqa: E402
 import spoken_helper as sh  # noqa: E402
 
-GROUPS = {"hume_m"}
+GROUPS = {"hume_m_adult"}
 
 
 IROHA = {"gender": "female", "age": "young adult", "race": "hume", "description": "Warm.", "seed": 7,
@@ -22,7 +22,7 @@ IROHA = {"gender": "female", "age": "young adult", "race": "hume", "description"
 def make_designs(**cast):
     cast = cast or {"Iroha": IROHA}
     return designs.Designs({"calibration": "Wait here.", "races": {"hume": "", "galka": "Huge."}, "cast": cast,
-                            "pools": {"hume_m": ["plain", {"age": "fifties", "description": "gruff"}]}},
+                            "pools": {"hume_m_adult": ["plain", {"age": "fifties", "description": "gruff"}]}},
                            groups=GROUPS)
 
 
@@ -58,9 +58,9 @@ class DesignVoicesTest(unittest.TestCase):
     def test_first_run_designs_everything_with_each_seed(self):
         d = make_designs()
         todo, engine = self.run_design(d)
-        self.assertEqual(todo, [("iroha", "missing"), ("hume_m-0", "missing"), ("hume_m-1", "missing")])
+        self.assertEqual(todo, [("iroha", "missing"), ("hume_m_adult-0", "missing"), ("hume_m_adult-1", "missing")])
         self.assertEqual(engine.calls, [("Wait here.", "Gender: female. Age: young adult. Warm."),
-                                        ("Wait here.", "Gender: male. plain"),
+                                        ("Wait here.", "Gender: male. Age: adult. plain"),
                                         ("Wait here.", "Gender: male. Age: fifties. gruff")],
                          "Qwen is given the composed instruction")
         self.assertEqual(engine.seeds, [7, 1, 1])
@@ -72,7 +72,7 @@ class DesignVoicesTest(unittest.TestCase):
                          ("female", "young adult", "hume", "Warm."))
         self.assertEqual(rec["instruct"], "Gender: female. Age: young adult. Warm.")
         self.assertEqual(rec["sha256"], dv.sha256_file(self.refs / "iroha.wav"))
-        self.assertEqual(index["voices"]["hume_m-1"]["group"], "hume_m")
+        self.assertEqual(index["voices"]["hume_m_adult-1"]["group"], "hume_m_adult")
 
     def test_changed_designs_are_listed_and_redone_only_on_request(self):
         self.run_design(make_designs())
@@ -89,9 +89,9 @@ class DesignVoicesTest(unittest.TestCase):
         todo, engine = self.run_design(changed, changed=True)
         self.assertEqual(todo, [("iroha", "changed")])
         self.assertEqual(engine.seeds, [8])
-        (self.refs / "hume_m-0.wav").unlink()
+        (self.refs / "hume_m_adult-0.wav").unlink()
         todo, _ = self.run_design(changed)
-        self.assertEqual(todo, [("hume_m-0", "missing")])
+        self.assertEqual(todo, [("hume_m_adult-0", "missing")])
         todo, _ = self.run_design(changed, only=["Volto Oscuro"], fresh=True)
         self.assertEqual(todo, [("iroha", "fresh")])
 
@@ -104,11 +104,53 @@ class DesignVoicesTest(unittest.TestCase):
         spike.mkdir()
         sh.write_wav(spike / "iroha.wav", [0.1] * 4800, 24000)
         _, engine = self.run_design(make_designs(), adopt=spike)
-        self.assertEqual([c[1] for c in engine.calls], ["Gender: male. plain", "Gender: male. Age: fifties. gruff"])
+        self.assertEqual([c[1] for c in engine.calls], ["Gender: male. Age: adult. plain", "Gender: male. Age: fifties. gruff"])
         self.assertEqual((self.refs / "iroha.wav").read_bytes(), (spike / "iroha.wav").read_bytes())
         index = json.loads((self.refs / "index.json").read_text())["voices"]
         self.assertTrue(index["iroha"]["how"].startswith("adopted from"))
-        self.assertEqual(index["hume_m-0"]["how"], "designed")
+        self.assertEqual(index["hume_m_adult-0"]["how"], "designed")
+
+    def test_audit_says_what_a_run_would_do_and_why(self):
+        d = make_designs()
+        voices = list(d.voices)
+        index = {}
+        engine = FakeQwen()
+        dv.design_all(d, dv.plan(d, index, self.refs, voices), self.refs, engine, index)
+        rows = dv.audit(d, dv.load_index(self.refs), self.refs, voices)
+        self.assertEqual([s for _, s, _ in rows], ["current"] * 3)
+        self.assertEqual(rows[0][2], "designed")
+        # one voice edited, one reseeded, one clip gone
+        d.update("hume_m_adult-0", "plainer", 1)
+        d.update("hume_m_adult-1", "gruff", 9, age="fifties")
+        (self.refs / "iroha.wav").unlink()
+        index = dv.load_index(self.refs)
+        rows = {v: (s, dt) for v, s, dt in dv.audit(d, index, self.refs, voices)}
+        self.assertEqual(rows["iroha"], ("missing", "no clip"))
+        self.assertEqual(rows["hume_m_adult-0"], ("stale", "instruction"), "kept unless CHANGED=1")
+        self.assertEqual(rows["hume_m_adult-1"], ("stale", "seed 1 -> 9"))
+        rows = {v: s for v, s, _ in dv.audit(d, index, self.refs, voices, changed=True)}
+        self.assertEqual(rows, {"iroha": "missing", "hume_m_adult-0": "changed", "hume_m_adult-1": "changed"})
+        rows = {v: (s, dt) for v, s, dt in dv.audit(d, index, self.refs, voices, fresh=True)}
+        self.assertEqual(rows["hume_m_adult-1"], ("fresh", "FRESH=1; seed 1 -> 9"))
+        self.assertEqual(rows["iroha"][0], "missing")
+        # the audit's plan is design-voices' plan
+        for flags in ({}, {"changed": True}, {"fresh": True}):
+            planned = [v for v, _ in dv.plan(d, index, self.refs, voices, **flags)]
+            audited = [v for v, s, _ in dv.audit(d, index, self.refs, voices, **flags)
+                       if s in ("missing", "changed", "fresh")]
+            self.assertEqual(planned, audited, str(flags))
+        self.assertEqual(dv.who_is(d, "iroha"), "Iroha, Volto Oscuro")
+        self.assertEqual(dv.who_is(d, "hume_m_adult-1"), "pool hume male adult 2 of 2")
+        import contextlib, io
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            dv.print_audit(d, index, self.refs, dv.audit(d, index, self.refs, voices))
+        text = out.getvalue()
+        self.assertIn("Will design 1:", text)
+        self.assertIn("Stale, kept (2; CHANGED=1 redesigns them):", text)
+        self.assertIn("Current: 0", text)
+        self.assertIn("iroha", text)
+        self.assertIn("pool hume male adult 1 of 2", text)
 
     def test_review_page_lists_every_voice(self):
         d = make_designs()
@@ -118,7 +160,7 @@ class DesignVoicesTest(unittest.TestCase):
         text = page.read_text(encoding="utf-8")
         self.assertIn("data:iroha.wav", text)
         self.assertIn("Iroha, Volto Oscuro", text)
-        self.assertIn("pool: hume_m", text)
+        self.assertIn("pool: hume_m_adult", text)
         self.assertEqual(text.count("not designed yet"), 2)
         self.assertIn("Gender: female. Age: young adult. Warm.", text, "the page shows the composed instruction")
 

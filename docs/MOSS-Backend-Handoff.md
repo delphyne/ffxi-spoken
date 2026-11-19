@@ -69,8 +69,8 @@ quick checks.
     each voice its age and description.
 
   Qwen is given `designs.compose`: "Gender: …. Age: …. <race phrase>
-  <description>". `make voice-review` edits all of it with auditions and
-  shows the composed instruction in a popout.
+  <description>". `make review-voices` edits all three layers (race phrase,
+  pool voice, own voice) with auditions, and shows the composed instruction in a popout.
 - **`tools/design_voices.py`** runs under `.venv-qwen` and renders each
   description into `helper/voices/moss/refs/<voice>.wav`, then encodes the
   clip's MOSS codes beside it as `<voice>.codes.pt` under `.venv-moss`. A
@@ -80,16 +80,19 @@ quick checks.
   `helper/voices/`. Every pack manifest records the sha256 of each clip it
   used, and `make release` uploads the clip set beside the pack zip, so a
   pack can be rebuilt with the same voices.
-- `make design-voices [ONLY=Name] [FRESH=1]`, and `make review-voices` for a
+- `make design-voices [ONLY=Name] [FRESH=1]`, and `make listen-voices` for a
   page with every clip and its description.
 
 ### Casting
 
-`helper/casting.py` gains `MOSS_POOLS`, four voices per group, picked by the
-same stable hash as Kokoro's pools. `helper/cast.py` writes a `moss` section
-into `voices.json`: a named character with a design gets their own voice,
-everyone else in `CAST` their group's pool voice. NPCs outside `voices.json`
-fall back through the census by race as now.
+A casting group is a race, a sex, and an age band (child, teen, young adult,
+adult, elder), or one of the special buckets; `voice_designs.yaml` has two
+pool voices per band group. `helper/cast.py` writes a `moss` section into
+`voices.json`: a named character with a design gets their own voice (every
+speaker with twenty lines or more has one, so the pools carry only minor
+NPCs), everyone else in `CAST` a pool voice, the group spread round-robin in
+the order `CAST` lists it. NPCs outside `voices.json` fall back through the
+census by race, as adults, by a stable hash.
 
 ### The backend
 

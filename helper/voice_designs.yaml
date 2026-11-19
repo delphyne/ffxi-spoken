@@ -4,7 +4,7 @@
 # calibration sentence in that voice (tools/design_voices.py, `make
 # design-voices`), and MOSS-TTS continues that clip for every line the voice
 # says. The clips live in helper/voices/moss/refs/ and are never committed.
-# Edit by hand or with `make voice-review`, which auditions as you go.
+# Edit by hand or with `make review-voices`, which auditions as you go.
 #
 # A design is meta plus a description. Qwen is given them composed:
 #
@@ -18,10 +18,16 @@
 #                what a Galka sounds like, so say it. Blank for none
 #   cast         one voice per named character: gender, age, race, a
 #                description, an optional seed (1 by default), and `also`,
-#                other names that share it (Volto Oscuro is Iroha's shadow)
-#   pools        voices per casting group (helper/casting.py's POOLS) for
-#                everyone else, drawn by a stable hash of the speaker's
-#                name; the group gives gender and race, each voice its age
+#                other names that share it (Volto Oscuro is Iroha's shadow).
+#                Every speaker with twenty lines or more across the
+#                storylines gets one, so no character the player will
+#                remember shares a pool voice
+#   pools        voices per casting group (helper/casting.py's POOLS: a
+#                race, a sex, and an age band, two voices each, or one of
+#                the special buckets) for everyone else: cast.py spreads a
+#                group round-robin over them, the census draws by a stable
+#                hash. The group gives gender and race; each voice has an
+#                age, by default its band's
 #
 # Changing a design, or its seed, and running `make design-voices` redesigns
 # only that voice; the pack cache then re-renders only its lines. The nine
@@ -33,7 +39,7 @@ calibration: >-
   road back to town and do not look behind you.
 
 races:
-  hume: ""
+  hume: "A plain, friendly, mid-pitched voice with a neutral American accent; easygoing and direct."
   elvaan: "A tall, proud, long-eared elf, with a faint french accent."
   tarutaru: "A tiny, child-sized person with a small, high voice, though not a child."
   mithra: "A lithe cat-woman who speaks with a gentle purrs."
@@ -44,6 +50,7 @@ races:
   dark: ""
   cait sith: ""
   narrator: ""
+  beastman: "A beastman of the goblin, orc, quadav, yagudo, or mamool ja tribes, with a rough, inhuman voice."
 
 cast:
   Iroha:
@@ -73,19 +80,19 @@ cast:
     seed: 2147
   Lilisette:
     gender: female
-    age: late teens
+    age: young adult
     race: elvaan
     description: >-
       An elegant dancer; bright, lively, energetic, quick, expressive, easily
       excited
-    seed: 1929602238
+    seed: 1838567497
   Cait Sith:
     gender: female
     race: cait sith
     description: >-
       A prim, precise, feline voice with a refined British accent; crisp
       consonants, slightly haughty, a hint of purr.
-    seed: 2059
+    seed: 953240600
     also: [Cait Sith Prime, Cait Sith Aon, Cait Sith Dha, Cait Sith Tri,
            Cait Sith Ceithir, Cait Sith Coig, Cait Sith Sia, Cait Sith Seachd,
            Cait Sith Ochd, Cait Sith Naoi, Cait Sith Deich]
@@ -187,81 +194,1328 @@ cast:
     description: >-
       A soft, sweet, musical voice with a light French accent; gentle, earnest,
       a little shy.
+  Nag'molada:
+    gender: male
+    age: ageless
+    race: zilart
+    description: >-
+      A cold, smooth, aristocratic voice with a clipped British accent; precise
+      and disdainful.
+  Arciela:
+    gender: female
+    age: young adult
+    race: hume
+    description: >-
+      A bright, refined, spirited young noblewoman's voice; quick, warm,
+      earnest, with an aristocratic polish.
+    seed: 1872625757
+  Cid:
+    gender: male
+    age: elderly
+    race: hume
+    description: >-
+      A gruff, gravelly, impatient old engineer's voice; blunt, fast, barking,
+      warm underneath.
+    seed: 495494536
+  Ragelise:
+    gender: male
+    age: thirties
+    race: elvaan
+    description: >-
+      A dry, weary, sardonic knight's voice with a light French accent;
+      measured, deadpan, quietly kind.
+    seed: 1816177442
+  Louverance:
+    gender: male
+    age: thirties
+    race: elvaan
+    description: >-
+      A theatrical, flamboyant, self-assured voice with a French accent; grand,
+      dramatic, amused.
+    seed: 1748176018
+  Levil:
+    gender: male
+    age: young adult
+    race: hume
+    description: >-
+      A rough, bitter, sharp-edged voice; clipped, sullen, quick to anger.
+    seed: 785770587
+  Aphmau:
+    gender: female
+    age: teenager
+    race: hume
+    description: >-
+      A sweet, gentle, slightly timid girl's voice; soft, hesitant, growing
+      braver.
+    seed: 1233948002
+  Gessho:
+    gender: male
+    race: deity
+    description: >-
+      A hoarse, hissing, sly avian voice; quiet, clipped, watchful.
+    seed: 745474708
+  Luzaf:
+    gender: male
+    age: thirties
+    race: hume
+    description: >-
+      A smooth, cultured, melancholy pirate captain's voice; low, deliberate,
+      wistful.
+    seed: 2021243466
+  Halver:
+    gender: male
+    age: thirties
+    race: elvaan
+    description: >-
+      A crisp, officious, loyal steward's voice with a French accent; formal,
+      precise, a touch fussy.
+    seed: 1164425586
+    also: [Halver M Borel]
+  Moogle:
+    race: creature
+    description: >-
+      A tiny, chirpy, eager moogle's voice; high, bouncy, every sentence ending
+      in kupo.
+    seed: 1664550131
+  Razfahd:
+    gender: male
+    age: thirties
+    race: hume
+    description: >-
+      A hard, cold, imperious commander's voice; low, controlled, menacing.
+    seed: 418359986
+  Naja Salaheem:
+    gender: female
+    age: thirties
+    race: mithra
+    description: >-
+      A brash, loud, bossy mercenary's voice with a purring drawl; fast,
+      sarcastic, money-minded.
+    seed: 1830755724
+  Pieuje:
+    gender: male
+    age: young adult
+    race: elvaan
+    description: >-
+      A soft, pious, gentle young prince's voice with a French accent; calm,
+      kindly, slightly sad.
+    seed: 1451036980
+    also: [Prince Pieuje]
+  Ingrid:
+    gender: female
+    age: forties
+    race: hume
+    description: >-
+      A cool, scholarly, composed voice; precise, dry, quietly ironic.
+    seed: 208067423
+  Shantotto:
+    gender: female
+    age: forties
+    race: tarutaru
+    description: >-
+      A tiny, shrill, cackling sorceress's voice; rapid, rhyming, arrogant,
+      gleeful.
+    seed: 1322329271
+    also: [D. Shantotto]
+  Mayakov:
+    gender: male
+    age: forties
+    race: hume
+    description: >-
+      A flamboyant, nasal, theatrical dance master's voice; fast, excitable,
+      dramatic.
+    seed: 22291533
+  Portia:
+    gender: female
+    age: young adult
+    race: hume
+    description: >-
+      A sweet, airy, dreamy young dancer's voice; soft, light, slightly
+      breathless.
+    seed: 532686845
+  Esha'ntarl:
+    gender: female
+    age: ageless
+    race: zilart
+    description: >-
+      A cool, poised, ancient voice with a refined British accent; calm, kind,
+      faintly sorrowful.
+    seed: 960037601
+  Jabbos:
+    gender: male
+    age: forties
+    race: galka
+    description: >-
+      A deep, slow, gentle giant's voice; soft-spoken, loyal, a little
+      bewildered.
+    seed: 1064756989
+  Karababa:
+    gender: female
+    age: thirties
+    race: tarutaru
+    description: >-
+      A high, brisk, haughty scholar's voice; quick, sharp, disdainful of fools.
+    seed: 872439820
+  Lady Lilith:
+    gender: female
+    race: dark
+    description: >-
+      A low, silky, mocking voice; slow, seductive, cruel.
+    seed: 244904757
+    also: [Lilith Ascendant, Lilith Ascended]
+  Teodor:
+    gender: male
+    age: teenager
+    race: hume
+    description: >-
+      A thin, nervous, well-bred boy's voice; soft, polite, easily rattled.
+    seed: 353715974
+  Wolfgang:
+    gender: male
+    age: thirties
+    race: hume
+    description: >-
+      A deep, gruff, no-nonsense veteran's voice; slow, dependable, stern.
+    seed: 1676516770
+  Volker:
+    gender: male
+    age: thirties
+    race: hume
+    description: >-
+      A calm, steady, honorable captain's voice; measured, firm, quietly warm.
+    seed: 303645880
+  Trion:
+    gender: male
+    age: young adult
+    race: elvaan
+    description: >-
+      A proud, hot-headed young prince's voice with a French accent; loud,
+      impatient, commanding.
+    seed: 510701493
+    also: [Prince Trion]
+  Hildebert:
+    gender: male
+    age: forties
+    race: elvaan
+    description: >-
+      A rough, gruff, worldly swordsman's voice with a French accent; blunt,
+      hearty, loud.
+    seed: 720878617
+  Atori-Tutori:
+    gender: male
+    age: thirties
+    race: tarutaru
+    description: >-
+      A high, fretful, officious little voice; quick, fussy, prone to panic.
+    seed: 719789128
+  Makki-Chebukki:
+    gender: male
+    age: child
+    race: tarutaru
+    description: >-
+      A tiny, loud, cocky boy's voice; fast, boastful, squeaky.
+    seed: 1045446827
+  Verena:
+    gender: female
+    age: young adult
+    race: hume
+    description: >-
+      A gentle, soft, earnest young voice; shy, careful, sincere.
+    seed: 1048825936
+  Flit:
+    gender: female
+    age: young adult
+    race: hume
+    description: >-
+      A tiny, impish, chattering voice; high, fast, sly, giggling.
+    seed: 1122769278
+  Ghatsad:
+    gender: male
+    age: elderly
+    race: hume
+    description: >-
+      A hoarse, muttering old man's voice; slow, cracked, rambling.
+    seed: 567579029
+  Hades:
+    gender: male
+    race: deity
+    description: >-
+      A vast, hollow, ancient voice from beneath the earth; slow, dreadful,
+      echoing.
+    seed: 1877230476
+  Morimar:
+    gender: male
+    age: forties
+    race: hume
+    description: >-
+      A deep, grave, dignified voice; slow, formal, carrying authority.
+    seed: 759406607
+  Cavernous Maw:
+    gender: male
+    race: dark
+    description: >-
+      A huge, hollow, grinding voice from the earth; slow, deep, inhuman.
+    seed: 2062752487
+  Ajido-Marujido:
+    gender: male
+    age: young adult
+    race: tarutaru
+    description: >-
+      A high, quick, cocky young scholar's voice; brash, impatient, clever.
+    seed: 1502403480
+  Schultz:
+    gender: male
+    age: thirties
+    race: hume
+    description: >-
+      A plain, dutiful, slightly tired soldier's voice; even, polite,
+      matter-of-fact.
+    seed: 211101444
+  Naji:
+    gender: male
+    age: young adult
+    race: hume
+    description: >-
+      A loud, brash, eager young guard's voice; quick, boastful, warm-hearted.
+    seed: 2098385058
+  Stooge Moogle:
+    race: creature
+    description: >-
+      A squeaky, panicky, hapless moogle's voice; fast, flustered, kupo on every
+      line.
+    seed: 32713887
+  Iron Eater:
+    gender: male
+    age: thirties
+    race: galka
+    description: >-
+      A very deep, calm, honorable voice; slow, measured, thoughtful.
+    seed: 896086290
+  Kukki-Chebukki:
+    gender: male
+    age: child
+    race: tarutaru
+    description: >-
+      A tiny, gruff-for-a-child voice; blunt, short, grumbling.
+    seed: 428161411
+  Kam'lanaut:
+    gender: male
+    age: ageless
+    race: zilart
+    description: >-
+      A smooth, cultured, gracious voice with a British accent; warm on the
+      surface, cold beneath.
+    seed: 405749825
+  Cherukiki:
+    gender: female
+    age: teenager
+    race: tarutaru
+    description: >-
+      A high, sweet, chirpy girl's voice; bright, fast, a little bossy.
+    seed: 858744470
+  Ovjang:
+    gender: female
+    race: deity
+    description: >-
+      A small, chiming, mechanical voice; prim, quick, oddly cheerful.
+    seed: 409447742
+  Abquhbah:
+    gender: male
+    age: young adult
+    race: hume
+    description: >-
+      An eager, wide-eyed, clumsy young man's voice; fast, nervous, apologetic.
+    seed: 185206740
+  Cornelia:
+    gender: female
+    age: young adult
+    race: hume
+    description: >-
+      A bright, polite, earnest young woman's voice; clear, warm, hopeful.
+    seed: 2048513470
+  Gumbah:
+    gender: male
+    age: thirties
+    race: galka
+    description: >-
+      A deep, gentle, soft-spoken voice; slow, kind, thoughtful.
+    seed: 1557130960
+  Rishfee:
+    gender: male
+    age: forties
+    race: hume
+    description: >-
+      A brisk, nasal, bureaucratic clerk's voice; quick, fussy, exasperated.
+    seed: 440645395
+  Shikaree Z:
+    gender: female
+    age: forties
+    race: mithra
+    description: >-
+      A sharp, terse hunter's voice with a purring edge; quick, dry, suspicious.
+    seed: 521248563
+  Larzos:
+    gender: male
+    age: thirties
+    race: elvaan
+    description: >-
+      A smooth, oily, insinuating voice with a French accent; soft, mocking,
+      dangerous.
+    seed: 907237068
+  Chero-Machero:
+    gender: female
+    age: thirties
+    race: tarutaru
+    description: >-
+      A high, calm, kindly little voice; soft, unhurried, gently wry.
+    seed: 386622238
+  Haudrale:
+    gender: male
+    age: thirties
+    race: elvaan
+    description: >-
+      A measured, scholarly, courteous voice with a French accent; calm,
+      precise, kindly.
+    seed: 2004445944
+  Darcia:
+    gender: female
+    age: young adult
+    race: hume
+    description: >-
+      A sharp, dry, world-weary young woman's voice; clipped, sardonic, brisk.
+    seed: 1947336785
+  Rochefogne:
+    gender: male
+    age: thirties
+    race: elvaan
+    description: >-
+      A low, bitter, haunted voice with a French accent; slow, hoarse, grieving.
+    seed: 406659588
+  Monberaux:
+    gender: male
+    age: thirties
+    race: elvaan
+    description: >-
+      A soft, gentle, scholarly healer's voice with a French accent; calm, kind,
+      quiet.
+    seed: 395433888
+  Eald'narche:
+    gender: male
+    age: ageless
+    race: zilart
+    description: >-
+      A light, boyish, eerily calm voice with a British accent; precise,
+      mocking, ageless.
+    seed: 307769599
+  Despachiaire:
+    gender: male
+    age: elderly
+    race: elvaan
+    description: >-
+      A thin, weary, dignified old man's voice with a French accent; slow,
+      sorrowful, kind.
+    seed: 824291359
+  King of Hearts:
+    race: creature
+    description: >-
+      A tinny, courtly, mechanical cardian's voice; stiff, formal, faintly
+      comic.
+    seed: 1270939489
+  Fickblix:
+    gender: male
+    race: beastman
+    description: >-
+      A high, raspy, wheedling goblin's voice; fast, sly, cackling.
+    seed: 295065462
+  Tosuka-Porika:
+    gender: male
+    age: forties
+    race: tarutaru
+    description: >-
+      A high, pompous, bureaucratic little voice; precise, fussy, superior.
+    seed: 1784112433
+  Semih Lafihna:
+    gender: female
+    age: thirties
+    race: mithra
+    description: >-
+      A cool, firm, disciplined voice with a light purr; crisp, formal,
+      protective.
+    seed: 1996088940
+  Shadow Lord:
+    gender: male
+    race: dark
+    description: >-
+      A vast, deep, rumbling voice full of hate; slow, booming, echoing.
+    seed: 326040390
+    also: [The Shadow Lord]
+  Ayame:
+    gender: female
+    age: young adult
+    race: hume
+    description: >-
+      A clipped, stern, disciplined young warrior's voice; terse, proud, cool.
+    seed: 2001723471
+  Svenja:
+    gender: female
+    age: young adult
+    race: hume
+    description: >-
+      A sweet, gentle, quiet young voice; soft, patient, kind.
+    seed: 252546537
+  Travialce:
+    gender: male
+    age: thirties
+    race: elvaan
+    description: >-
+      A brisk, polished, diplomatic voice with a French accent; smooth, formal,
+      discreet.
+    seed: 1083956800
+  Yoran-Oran:
+    gender: male
+    age: elderly
+    race: tarutaru
+    description: >-
+      A high, kindly, doddering old scholar's voice; slow, rambling, warm.
+    seed: 1132472273
+  Raogrimm:
+    gender: male
+    age: forties
+    race: galka
+    description: >-
+      A deep, grave, noble warrior's voice; slow, heavy with sorrow, dignified.
+    seed: 1407938467
+  Apururu:
+    gender: female
+    age: forties
+    race: tarutaru
+    description: >-
+      A high, gentle, motherly little voice; soft, patient, caring.
+    seed: 38521827
+  Melvien:
+    gender: male
+    age: forties
+    race: elvaan
+    description: >-
+      A dry, sharp, ministerial voice with a French accent; quick, clipped,
+      scheming.
+    seed: 848321167
+  Vestillet:
+    gender: male
+    age: forties
+    race: elvaan
+    description: >-
+      A smooth, cautious, courtly voice with a French accent; measured, polite,
+      guarded.
+    seed: 886804811
+  Mnejing:
+    gender: male
+    race: deity
+    description: >-
+      A small, clicking, mechanical voice; gruff, terse, dutiful.
+    seed: 407247542
+  Yve'noile:
+    gender: female
+    age: ageless
+    race: zilart
+    description: >-
+      A soft, warm, ethereal voice with a British accent; slow, gentle,
+      sorrowful.
+    seed: 513584115
+  Brenton:
+    gender: male
+    age: forties
+    race: hume
+    description: >-
+      A hearty, loud, rough-edged pioneer's voice; boisterous, warm, impatient.
+    seed: 1934187341
+  Chasalvige:
+    gender: male
+    age: elderly
+    race: elvaan
+    description: >-
+      A frail, kindly, scholarly old voice with a French accent; soft, slow,
+      thoughtful.
+    seed: 1870291845
+  Rahal:
+    gender: male
+    age: thirties
+    race: elvaan
+    description: >-
+      A firm, formal, dutiful knight-captain's voice with a French accent;
+      crisp, stern, fair.
+    seed: 613278936
+  Duke Alloces:
+    gender: male
+    race: dark
+    description: >-
+      A sly, cultured, mocking demon's voice; smooth, slow, contemptuous.
+    seed: 1633055157
+  Selh'teus:
+    gender: male
+    age: ageless
+    race: zilart
+    description: >-
+      A light, calm, luminous young voice with a British accent; serene, gentle,
+      distant.
+    seed: 1316506156
+  Amnaf:
+    gender: female
+    age: teenager
+    race: hume
+    description: >-
+      A small, shy, soft girl's voice; hesitant, sweet, easily frightened.
+    seed: 1916422854
+  Aquila:
+    gender: male
+    age: thirties
+    race: hume
+    description: >-
+      A gruff, brusque, world-weary voice; low, terse, grumbling.
+    seed: 183562624
+  Lhe Lhangavo:
+    gender: female
+    age: forties
+    race: mithra
+    description: >-
+      A warm, patient, purring voice; slow, motherly, wise.
+    seed: 758751115
+  Talking Doll:
+    race: creature
+    description: >-
+      A tinny, sing-song, mechanical doll's voice; flat, chirpy, slightly
+      unsettling.
+    seed: 488325822
+  Lucius:
+    gender: male
+    age: thirties
+    race: hume
+    description: >-
+      A smooth, unctuous, scheming voice; soft, polite, untrustworthy.
+    seed: 1577422924
+  Mildaurion:
+    gender: female
+    age: forties
+    race: elvaan
+    description: >-
+      A cold, precise, commanding knight's voice with a French accent; clipped,
+      proud, severe.
+    seed: 1726957593
+  Curilla:
+    gender: female
+    age: thirties
+    race: elvaan
+    description: >-
+      A calm, noble, disciplined knight's voice with a French accent; low,
+      steady, courteous.
+    seed: 1447901152
+  Ploh Trishbahk:
+    gender: female
+    age: forties
+    race: mithra
+    description: >-
+      A brisk, sharp, no-nonsense voice with a purring edge; quick, dry,
+      efficient.
+    seed: 1638489275
+  Grohm:
+    gender: male
+    age: forties
+    race: galka
+    description: >-
+      A deep, gruff, sullen voice; slow, short, resentful.
+    seed: 942427973
+  Raubahn:
+    gender: male
+    age: thirties
+    race: hume
+    description: >-
+      A deep, hard, menacing voice; slow, gravelly, threatening.
+    seed: 1979181102
+  Zonpa-Zippa:
+    gender: male
+    age: elderly
+    race: tarutaru
+    description: >-
+      A high, cracked, manic old inventor's voice; fast, cackling, eccentric.
+    seed: 630731585
+  Hinaree:
+    gender: female
+    age: child
+    race: mithra
+    description: >-
+      A tiny, bright, chirping girl's voice; quick, innocent, curious.
+    seed: 1773186085
+  Muckvix:
+    gender: male
+    race: beastman
+    description: >-
+      A rasping, grumbling goblin's voice; sly, impatient, cackling.
+    seed: 370215278
+  Shamonde:
+    gender: male
+    age: thirties
+    race: elvaan
+    description: >-
+      A smooth, courtly, cautious archduke's voice; measured, polite, political.
+    seed: 1361244346
+  Tiana:
+    gender: female
+    age: young adult
+    race: hume
+    description: >-
+      A sweet, soft, slightly sad young voice; gentle, hesitant, wistful.
+    seed: 988916994
+  Patt-Pott:
+    gender: male
+    age: thirties
+    race: tarutaru
+    description: >-
+      A high, quick, jittery little voice; fast, anxious, excitable.
+    seed: 62191608
+  Chalvava:
+    gender: female
+    age: young adult
+    race: tarutaru
+    description: >-
+      A high, warm, sing-song little voice; chatty, teasing, kind.
+    seed: 279455911
+  Cousseraux:
+    gender: male
+    age: forties
+    race: elvaan
+    description: >-
+      A rough, blunt, grizzled soldier's voice with a French accent; gruff,
+      terse, loud.
+    seed: 1656418781
+  Vortimere:
+    gender: male
+    age: forties
+    race: elvaan
+    description: >-
+      A stiff, formal, stern commander's voice with a French accent; clipped,
+      cold, precise.
+    seed: 237825487
+  Dazbog:
+    gender: male
+    race: beastman
+    description: >-
+      A rough, rasping, guttural beastman's voice; harsh, sly, inhuman.
+    seed: 462864662
+  Gratzigg:
+    gender: male
+    age: thirties
+    race: galka
+    description: >-
+      A very deep, slow, rumbling voice; plain-spoken, patient, steady.
+    seed: 1194835484
+  Justinius:
+    gender: male
+    age: forties
+    race: hume
+    description: >-
+      A calm, gentle, devout voice; soft, slow, reassuring.
+    seed: 340715077
+  Robel-Akbel:
+    gender: male
+    age: forties
+    race: tarutaru
+    description: >-
+      A high, grave, measured scholar's voice; slow, dignified, careful.
+    seed: 2101813867
+  Zazarg:
+    gender: male
+    age: forties
+    race: galka
+    description: >-
+      A deep, hearty, booming mercenary's voice; loud, jovial, blunt.
+    seed: 1012200731
+  Ikhi Askamot:
+    gender: female
+    age: forties
+    race: mithra
+    description: >-
+      A sharp, terse voice with a purring edge; quick, dry, watchful.
+    seed: 1346928011
+  Vukki-Chebukki:
+    gender: male
+    age: child
+    race: tarutaru
+    description: >-
+      A tiny, timid, sniffly boy's voice; soft, hesitant, whiny.
+    seed: 854277431
+  Noillurie:
+    gender: female
+    age: thirties
+    race: elvaan
+    description: >-
+      A warm, bright, cheerful knight's voice with a French accent; quick,
+      friendly, brave.
+    seed: 562036170
+  Ulrich:
+    gender: male
+    age: thirties
+    race: hume
+    description: >-
+      A stiff, dutiful, slightly pompous officer's voice; formal, even,
+      self-important.
+    seed: 45948076
+  Andreine:
+    gender: female
+    age: forties
+    race: elvaan
+    description: >-
+      A low, firm voice with a French accent; stern, disciplined, fair.
+    seed: 1608322235
+  Francmage:
+    gender: male
+    age: thirties
+    race: elvaan
+    description: >-
+      A stern, formal, bureaucratic voice with a French accent; dry, clipped,
+      officious.
+    seed: 2134852682
+  Nadeey:
+    gender: male
+    age: forties
+    race: hume
+    description: >-
+      A warm, slightly husky voice; easygoing, chatty, friendly.
+    seed: 436544537
+  Abda-Lurabda:
+    gender: male
+    age: forties
+    race: tarutaru
+    description: >-
+      A high, squeaky, nervous little voice; fast, flustered, earnest.
+    seed: 1566806771
+  Megomak:
+    race: creature
+    description: >-
+      A high, scratchy, chattering qiqirn's voice; fast, nervous, greedy.
+    seed: 827935950
+  Ambrotien:
+    gender: male
+    age: forties
+    race: elvaan
+    description: >-
+      A soft, measured voice with a French accent; calm, scholarly, polite.
+    seed: 446470531
+  Eideialc:
+    gender: female
+    age: forties
+    race: elvaan
+    description: >-
+      A bright, quick voice with a French accent; spirited, warm, confident.
+    seed: 635970929
+  Endracion:
+    gender: male
+    age: forties
+    race: elvaan
+    description: >-
+      A dry, cultured voice with a French accent; quick, clipped, ironic.
+    seed: 1487241193
+  Grilau:
+    gender: female
+    age: thirties
+    race: elvaan
+    description: >-
+      A cool, elegant voice with a French accent; precise, reserved, courteous.
+    seed: 1622850296
+  Margret:
+    gender: female
+    age: thirties
+    race: hume
+    description: >-
+      A bright, quick, talkative voice; animated, curious, cheerful.
+    seed: 2026003710
+  Amchuchu:
+    gender: female
+    age: thirties
+    race: tarutaru
+    description: >-
+      A high, sweet, chirpy little voice; quick, bright, cheerful.
+    seed: 1711994724
+  Fenrir:
+    gender: male
+    race: deity
+    description: >-
+      A deep, cold, lupine voice; slow, growling, proud, lonely.
+    seed: 1740873181
+  Palometa:
+    gender: female
+    age: thirties
+    race: hume
+    description: >-
+      A bright, quick, talkative voice; animated, curious, cheerful.
+    seed: 838855958
+  Portentous Woman:
+    gender: female
+    race: dark
+    description: >-
+      A low, hushed, ominous woman's voice; slow, cryptic, chilling.
+    seed: 738751356
+  Riko Kupenreich:
+    race: creature
+    description: >-
+      A smooth, suave, businesslike moogle's voice; confident, slick, kupo with
+      a wink.
+    seed: 866117145
+  Carbuncle:
+    race: creature
+    description: >-
+      A small, bright, gentle creature's voice; soft, calm, kindly, chiming.
+    seed: 130793005
+  Amaura:
+    gender: female
+    age: forties
+    race: hume
+    description: >-
+      A warm, low, unhurried voice; kind, patient, dry.
+    seed: 1920894105
+  Pollimio:
+    gender: male
+    age: thirties
+    race: hume
+    description: >-
+      A plain, steady, mid-pitched voice; even, direct, unremarkable.
+    seed: 1095794724
+  Bahamut:
+    gender: male
+    race: deity
+    description: >-
+      A colossal, roaring, draconic voice; slow, thunderous, contemptuous of
+      mortals.
+    seed: 1871620048
+  Brandolf:
+    gender: male
+    age: thirties
+    race: hume
+    description: >-
+      A sharp, nasal, quick voice; impatient, brisk, businesslike.
+    seed: 1355971438
+  Fhu Madihmin:
+    gender: female
+    age: forties
+    race: mithra
+    description: >-
+      A sharp, terse voice with a purring edge; quick, dry, watchful.
+    seed: 929107971
+  Shikaree Y:
+    gender: female
+    age: forties
+    race: mithra
+    description: >-
+      A quick, light, curious hunter's voice with a purr; chatty, keen.
+    seed: 1654772903
+  Kipligg:
+    gender: male
+    age: thirties
+    race: hume
+    description: >-
+      A plain, steady, mid-pitched voice; even, direct, unremarkable.
+    seed: 1669353412
+  Magh Bihu:
+    gender: male
+    age: thirties
+    race: hume
+    description: >-
+      A sharp, nasal, quick voice; impatient, brisk, businesslike.
+    seed: 695643214
+  Pherimociel:
+    gender: male
+    age: forties
+    race: elvaan
+    description: >-
+      A soft, measured voice with a French accent; calm, scholarly, polite.
+    seed: 1326073743
+  Gulool Ja Ja:
+    gender: male
+    race: beastman
+    description: >-
+      A deep, croaking, reptilian voice; slow, guttural, imperious.
+    seed: 1886847902
+  Honoi-Gomoi:
+    gender: male
+    age: forties
+    race: tarutaru
+    description: >-
+      A high, squeaky, nervous little voice; fast, flustered, earnest.
+    seed: 343884019
+  Shikaree X:
+    gender: female
+    age: forties
+    race: mithra
+    description: >-
+      A low, slow, laconic hunter's voice with a dry purr; few words.
+    seed: 1586551223
+  Helaku:
+    gender: male
+    age: thirties
+    race: hume
+    description: >-
+      A sharp, nasal, quick voice; impatient, brisk, businesslike.
+    seed: 2029490422
+  Savae E Paleade:
+    gender: female
+    age: thirties
+    race: elvaan
+    description: >-
+      A cool, elegant voice with a French accent; precise, reserved, courteous.
+    seed: 509469012
+  Kupatete:
+    race: creature
+    description: >-
+      A dreamy, sing-song moogle's voice; soft, wandering, kupo trailing off.
+    seed: 736294015
+  Kupert:
+    race: creature
+    description: >-
+      A bright, dutiful moogle's voice; quick, polite, kupo at the end.
+    seed: 714304173
+  Kupignol:
+    race: creature
+    description: >-
+      A grumpy, nasal moogle's voice; slow, put-upon, kupo with a sigh.
+    seed: 988434030
+  Kupuckl:
+    race: creature
+    description: >-
+      A gruff, brisk moogle's voice; short, businesslike, kupo clipped.
+    seed: 2090845418
+  Toto Kupeliaure:
+    race: creature
+    description: >-
+      A pompous, drawling moogle's voice; slow, grand, kupo with ceremony.
+    seed: 1516598015
+  Wawaroon:
+    race: creature
+    description: >-
+      A high, rasping, excitable qiqirn's voice; fast, scheming, chattering.
+    seed: 731003631
+  Pyopyoroon:
+    race: creature
+    description: >-
+      A high, timid, squeaking qiqirn's voice; fast, jumpy, apologetic.
+    seed: 822698775
+  Meransarget:
+    gender: male
+    age: thirties
+    race: elvaan
+    description: >-
+      A hearty, rough voice with a French accent; loud, blunt, good-natured.
+    seed: 1226452790
+  Perih Vashai:
+    gender: female
+    age: elderly
+    race: mithra
+    description: >-
+      A dry, husky, aged huntress's voice with a faint purr; slow, wry,
+      commanding.
+    seed: 371732595
+  Alois:
+    gender: male
+    age: thirties
+    race: hume
+    description: >-
+      A plain, steady, mid-pitched voice; even, direct, unremarkable.
+    seed: 1739978404
+  Kasaroro:
+    gender: female
+    age: forties
+    race: tarutaru
+    description: >-
+      A high, warm, sing-song little voice; chatty, teasing, kind.
+    seed: 603278215
+  Laila:
+    gender: female
+    age: forties
+    race: hume
+    description: >-
+      A warm, low, unhurried voice; kind, patient, dry.
+    seed: 1123538145
+  Goblin Repossessor:
+    gender: male
+    race: beastman
+    description: >-
+      A deep, growling, brutish beastman's voice; slow, heavy, menacing.
+    seed: 609108477
+  Andrause:
+    gender: male
+    age: forties
+    race: elvaan
+    description: >-
+      A soft, measured voice with a French accent; calm, scholarly, polite.
+    seed: 1112625527
+  Moreno-Toeno:
+    gender: male
+    age: forties
+    race: tarutaru
+    description: >-
+      A high, squeaky, nervous little voice; fast, flustered, earnest.
+    seed: 821595439
+  Chekochuk:
+    gender: male
+    age: thirties
+    race: tarutaru
+    description: >-
+      A high, slow, thoughtful little voice; calm, studious, kindly.
+    seed: 163649218
+  Goblin Grenadier:
+    gender: male
+    race: beastman
+    description: >-
+      A rough, rasping, guttural beastman's voice; harsh, sly, inhuman.
+    seed: 802801554
+  Mawl'gofaur:
+    gender: male
+    race: beastman
+    description: >-
+      A deep, growling, brutish beastman's voice; slow, heavy, menacing.
+    seed: 856026801
+  Werei:
+    gender: male
+    age: thirties
+    race: galka
+    description: >-
+      A deep, hoarse, haunted voice; slow, heavy, mournful.
+    seed: 2027695038
+  Hani:
+    gender: male
+    age: forties
+    race: hume
+    description: >-
+      A low, quiet, careful voice; slow, thoughtful, reserved.
+    seed: 921388699
+  Maryoh Comyujah:
+    gender: female
+    age: thirties
+    race: mithra
+    description: >-
+      A warm, patient voice with a soft purr; slow, kind, wise.
+    seed: 1914962490
+  Nelcabrit:
+    gender: male
+    age: forties
+    race: elvaan
+    description: >-
+      A dry, cultured voice with a French accent; quick, clipped, ironic.
+    seed: 80095545
+  Prien:
+    gender: male
+    age: thirties
+    race: hume
+    description: >-
+      A sharp, nasal, quick voice; impatient, brisk, businesslike.
+    seed: 242033098
+  Tanja:
+    gender: female
+    age: forties
+    race: hume
+    description: >-
+      A warm, low, unhurried voice; kind, patient, dry.
+    seed: 408747289
 
 pools:
-  hume_m:
-    - age: thirties
-      description: "A plain, friendly, mid-pitched voice with a neutral American accent; easygoing and direct."
-    - age: fifties
-      description: "A gravelly, tired, working man's voice with a northern English accent; blunt, unhurried."
-    - age: twenties
-      description: "A quick, eager, slightly nasal voice with an American accent; chatty and bright."
-    - age: forties
-      description: "A steady, deep, confident merchant's voice with a Mediterranean accent; warm and persuasive."
-  hume_f:
-    - age: thirties
-      description: "A warm, clear, practical voice with a neutral American accent; friendly and brisk."
-    - age: fifties
-      description: "A rich, motherly, slightly husky voice with a Scottish accent; kind but firm."
-    - age: twenties
-      description: "A bright, quick, cheerful voice with an American accent; animated and curious."
-    - age: forties
-      description: "A cool, low, poised voice with a Spanish accent; measured and wry."
-  elvaan_m:
-    - age: thirties
-      description: "A noble, resonant, precise voice with a formal British accent; proud and courteous."
-    - age: fifties
-      description: "A deep, stern, commanding knight's voice with a received-pronunciation accent; slow and grave."
-    - age: twenties
-      description: "A clear, earnest, slightly haughty voice with a refined French accent; quick and sincere."
-    - age: forties
-      description: "A smooth, cultured, reserved voice with a British accent; dry and deliberate."
-  elvaan_f:
-    - age: thirties
-      description: "A cool, elegant, precise voice with a formal British accent; reserved and dignified."
-    - age: twenties
-      description: "A clear, bright, earnest voice with a light French accent; courteous and warm."
-    - age: fifties
-      description: "A low, stern, aristocratic voice with a received-pronunciation accent; slow and exacting."
-    - age: thirties
-      description: "A soft, melodic, devout voice with a British accent; gentle and serene."
-  taru_m:
-    - description: "A small, high, bouncy child-like voice; quick, cheerful and talkative."
-    - description: "A high, squeaky, fussy scholar's voice; rapid, precise, self-important."
-    - description: "A small, light, mischievous voice; playful, sing-song, quick to giggle."
-    - description: "A high but calm and wise little voice; gentle, slow, kindly."
-  taru_f:
-    - description: "A tiny, high, sweet voice; bubbly, quick and cheerful."
-    - description: "A high, sharp, bossy little voice; fast, imperious, easily annoyed."
-    - description: "A small, soft, dreamy voice; slow, airy, a little absent-minded."
-    - description: "A high, bright, sing-song voice; chatty, warm and teasing."
-  mithra:
-    - age: twenties
-      description: "A lively, sly, purring voice with a playful drawl; quick and teasing."
-    - age: thirties
-      description: "A husky, confident huntress's voice; low, direct, cool."
-    - age: young
-      description: "A bright, energetic, slightly cheeky voice; fast and bouncy."
-    - age: forties
-      description: "A smoky, worldly, mercenary voice; slow, amused, a little dangerous."
-  galka:
-    - age: mature
-      description: "A very deep, slow, rumbling voice; plain-spoken, patient and steady."
-    - age: older
-      description: "A deep, gravelly, tired miner's voice; gruff and laconic."
-    - age: young adult
-      description: "A deep, booming, good-natured voice; loud and hearty."
-    - age: mature
-      description: "A deep, quiet, thoughtful voice; soft-spoken and grave."
-  old_m:
-    - age: elderly
-      description: "A thin, creaky, kindly old man's voice; slow and rambling."
-  old_elvaan_m:
-    - age: elderly
-      description: "A dry, dignified, aristocratic old man's voice with a British accent; slow and precise."
-  boy:
+  hume_m_child:
     - age: child
       description: "A young boy's bright, eager voice; quick, excited, a little breathless."
+    - age: child
+      description: "A small boy's shy, soft voice; hesitant, mumbling, sweet."
+  hume_m_teen:
+    - age: teenager
+      description: "A cracking, gangly teenage boy's voice; quick, cocky, uneven."
+    - age: late teens
+      description: "A quiet, sullen teenage boy's voice; low for his age, short, moody."
+  hume_m_young:
+    - age: young adult
+      description: "A quick, eager, slightly nasal voice with an American accent; chatty and bright."
+    - age: twenties
+      description: "A light, easy, good-humoured young man's voice; relaxed, friendly, unhurried."
+  hume_m_adult:
+    - age: thirties
+      description: "A plain, friendly, mid-pitched voice with a neutral American accent; easygoing and direct."
+    - age: forties
+      description: "A steady, deep, confident merchant's voice with a Mediterranean accent; warm and persuasive."
+  hume_m_elder:
+    - age: elderly
+      description: "A thin, creaky, kindly old man's voice; slow and rambling."
+    - age: older
+      description: "A gravelly, tired, working man's voice with a northern English accent; blunt, unhurried."
+  hume_f_child:
+    - age: child
+      description: "A small girl's bright, piping voice; quick, curious, giggly."
+    - age: child
+      description: "A little girl's soft, shy voice; quiet, careful, sweet."
+  hume_f_teen:
+    - age: teenager
+      description: "A bright, quick, slightly sulky teenage girl's voice; animated, impatient."
+    - age: late teens
+      description: "A soft, earnest teenage girl's voice; gentle, hesitant, hopeful."
+  hume_f_young:
+    - age: young adult
+      description: "A bright, quick, cheerful voice with an American accent; animated and curious."
+    - age: twenties
+      description: "A clear, calm, pleasant young woman's voice; even, polite, friendly."
+  hume_f_adult:
+    - age: thirties
+      description: "A warm, clear, practical voice with a neutral American accent; friendly and brisk."
+    - age: forties
+      description: "A cool, low, poised voice with a Spanish accent; measured and wry."
+  hume_f_elder:
+    - age: elderly
+      description: "A rich, motherly, slightly husky voice with a Scottish accent; kind but firm."
+    - age: older
+      description: "A thin, quavering, sweet old woman's voice; slow, gentle, a little forgetful."
+  elvaan_m_child:
+    - age: child
+      description: "A well-spoken little boy's voice with a light French accent; bright, polite, eager."
+    - age: child
+      description: "A quiet, serious little boy's voice with a French accent; soft, careful, formal."
+  elvaan_m_teen:
+    - age: teenager
+      description: "A haughty, cracking teenage boy's voice with a French accent; quick, proud, impatient."
+    - age: late teens
+      description: "An earnest, soft teenage boy's voice with a French accent; polite, hesitant, sincere."
+  elvaan_m_young:
+    - age: young adult
+      description: "A clear, earnest, overly flirty, slightly haughty, too sincere."
+    - age: twenties
+      description: "A bright, brisk, confident young knight's voice with a French accent; quick, proud, cheerful."
+  elvaan_m_adult:
+    - age: thirties
+      description: "A noble, resonant, precise voice with a formal British accent; proud and courteous."
+    - age: forties
+      description: "A smooth, cultured, reserved voice with a British accent; dry and deliberate."
+  elvaan_m_elder:
+    - age: elderly
+      description: "A dry, dignified, aristocratic old man's voice with a British accent; slow and precise."
+    - age: older
+      description: "A deep, stern, commanding old knight's voice with a received-pronunciation accent; slow and grave."
+  elvaan_f_child:
+    - age: child
+      description: "A prim little girl's voice with a light French accent; clear, polite, curious."
+    - age: child
+      description: "A soft, dreamy little girl's voice with a French accent; quiet, sweet, slow."
+  elvaan_f_teen:
+    - age: teenager
+      description: "A bright, proud teenage girl's voice with a French accent; quick, spirited, a little sharp."
+    - age: late teens
+      description: "A gentle, devout teenage girl's voice with a French accent; soft, serene, earnest."
+  elvaan_f_young:
+    - age: young adult
+      description: "A clear, bright, earnest voice with a light French accent; courteous and warm."
+    - age: twenties
+      description: "A cool, quick, confident young woman's voice with a French accent; crisp, poised, dry."
+  elvaan_f_adult:
+    - age: thirties
+      description: "A cool, elegant, precise voice with a formal British accent; reserved and dignified."
+    - age: forties
+      description: "A soft, melodic, devout voice with a British accent; gentle and serene."
+  elvaan_f_elder:
+    - age: elderly
+      description: "A low, stern, aristocratic voice with a received-pronunciation accent; slow and exacting."
+    - age: older
+      description: "A warm, worn, kindly old woman's voice with a French accent; slow, gentle, wise."
+  taru_m_child:
+    - age: child
+      description: "A tiny, squeaky, bouncing little boy's voice; fast, loud, delighted."
+    - age: child
+      description: "A tiny, shy, whispery little boy's voice; soft, halting, sweet."
+  taru_m_teen:
+    - age: teenager
+      description: "A high, cocky, fast young voice; boastful, quick, sing-song."
+    - age: late teens
+      description: "A high, anxious, studious young voice; quick, precise, fretful."
+  taru_m_young:
+    - age: young adult
+      description: "A small, high, bouncy child-like voice; quick, cheerful and talkative."
+    - age: twenties
+      description: "A small, light, mischievous voice; playful, sing-song, quick to giggle."
+  taru_m_adult:
+    - age: thirties
+      description: "A high, squeaky, fussy scholar's voice; rapid, precise, self-important."
+    - age: forties
+      description: "A high, even, friendly little voice; brisk, practical, good-natured."
+  taru_m_elder:
+    - age: elderly
+      description: "A high but calm and wise little voice; gentle, slow, kindly."
+    - age: older
+      description: "A high, cracked, grumbling old voice; slow, muttering, crotchety."
+  taru_f_child:
+    - age: child
+      description: "A tiny, piping, giggly little girl's voice; fast, bright, excitable."
+    - age: child
+      description: "A tiny, soft, lisping little girl's voice; slow, shy, sweet."
+  taru_f_teen:
+    - age: teenager
+      description: "A high, chirpy, bossy young voice; quick, bright, a little sharp."
+    - age: late teens
+      description: "A high, soft, dreamy young voice; slow, airy, wondering."
+  taru_f_young:
+    - age: young adult
+      description: "A tiny, high, sweet voice; bubbly, quick and cheerful."
+    - age: twenties
+      description: "A high, bright, sing-song voice; chatty, warm and teasing."
+  taru_f_adult:
+    - age: thirties
+      description: "A high, sharp, bossy little voice; fast, imperious, easily annoyed."
+    - age: forties
+      description: "A small, soft, dreamy voice; slow, airy, a little absent-minded."
+  taru_f_elder:
+    - age: elderly
+      description: "A high, thin, serene old voice; slow, gentle, knowing."
+    - age: older
+      description: "A high, brisk, scolding old voice; quick, sharp, fond underneath."
+  mithra_f_child:
+    - age: child
+      description: "A tiny, chirping, playful kitten's voice; quick, curious, purring."
+    - age: child
+      description: "A small, soft, shy girl's voice with a light purr; hesitant, sweet."
+  mithra_f_teen:
+    - age: teenager
+      description: "A bright, energetic, slightly cheeky voice; fast and bouncy."
+    - age: late teens
+      description: "A cool, drawling, bored teenage voice with a purr; slow, dry, sly."
+  mithra_f_young:
+    - age: young adult
+      description: "A lively, sly, purring voice with a playful drawl; quick and teasing."
+    - age: twenties
+      description: "A light, quick, friendly young huntress's voice with a purr; eager, warm."
+  mithra_f_adult:
+    - age: thirties
+      description: "A husky, confident huntress's voice; low, direct, cool."
+    - age: forties
+      description: "A smoky, worldly, mercenary voice; slow, amused, a little dangerous."
+  mithra_f_elder:
+    - age: elderly
+      description: "A dry, husky, aged voice with a faint purr; slow, wry, commanding."
+    - age: older
+      description: "A warm, worn, motherly voice with a soft purr; slow, patient, kind."
+  galka_m_child:
+    - age: child
+      description: "A young galka's voice, deeper than any child's; slow, shy, gentle."
+    - age: child
+      description: "A young galka's eager, rumbling voice; quick for a galka, excited, loud."
+  galka_m_teen:
+    - age: teenager
+      description: "A deep, uneven, awkward young voice; slow, gruff, unsure."
+    - age: late teens
+      description: "A deep, loud, boisterous young voice; hearty, blunt, cheerful."
+  galka_m_young:
+    - age: young adult
+      description: "A deep, booming, good-natured voice; loud and hearty."
+    - age: twenties
+      description: "A deep, quiet, earnest young voice; slow, soft-spoken, sincere."
+  galka_m_adult:
+    - age: thirties
+      description: "A very deep, slow, rumbling voice; plain-spoken, patient and steady."
+    - age: forties
+      description: "A deep, quiet, thoughtful voice; soft-spoken and grave."
+  galka_m_elder:
+    - age: elderly
+      description: "A deep, gravelly, tired miner's voice; gruff and laconic."
+    - age: older
+      description: "A deep, worn, kindly old voice; slow, heavy, warm."
   zilart_m:
     - age: ageless
       description: "A cold, smooth, aristocratic voice with a clipped British accent; precise and disdainful."
@@ -276,6 +1530,10 @@ pools:
     - description: "A cool, crystalline, regal elemental voice; clear, aloof, commanding."
   small:
     - description: "A tiny, squeaky, fluffy creature's voice; high, quick, earnest and a little silly."
+    - description: "A tiny, scratchy, chattering creature's voice; fast, nervous, greedy."
+  beast:
+    - description: "A rough, rasping, guttural beastman's voice; harsh, sly, inhuman."
+    - description: "A deep, growling, brutish beastman's voice; slow, heavy, menacing."
   dark:
     - description: "A deep, hollow, hateful voice from the dark; slow, cold, echoing."
   dark_f:

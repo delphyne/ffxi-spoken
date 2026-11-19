@@ -5,11 +5,12 @@ A design is what Qwen3-TTS VoiceDesign turns into a reference clip
 the voice. Each design has a voice name, which is also its clip's file name:
 
     cast voice   the character's name as a slug: "Cait Sith" -> cait-sith
-    pool voice   the group and its index: hume_m-0, hume_m-1, ...
+    pool voice   the group and its index: hume_m_adult-0, hume_m_adult-1
 
 A design is meta plus a description. The meta is gender, age, and race: a
 cast voice carries all three; a pool voice takes gender and race from its
-casting group and carries its own age. The description is everything else
+casting group (casting.py: race, sex, and age band) and an age of its own,
+by default the band's. The description is everything else
 (timbre, accent, pace, manner). `compose` builds the string Qwen is given:
 
     Gender: female. Age: young adult. <the race's phrase> <description>
@@ -26,25 +27,22 @@ back keeping the comment block that opens it.
 
 import json
 import re
+import sys
 import textwrap
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import casting  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_PATH = HERE / "voice_designs.yaml"
 
 # casting group -> (race, gender): a pool voice's meta, and a speaker's when
 # they have no design of their own (via cast.py's CAST or the census race)
-GROUP_INFO = {
-    "hume_m": ("hume", "male"), "hume_f": ("hume", "female"), "old_m": ("hume", "male"),
-    "boy": ("hume", "male"), "elvaan_m": ("elvaan", "male"), "elvaan_f": ("elvaan", "female"),
-    "old_elvaan_m": ("elvaan", "male"), "taru_m": ("tarutaru", "male"), "taru_f": ("tarutaru", "female"),
-    "mithra": ("mithra", "female"), "galka": ("galka", "male"), "zilart_m": ("zilart", "male"),
-    "zilart_f": ("zilart", "female"), "deity_m": ("deity", "male"), "deity_f": ("deity", "female"),
-    "small": ("creature", "unknown"), "dark": ("dark", "male"), "dark_f": ("dark", "female"),
-    "cait": ("cait sith", "female"), "narrator": ("narrator", "male"),
-}
+# group -> (race, gender): the band groups and the special ones, from casting.py
+GROUP_INFO = {g: casting.group_info(g)[:2] for g in casting.POOLS}
 GENDERS = ("female", "male", "unknown")
-AGES = ("child", "young", "late teens", "young adult", "twenties", "thirties", "forties", "fifties",
+AGES = ("child", "young", "teenager", "late teens", "young adult", "twenties", "adult", "thirties", "forties", "fifties",
         "middle-aged", "mature", "older", "elderly", "ageless")
 CAST_KEYS = {"gender", "age", "race", "description", "seed", "also"}
 POOL_KEYS = {"age", "description", "seed"}
@@ -52,6 +50,19 @@ POOL_KEYS = {"age", "description", "seed"}
 
 def race_gender(group):
     return GROUP_INFO.get(group, ("unknown", "unknown"))
+
+
+def band_age(group):
+    """The age word a pool voice of `group` composes with when its entry
+    gives none: the band's, or nothing for a special group."""
+    band = casting.group_info(group)[2]
+    return casting.BAND_AGES.get(band, "")
+
+
+def pool_label(group, index, count):
+    """"hume male young adult 1 of 2": what a pool voice is called where
+    people read it; its name (hume_m_young-0) is for files."""
+    return f"{casting.group_label(group)} {index + 1} of {count}"
 
 
 def voice_slug(name):
@@ -132,7 +143,8 @@ class Designs:
                                      f"{', '.join(sorted(extra))}")
                 voice = pool_voice(group, i)
                 self._add(voice, f"pool {group!r} voice {i}", kind="pool", group=group, gender=gender,
-                          age=e.get("age"), race=race, description=e.get("description"), seed=e.get("seed", 1))
+                          age=e.get("age") or band_age(group), race=race, description=e.get("description"),
+                          seed=e.get("seed", 1))
                 self.pools[group].append(voice)
         if groups is not None:
             missing = sorted(set(groups) - set(self.pools))
@@ -176,18 +188,20 @@ class Designs:
 
     # -- the string Qwen is given ------------------------------------------
 
-    def compose(self, voice=None, **design):
+    def compose(self, voice=None, races=None, **design):
         """Qwen's instruction for a voice, or for a design not saved yet
-        (gender, age, race, description as keywords)."""
+        (gender, age, race, description as keywords). `races` tries other
+        phrases than the saved ones."""
         d = dict(self.voices[voice]) if voice else {}
         d.update({k: v for k, v in design.items() if v is not None})
+        races = self.races if races is None else races
         parts = []
         gender, age = tidy(d.get("gender")), tidy(d.get("age"))
         if gender and gender != "unknown":
             parts.append(f"Gender: {gender}.")
         if age:
             parts.append(f"Age: {age}.")
-        phrase = self.races.get(tidy(d.get("race")), "")
+        phrase = races.get(tidy(d.get("race")), "")
         if phrase:
             parts.append(phrase)
         parts.append(tidy(d.get("description")))
@@ -204,6 +218,14 @@ class Designs:
         new = self._check(voice, v["gender"] if gender is None else gender, v["age"] if age is None else age,
                           v["race"] if race is None else race, description, seed)
         v.update(new)
+
+    def update_race(self, race, phrase):
+        """A new phrase for a race the races section lists; blank for none.
+        Every voice of that race composes differently afterwards."""
+        if race not in self.races:
+            raise ValueError(f"{self.source}: race {race!r} is not in the races section "
+                             f"({', '.join(sorted(self.races))})")
+        self.races[race] = tidy(phrase)
 
     def add_cast(self, name, description, seed=1, gender=None, age=None, race=None):
         """Give `name` a voice of their own; returns the new voice name."""

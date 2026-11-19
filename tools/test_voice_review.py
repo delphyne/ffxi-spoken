@@ -42,7 +42,7 @@ cast:
 
 pools:
 """ + "".join(f"  {g}:\n    - age: thirties\n      description: \"{g} voice\"\n"
-              + ("    - \"second hume\"\n" if g == "hume_m" else "") for g in casting.POOLS)
+              + ("    - \"second hume\"\n" if g == "hume_m_adult" else "") for g in casting.POOLS)
 
 
 class FakeEngine:
@@ -90,19 +90,39 @@ class SessionTest(unittest.TestCase):
         iroha = self.ses.row("speaker:Iroha")
         self.assertEqual((iroha["voice"], iroha["kind"], iroha["race"], iroha["gender"], iroha["age"], iroha["lines"]),
                          ("iroha", "own voice", "hume", "female", "young adult", 300))
+        self.assertEqual((iroha["via"], iroha["parent"]), ("own", "race:hume"))
         numi = self.ses.row("speaker:Numi Adaligo")   # census race 7: a mithra pool voice
-        self.assertEqual((numi["kind"], numi["race"], numi["gender"]), ("pool voice", "mithra", "female"))
-        self.assertTrue(numi["voice"].startswith("mithra-"))
+        self.assertEqual((numi["kind"], numi["race"], numi["gender"]), ("on a pool voice", "mithra", "female"))
+        self.assertTrue(numi["voice"].startswith("mithra_f_adult-"))
         self.assertEqual(numi["age"], "thirties", "a pool speaker's age is their pool voice's")
+        self.assertEqual((numi["via"], numi["parent"]), ("cast.py", f"voice:{numi['voice']}"))
+        tonasav = self.ses.row("speaker:Tonasav")      # not in cast.py: the census race byte casts them
+        self.assertEqual((tonasav["via"], tonasav["kind"], tonasav["race"]), ("census", "on a pool voice", "hume"))
+        self.assertIn("the census gives Tonasav race 1, group hume_m_adult; a hash of the name picks voice ",
+                      tonasav["how"])
+        self.assertIn(" of 2 in that pool, hume_m_adult-", tonasav["how"])
         eko = self.ses.row("speaker:Ekokoko")         # race and gender from the design's own meta
         self.assertEqual((eko["race"], eko["gender"]), ("tarutaru", "female"))
         self.assertEqual(self.ses.row("speaker:")["label"], vr.NARRATION)
+        self.assertEqual(self.ses.row("speaker:")["via"], "voices.json", "narration is cast by voices.json alone")
         pool = self.ses.row(f"voice:{numi['voice']}")
-        self.assertEqual(pool["stories"], {"rov": 19})
+        self.assertEqual((pool["kind"], pool["stories"], pool["via"], pool["parent"]),
+                         ("pool voice", {"rov": 19}, "mithra_f_adult", "race:mithra"))
         self.assertIn("Numi Adaligo", self.ses.users[numi["voice"]])
-        self.assertEqual(self.labels(kind="pool voice")[0], "Prishe", "most-spoken first")
+        self.assertEqual(self.labels(kind="on a pool voice")[0], "Prishe", "most-spoken first")
         prishe = self.ses.row("speaker:Prishe")   # in the hand cast, no design: the group's pool
+        self.assertEqual(prishe["via"], "cast.py")
+        self.assertIn("cast.py puts Prishe in group elvaan_f_teen", prishe["how"])
         self.assertEqual(self.ses.row(f"voice:{prishe['voice']}")["lines"], 400, "a pool counts its speakers' lines")
+        self.assertEqual(self.ses.row("speaker:Volto Oscuro")["via"], "shares")
+        mithra = self.ses.row("race:mithra")        # a race counts everything under it
+        self.assertEqual((mithra["kind"], mithra["parent"], mithra["phrase"], mithra["lines"]),
+                         ("race", "", "A cat-woman.", 19))
+        self.assertEqual(self.ses.row("race:hume")["lines"], 300 + 3 + 2,
+                         "Iroha's own voice and Tonasav on a hume pool; narration is its own race")
+        shown = self.ses.with_parents([numi])
+        self.assertEqual(set(shown), {"race:mithra", f"voice:{numi['voice']}", "speaker:Numi Adaligo"},
+                         "a row comes with the rows above it")
 
     def test_filters_and_partial_search(self):
         self.assertEqual(self.labels(query="numi"), ["Numi Adaligo"])
@@ -114,15 +134,18 @@ class SessionTest(unittest.TestCase):
         self.assertIn("Volto Oscuro", self.labels(query="volto"))
         rov = self.labels(story="rov", kind="own voice")
         self.assertEqual(rov, ["Iroha"])
-        self.assertEqual(self.labels(story="rov", kind="pool voice"), ["Numi Adaligo", vr.NARRATION, "Tonasav"],
+        self.assertEqual(self.labels(story="rov", kind="on a pool voice"), ["Numi Adaligo", vr.NARRATION, "Tonasav"],
                          "sorted by lines in the chosen storyline")
-        self.assertEqual(self.labels(story="cop", kind="pool voice"), ["Prishe", "Tonasav"])
+        self.assertEqual(self.labels(story="cop", kind="on a pool voice"), ["Prishe", "Tonasav"])
+        self.assertEqual(self.labels(story="cop", kind="race"), ["elvaan", "hume"])
         cop = self.labels(story="cop")
         self.assertIn("Prishe", cop)
         self.assertNotIn("Iroha", cop)
         self.assertTrue(all(r["gender"] == "female" for r in self.ses.filter(gender="female")))
         self.assertTrue(all(r["race"] == "mithra" for r in self.ses.filter(race="mithra")))
-        self.assertTrue(all(r["kind"] == "pools" for r in self.ses.filter(kind="pools")))
+        self.assertTrue(all(r["kind"] == "pool voice" for r in self.ses.filter(kind="pool voice")))
+        self.assertEqual(self.labels(query="mithra female adult", kind="pool voice"), ["pool mithra female adult 1 of 1"])
+        self.assertEqual(len(self.labels(query="mithra", kind="pool voice")), 5, "one pool per age band")
         opts = self.ses.options()
         self.assertIn(("cop", "Chains of Promathia"), opts["story"])
         self.assertIn(("mithra", "mithra"), opts["race"])
@@ -130,6 +153,7 @@ class SessionTest(unittest.TestCase):
         self.assertIn("tarutaru", opts["meta_race"])
         self.assertIn("young adult", opts["meta_age"])
         self.assertEqual(opts["meta_gender"], ["female", "male", "unknown"])
+        self.assertNotIn(("", ""), opts["gender"], "a race row's blank gender is not a choice")
 
     def test_state_composes_the_instruction(self):
         st = self.ses.state("iroha")
@@ -138,7 +162,7 @@ class SessionTest(unittest.TestCase):
         self.assertEqual(st["saved_instruct"], st["instruct"])
         self.assertEqual(self.ses.compose("iroha", "Brisk.", gender="female", age="", race="mithra"),
                          "Gender: female. A cat-woman. Brisk.", "what the prompt popout shows as you type")
-        self.assertEqual(self.ses.compose("mithra-0", "Sly.", gender="male", age="forties", race="hume"),
+        self.assertEqual(self.ses.compose("mithra_f_adult-0", "Sly.", gender="male", age="forties", race="hume"),
                          "Gender: female. Age: forties. A cat-woman. Sly.", "a pool voice keeps its group's meta")
         self.assertIsNone(st["clip_instruct"])
         self.assertFalse(st["stale"])
@@ -183,10 +207,10 @@ class SessionTest(unittest.TestCase):
         self.assertEqual(st["instruct"], "Gender: female. Age: young adult. A cat-woman. Warm.")
 
     def test_a_pool_voice_keeps_its_groups_gender_and_race(self):
-        self.ses.audition("mithra-0", "Sly.", gender="male", race="hume", age="forties")
+        self.ses.audition("mithra_f_adult-0", "Sly.", gender="male", race="hume", age="forties")
         self.assertEqual(self.engine.calls[-1][2], "Gender: female. Age: forties. A cat-woman. Sly.")
-        self.ses.accept("mithra-0")
-        v = designs.Designs.load(self.yaml).voices["mithra-0"]
+        self.ses.accept("mithra_f_adult-0")
+        v = designs.Designs.load(self.yaml).voices["mithra_f_adult-0"]
         self.assertEqual((v["gender"], v["race"], v["age"]), ("female", "mithra", "forties"))
 
     def test_an_unknown_race_is_refused(self):
@@ -217,7 +241,7 @@ class SessionTest(unittest.TestCase):
         self.assertEqual((row["voice"], row["kind"], row["race"]), ("numi-adaligo", "own voice", "mithra"))
         st = self.ses.state(voice)
         self.assertEqual((st["description"], st["gender"], st["age"], st["race"]),
-                         ("mithra voice", "female", "thirties", "mithra"), "starts from the pool's design")
+                         ("mithra_f_adult voice", "female", "thirties", "mithra"), "starts from the pool's design")
         self.ses.audition(voice, "A sly merchant.", age="forties")
         self.assertEqual(self.engine.calls[-1][2], "Gender: female. Age: forties. A cat-woman. A sly merchant.")
         self.ses.accept(voice)
@@ -232,9 +256,96 @@ class SessionTest(unittest.TestCase):
     def test_reset_of_an_unaccepted_new_voice_removes_it(self):
         self.ses.give_own_voice("Tonasav")
         self.ses.reset("tonasav")
-        self.assertEqual(self.ses.row("speaker:Tonasav")["kind"], "pool voice")
+        self.assertEqual(self.ses.row("speaker:Tonasav")["kind"], "on a pool voice")
         self.assertNotIn("tonasav", self.ses.designs.voices)
         self.assertNotIn("Tonasav", designs.Designs.load(self.yaml).speakers)
+
+    def test_a_race_phrase_is_saved_without_a_take(self):
+        st = self.ses.race_state("mithra")
+        self.assertEqual((st["phrase"], st["editable"]), ("A cat-woman.", True))
+        self.assertIn("mithra_f_adult-0", st["voices"])
+        self.assertEqual(len(st["voices"]), 5, "every mithra pool voice, one per band")
+        self.assertFalse(self.ses.race_state("moogle")["editable"])
+        self.ses.audition("mithra_f_adult-0", "Sly.")
+        self.ses.accept("mithra_f_adult-0")                      # a clip made with the old phrase
+        self.assertFalse(self.ses.state("mithra_f_adult-0")["stale"])
+        stale = self.ses.save_race("mithra", " A lithe  cat-woman. ")
+        self.assertEqual(stale, ["mithra_f_adult-0"], "its clip, the only one of the race, is now from an older design")
+        self.assertTrue(self.ses.state("mithra_f_adult-0")["stale"])
+        self.assertEqual(self.ses.state("mithra_f_adult-0")["instruct"], "Gender: female. Age: thirties. A lithe cat-woman. Sly.")
+        text = self.yaml.read_text(encoding="utf-8")
+        self.assertIn('mithra: "A lithe cat-woman."', text)
+        self.assertTrue(text.startswith("# header comment that must survive"))
+        self.assertEqual(self.ses.save_race("hume", ""), [], "blank stays blank; nothing of hume changed")
+        with self.assertRaises(ValueError):
+            self.ses.save_race("moogle", "Small.")
+
+    def test_a_typed_phrase_is_a_draft_until_saved(self):
+        self.ses.edit_race("hume", " Plain  folk. ")
+        st = self.ses.race_state("hume")
+        self.assertEqual((st["phrase"], st["saved_phrase"], st["pending"]), ("Plain folk.", "", True))
+        self.assertEqual(self.ses.state("iroha")["instruct"], "Gender: female. Age: young adult. Plain folk. Warm.",
+                         "a voice of the race is auditioned with the draft")
+        self.assertEqual(self.ses.state("iroha")["saved_instruct"], "Gender: female. Age: young adult. Warm.")
+        self.assertEqual(self.ses.state("mithra_f_adult-0")["instruct"], "Gender: female. Age: thirties. A cat-woman. mithra_f_adult voice")
+        self.assertNotIn("Plain folk", self.yaml.read_text(encoding="utf-8"))
+        self.ses.edit_race("hume", "")
+        self.assertFalse(self.ses.race_state("hume")["pending"], "typed back to what is saved: no draft")
+        self.ses.edit_race("hume", "Plain folk.")
+        self.ses.reset_race("hume")
+        self.assertFalse(self.ses.race_state("hume")["pending"])
+        self.ses.edit_race("hume", "Plain folk.")
+        self.ses.save_race("hume")
+        self.assertIn('hume: "Plain folk."', self.yaml.read_text(encoding="utf-8"))
+        self.assertFalse(self.ses.race_state("hume")["pending"])
+        with self.assertRaises(ValueError):
+            self.ses.edit_race("moogle", "Small.")
+
+    def test_accepting_a_take_heard_with_a_draft_phrase_saves_the_phrase(self):
+        self.ses.edit_race("mithra", "A sly cat-woman.")
+        self.ses.audition("mithra_f_adult-0", "Quick.")
+        self.assertEqual(self.engine.calls[-1][2], "Gender: female. Age: thirties. A sly cat-woman. Quick.")
+        self.ses.accept("mithra_f_adult-0")
+        text = self.yaml.read_text(encoding="utf-8")
+        self.assertIn('mithra: "A sly cat-woman."', text)
+        self.assertIn('description: "Quick."', text)
+        self.assertFalse(self.ses.race_state("mithra")["pending"])
+        self.assertFalse(self.ses.state("mithra_f_adult-0")["stale"], "the clip on record was made with the saved phrase")
+
+    def test_typed_fields_are_a_draft_until_auditioned(self):
+        self.ses.edit_voice("iroha", " Warm  and low. ", age="thirties")
+        st = self.ses.state("iroha")
+        self.assertEqual((st["description"], st["age"], st["gender"], st["pending"], st["candidate"]),
+                         ("Warm and low.", "thirties", "female", True, None))
+        self.assertEqual(st["instruct"], "Gender: female. Age: thirties. Warm and low.")
+        with self.assertRaisesRegex(ValueError, "audition a take"):
+            self.ses.accept("iroha")
+        self.ses.edit_voice("iroha", "Warm.", age="young adult")
+        self.assertFalse(self.ses.state("iroha")["pending"], "typed back to what is saved: no draft")
+        self.ses.edit_voice("iroha", "Warm and low.")
+        self.ses.audition("iroha", "Warm and low.", age="thirties")
+        st = self.ses.state("iroha")
+        self.assertTrue(st["candidate"])
+        self.assertFalse(st["edited_since_take"])
+        self.ses.edit_voice("iroha", "Warm and lower.", age="thirties")
+        st = self.ses.state("iroha")
+        self.assertEqual((st["description"], st["edited_since_take"]), ("Warm and lower.", True))
+        with self.assertRaisesRegex(ValueError, "changed since the take"):
+            self.ses.accept("iroha")
+        self.ses.edit_voice("iroha", "Warm and low.", age="thirties")
+        self.assertFalse(self.ses.state("iroha")["edited_since_take"], "typed back to the take: it can be accepted")
+        self.ses.edit_voice("iroha", "Warm and lower.", age="thirties")
+        self.ses.audition("iroha", "Warm and lower.", age="thirties")
+        self.assertFalse(self.ses.state("iroha")["edited_since_take"])
+        self.ses.accept("iroha")
+        self.assertEqual(designs.Designs.load(self.yaml, groups=set(casting.POOLS)).voices["iroha"]["description"],
+                         "Warm and lower.")
+        # a pool voice's gender and race stay its group's whatever is typed
+        self.ses.edit_voice("mithra_f_adult-0", "Sly.", gender="male", race="hume")
+        st = self.ses.state("mithra_f_adult-0")
+        self.assertEqual((st["description"], st["gender"], st["race"]), ("Sly.", "female", "mithra"))
+        self.ses.reset("mithra_f_adult-0")
+        self.assertFalse(self.ses.state("mithra_f_adult-0")["pending"])
 
     def test_empty_description_is_refused(self):
         with self.assertRaises(ValueError):
@@ -287,11 +398,20 @@ class GuiTest(unittest.TestCase):
         except Exception as e:  # noqa: BLE001 - a display that refuses connections
             self.skipTest(f"Tk could not open a window: {e}")
         self.addCleanup(w.root.destroy)
-        self.assertEqual(len(w.tree.get_children()), len(t.ses.rows))
-        def order():
-            return [w.tree.item(i, "text") for i in w.tree.get_children()]
+        races = [r for r in t.ses.rows if r["kind"] == "race"]
+        self.assertEqual(len(w.tree.get_children()), len(races), "the top level is the races")
+        self.assertIn("voice:mithra_f_adult-0", w.tree.get_children("race:mithra"))
+        self.assertEqual(w.tree.get_children("voice:mithra_f_adult-0")[0], "speaker:Numi Adaligo",
+                         "the speakers on a pool voice, most-spoken first")
+        self.assertIn("speaker:Iroha", w.tree.get_children("race:hume"), "an own voice sits under its race")
+        self.assertEqual(w.tree.set("speaker:Iroha", "via"), "own")
+        self.assertEqual(w.tree.set("speaker:Numi Adaligo", "via"), "cast.py")
+        def order(parent=""):
+            return [w.tree.item(i, "text") for i in w.tree.get_children(parent)]
         w.sort_by("#0")
-        self.assertEqual(order(), sorted(order(), key=str.lower), "speaker sorts A to Z")
+        self.assertEqual(order(), sorted(order(), key=str.lower), "races sort A to Z")
+        hume = order("race:hume")
+        self.assertEqual(hume, sorted(hume, key=str.lower), "and so do the rows under one")
         self.assertTrue(w.tree.heading("#0", "text").endswith("▲"))
         w.sort_by("#0")
         self.assertEqual(order(), sorted(order(), key=str.lower, reverse=True), "a second click reverses")
@@ -300,21 +420,27 @@ class GuiTest(unittest.TestCase):
         self.assertEqual(lines, sorted(lines, reverse=True), "lines sort as numbers, most first")
         self.assertEqual(w.tree.heading("#0", "text"), "speaker", "only the sorted column is marked")
         w.sort_by("age")
-        ages = [w.tree.set(i, "age") for i in w.tree.get_children()]
+        ages = [w.tree.set(i, "age") for i in w.tree.get_children("race:hume")]
         known = [a for a in ages if a]
         self.assertEqual(known, sorted(known, key=voice_review_gui.AGE_ORDER.get), "ages run youngest first")
         self.assertEqual(ages[len(known):], [""] * (len(ages) - len(known)), "no age sorts last")
         w.query.set("numi")
-        self.assertEqual(w.tree.get_children(), ("speaker:Numi Adaligo",))
+        self.assertEqual(w.tree.get_children(), ("race:mithra",), "a match brings the rows above it")
+        self.assertEqual(w.tree.item("race:mithra", "tags"), ("context",), "greyed: shown only for what is under it")
+        self.assertEqual(w.tree.get_children("voice:mithra_f_adult-0"), ("speaker:Numi Adaligo",))
+        self.assertEqual(w.tree.item("speaker:Numi Adaligo", "tags"), "")
         w.tree.selection_set("speaker:Numi Adaligo")
         w.select()
+        self.assertEqual(w.title.cget("text"), "Pool voice: mithra female adult 1 of 1", "the pane names what it edits")
+        self.assertIn("Editing here changes every speaker on mithra_f_adult-0", w.info.cget("text"))
+        self.assertIn("cast.py puts Numi Adaligo in group mithra_f_adult", w.info.cget("text"))
         self.assertTrue(w.own.winfo_manager(), "a pool speaker gets the own-voice button")
-        self.assertIn("mithra voice", w.text.get("1.0", "end"))
+        self.assertIn("mithra_f_adult voice", w.text.get("1.0", "end"))
         self.assertEqual(str(w.meta["gender"][1].cget("state")), "disabled", "a pool voice's gender is its group's")
         self.assertEqual(w.meta["age"][0].get(), "thirties")
         # the prompt popout follows the fields as they change
         w.show_prompt()
-        self.assertEqual(w.prompt_text.get("1.0", "end").strip(), "Gender: female. Age: thirties. A cat-woman. mithra voice")
+        self.assertEqual(w.prompt_text.get("1.0", "end").strip(), "Gender: female. Age: thirties. A cat-woman. mithra_f_adult voice")
         w.meta["age"][0].set("forties")
         w.text.delete("1.0", "end")
         w.text.insert("1.0", "Sly.")
@@ -328,6 +454,66 @@ class GuiTest(unittest.TestCase):
         w.root.update()
         self.assertEqual(str(w.meta["race"][1].cget("state")), "readonly", "an own voice's race can change")
         self.assertEqual(w.prompt_text.get("1.0", "end").strip(), "Gender: female. Age: young adult. Warm.")
+        self.assertEqual(w.title.cget("text"), "Own voice iroha")
+        # a race row edits its phrase, saved without a take
+        w.tree.selection_set("race:mithra")
+        w.root.update()
+        self.assertEqual(w.title.cget("text"), "Race mithra")
+        self.assertEqual(w.field_label.cget("text"), "Race phrase")
+        self.assertEqual(w.text.get("1.0", "end").strip(), "A cat-woman.")
+        self.assertEqual(str(w.meta["age"][1].cget("state")), "disabled")
+        self.assertFalse(w.own.winfo_manager())
+        for name in ("accept", "reset", "audition", "show_prompt"):
+            self.assertIn("disabled", w.buttons[name].state(), name)
+        w.text.delete("1.0", "end")
+        w.text.insert("1.0", "A lithe cat-woman.")
+        w.root.update()
+        self.assertNotIn("disabled", w.buttons["accept"].state(), "a changed phrase can be accepted")
+        self.assertIn("disabled", w.buttons["audition"].state(), "but never auditioned alone")
+        self.assertEqual(w.tree.set("race:mithra", "state"), "edited")
+        w.tree.selection_set("speaker:Numi Adaligo")   # off to audition a voice of the race, and back
+        w.root.update()
+        self.assertIn("auditions use the unsaved mithra phrase", w.seed.cget("text"))
+        w.show_prompt()
+        self.assertEqual(w.prompt_text.get("1.0", "end").strip(),
+                         "Gender: female. Age: forties. A lithe cat-woman. Sly.",
+                         "the pool voice's edits from before are still there, under the draft phrase")
+        self.assertEqual(w.tree.set("speaker:Numi Adaligo", "state"), "edited")
+        w.tree.selection_set("race:mithra")
+        w.root.update()
+        self.assertEqual(w.text.get("1.0", "end").strip(), "A lithe cat-woman.", "the typed phrase survives the trip")
+        self.assertEqual(w.seed.cget("text"), "edited, not saved yet")
+        w.accept()
+        self.assertIn("saved the mithra phrase", w.status_line.cget("text"))
+        self.assertIn('mithra: "A lithe cat-woman."', t.yaml.read_text(encoding="utf-8"))
+        self.assertIn("disabled", w.buttons["accept"].state())
+        self.assertEqual(w.tree.selection(), ("race:mithra",), "still selected after the save")
+        self.assertEqual(w.seed.cget("text"), "")
+        self.assertEqual(w.tree.set("race:mithra", "state"), "")
+        # a voice's typed fields survive the trip too, and a take finishing elsewhere does not move the selection
+        w.tree.selection_set("speaker:Iroha")
+        w.root.update()
+        w.text.delete("1.0", "end")
+        w.text.insert("1.0", "Warm and low.")
+        w.meta["age"][0].set("thirties")
+        w.root.update()
+        self.assertEqual(w.tree.set("speaker:Iroha", "state"), "edited")
+        self.assertIn("edited, not auditioned", w.seed.cget("text"))
+        self.assertIn("disabled", w.buttons["accept"].state())
+        self.assertNotIn("disabled", w.buttons["reset"].state())
+        w.tree.selection_set("race:mithra")
+        w.root.update()
+        w.done("take for mithra_f_adult-0 ready", "speaker:Numi Adaligo", None)
+        w.root.update()
+        self.assertEqual(w.row["key"], "race:mithra", "the row being edited stays selected")
+        w.tree.selection_set("speaker:Iroha")
+        w.root.update()
+        self.assertEqual(w.text.get("1.0", "end").strip(), "Warm and low.", "typed text survives the trip")
+        self.assertEqual(w.meta["age"][0].get(), "thirties")
+        w.reset()
+        w.root.update()
+        self.assertEqual(w.text.get("1.0", "end").strip(), "Warm.")
+        self.assertEqual(w.tree.set("speaker:Iroha", "state"), "no clip")
 
 
 if __name__ == "__main__":

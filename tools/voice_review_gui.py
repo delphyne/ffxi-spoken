@@ -2,9 +2,14 @@
 the window opens, like the lexicon review's (helper/review_gui.py).
 
 Left: a search box (any part of a name or voice), filters for race,
-gender, storyline, and kind, and the matching speakers and pool voices,
-most-spoken first. Right: the selected voice's meta (gender, age, race)
-and description to edit, and
+gender, storyline, and kind, and a tree of what matches, most-spoken
+first: races, under each its pool voices with their speakers and its own
+voices (a row shown only because a match sits under it is greyed). The
+`via` column says how a speaker got their voice: cast.py, the census,
+voices.json, or the default, else their own or a shared own voice. Right:
+what the selected row edits, named in the title (a pool voice, even when
+reached through one of its speakers; an own voice; a race's phrase), its
+meta (gender, age, race) and description, and
 
     Play saved      the clip on file, if any
     Audition        design a take from the description as typed
@@ -17,12 +22,20 @@ and description to edit, and
                     composed from the fields as they stand, kept up to date
                     while it is open, beside what the saved clip was made with
 
-A pool voice's gender and race are its casting group's and cannot be
-changed here; its age can. A speaker on a shared pool voice gets a "Give
-... a voice of their own" button, which starts a new design from the pool
-voice's.
+Whatever is typed is kept until it is accepted or reset: moving to another
+row and back shows it again, and the tree's state column says "edited",
+"take", or "take, edited" (the fields changed after the take was heard, so
+it must be auditioned again before Accept). A pool voice's gender and race
+are its casting group's and cannot be changed here; its age can. A speaker
+on a shared pool voice gets a "Give ... a voice of their own" button, which
+starts a new design from the pool voice's. A race row edits only the race's
+phrase. A phrase alone cannot be auditioned, so its draft is heard by
+auditioning any voice of the race; Accept on the race row saves it with no
+take, accepting a take of such a voice saves it too, and Reset on the race
+row drops it.
 Designing runs off the Tk thread; the first take loads Qwen3, which takes a
-while. Ctrl+Enter auditions, Ctrl+P plays the saved clip, Ctrl+T the take.
+while, and a finished take does not move the selection. Ctrl+Enter
+auditions, Ctrl+P plays the saved clip, Ctrl+T the take.
 """
 
 import os
@@ -55,7 +68,8 @@ def sort_key(col, r, ses):
     if col == "stories":
         return (0, len(r["stories"]), " ".join(sorted(r["stories"])))
     if col == "state":
-        value = "take" if r["voice"] in ses.drafts else ("" if ses.clip(r["voice"]) else "no clip")
+        value = "" if not r["voice"] else ("take" if r["voice"] in ses.drafts
+                                           else ("" if ses.clip(r["voice"]) else "no clip"))
         return (0 if value else 1, value)
     value = str(r.get(col) or "")
     return (0 if value else 1, value.lower())
@@ -129,13 +143,14 @@ class Window:
         left.grid(row=1, column=0, sticky="nsew")
         left.rowconfigure(0, weight=1)
         left.columnconfigure(0, weight=1)
-        cols = ("voice", "race", "gender", "age", "lines", "stories", "state")
+        cols = ("voice", "via", "race", "gender", "age", "lines", "stories", "state")
         tree = self.tree = ttk.Treeview(left, columns=cols, selectmode="browse")
         self.sort = None          # (column, descending), or None for the session's order
         self.columns = ("#0",) + cols
         tree.heading("#0", text="speaker", command=lambda: self.sort_by("#0"))
-        tree.column("#0", width=px(200))
-        for col, width in zip(cols, (120, 80, 70, 90, 60, 180, 80)):
+        tree.column("#0", width=px(220))
+        tree.tag_configure("context", foreground="#888")   # a parent shown only for what is under it
+        for col, width in zip(cols, (120, 80, 80, 70, 90, 60, 180, 80)):
             tree.heading(col, text=col, command=lambda c=col: self.sort_by(c))
             tree.column(col, width=px(width), anchor="e" if col == "lines" else "w")
         scroll = ttk.Scrollbar(left, orient="vertical", command=tree.yview)
@@ -147,10 +162,11 @@ class Window:
         right = ttk.Frame(root, padding=(px(3), 0, px(6), px(6)))
         right.grid(row=1, column=1, sticky="nsew")
         right.columnconfigure(0, weight=1)
-        self.title = ttk.Label(right, text="Select a speaker or a voice", font=self.f_title)
+        self.title = ttk.Label(right, text="Select a race, a voice, or a speaker", font=self.f_title)
         self.title.grid(row=0, column=0, sticky="w")
         self.info = ttk.Label(right, text="", wraplength=px(480), justify="left")
         self.info.grid(row=1, column=0, sticky="w", pady=(px(2), px(6)))
+        self.field_label = ttk.Label(right, text="Description")
         self.own = ttk.Button(right, text="", command=self.give_own)
         self.own.grid(row=2, column=0, sticky="w")
         self.own.grid_remove()
@@ -165,9 +181,9 @@ class Window:
             var = tk.StringVar()
             box = ttk.Combobox(meta, textvariable=var, values=opts[f"meta_{name}"], width=width, state=state)
             box.grid(row=0, column=2 * col + 1, sticky="w")
-            var.trace_add("write", lambda *_: self.update_prompt())
+            var.trace_add("write", lambda *_: self.meta_modified())
             self.meta[name] = (var, box, state)
-        ttk.Label(right, text="Description").grid(row=4, column=0, sticky="w", pady=(px(8), 0))
+        self.field_label.grid(row=4, column=0, sticky="w", pady=(px(8), 0))
         self.text = tk.Text(right, wrap="word", height=7, font=self.f_text, undo=True, padx=px(4), pady=px(4))
         self.text.grid(row=5, column=0, sticky="ew")
         self.text.bind("<<Modified>>", self.text_modified)
@@ -213,20 +229,44 @@ class Window:
         return next((value for value, label in self.choices[name] if label == var.get()), "all")
 
     def refresh(self, keep=None):
+        """The tree: the matching rows under their parents, siblings in the
+        catalogue's order or the sorted column's."""
         rows = self.ses.filter(self.query.get(), **{n: self.chosen(n) for n in self.filters})
-        if self.sort:
-            col, descending = self.sort
-            rows = sorted(rows, key=lambda r: sort_key(col, r, self.ses), reverse=descending)
+        matched = {r["key"] for r in rows}
+        children = {}
+        for r in self.ses.with_parents(rows).values():
+            children.setdefault(r["parent"], []).append(r)
         self.tree.delete(*self.tree.get_children())
-        for r in rows:
-            st = "take" if r["voice"] in self.ses.drafts else ("" if self.ses.clip(r["voice"]) else "no clip")
-            self.tree.insert("", "end", iid=r["key"], text=r["label"],
-                             values=(r["voice"], r["race"], r["gender"], r["age"], r["lines"] or "",
-                                     " ".join(sorted(r["stories"])), st))
+
+        def insert(parent):
+            kids = children.get(parent, [])
+            if self.sort:
+                col, descending = self.sort
+                kids = sorted(kids, key=lambda r: sort_key(col, r, self.ses), reverse=descending)
+            for r in kids:
+                self.tree.insert(parent, "end", iid=r["key"], text=r["label"], open=True,
+                                 tags=() if r["key"] in matched else ("context",),
+                                 values=(r["voice"], r["via"], r["race"], r["gender"], r["age"], r["lines"] or "",
+                                         " ".join(sorted(r["stories"])), self.state_of(r)))
+                insert(r["key"])
+        insert("")
         self.count.configure(text=f"{len(rows)} of {len(self.ses.rows)}")
         if keep and self.tree.exists(keep):
             self.tree.selection_set(keep)
             self.tree.see(keep)
+
+    def state_of(self, r):
+        """The tree's state cell: a take or an edit waiting, else whether
+        the voice has a clip."""
+        voice = r["voice"]
+        if not voice:
+            return "edited" if r["race"] in self.ses.race_drafts else ""
+        draft = self.ses.drafts.get(voice)
+        if draft and draft.get("candidate"):
+            return "take, edited" if draft.get("typed") else "take"
+        if draft:
+            return "edited"
+        return "" if self.ses.clip(voice) else "no clip"
 
     def sort_by(self, col):
         """A header click: sort by that column, again to reverse. Lines start
@@ -247,24 +287,30 @@ class Window:
             return
         # refresh() reselects the current row after an audition, an accept,
         # or a filter change, and Tk delivers that selection event later;
-        # showing the row again then would wipe edits not yet auditioned
+        # the row is already shown
         if self.row is not None and sel[0] == self.row["key"]:
             return
         self.row = self.ses.row(sel[0])
-        self.voice = self.row["voice"]
+        self.voice = self.row["voice"] or None   # a race row has no voice
         self.show()
 
     def show(self):
-        st = self.ses.state(self.voice)
         r = self.row
-        self.title.configure(text=r["label"])
-        if r["kind"] == "pools" or st["kind"] == "pool":
+        if r["kind"] == "race":
+            return self.show_race()
+        st = self.ses.state(self.voice)
+        stories = ", ".join(f"{self.ses.story_names.get(c, c)} {n}" for c, n in sorted(r["stories"].items()))
+        if st["kind"] == "pool":
             shared = st["users"]
             who = ", ".join(shared[:8]) + (f" and {len(shared) - 8} more" if len(shared) > 8 else "")
-            info = f"Pool voice {self.voice} ({st['group']}), shared by {len(shared)}: {who or 'nobody yet'}."
+            self.title.configure(text=f"Pool voice: {self.ses.pool_name(self.voice)}")
+            info = f"{self.voice}, one of group {st['group']}'s voices, shared by {len(shared)}: {who or 'nobody yet'}."
+            if r["name"] is not None:
+                info = (f"{r['how']}\nEditing here changes every speaker on {self.voice}; "
+                        f"to change only {r['label']}, give them a voice of their own.\n" + info)
         else:
-            info = f"Own voice {self.voice}" + (" (new, not accepted yet)" if st["new"] else "") + "."
-        stories = ", ".join(f"{self.ses.story_names.get(c, c)} {n}" for c, n in sorted(r["stories"].items()))
+            self.title.configure(text=f"Own voice {self.voice}" + (" (new, not accepted yet)" if st["new"] else ""))
+            info = r["how"] if r["name"] is not None else ""
         self.info.configure(text=info + (f"\nLines: {stories}" if stories else ""))
         if r["name"] is not None and st["kind"] == "pool":
             self.own.configure(text=f"Give {r['label']} a voice of their own")
@@ -276,17 +322,58 @@ class Window:
         for name, (var, box, state) in self.meta.items():
             var.set(st[name])
             box.configure(state="disabled" if pool and name in ("gender", "race") else state)
+        self.field_label.configure(text="Description")
         self.text.delete("1.0", "end")
         self.text.insert("1.0", st["description"])
         self.text.edit_modified(False)
         self.loading = False
+        self.seed_line(st)
+        self.update_prompt()
+        self.calibration.configure(text=f"Every clip says: {st['calibration']}")
+        self.enable()
+
+    def seed_line(self, st=None):
+        st = st or self.ses.state(self.voice)
         changed = st["seed"] != st["saved_seed"]
         self.seed.configure(text=f"seed {st['seed']}" + (f" (saved: {st['saved_seed']})" if changed else "")
                             + ("" if st["clip"] else "  ·  no clip yet")
                             + ("  ·  saved clip is from an older design" if st["stale"] else "")
-                            + ("  ·  take ready" if st["candidate"] else ""))
+                            + ("  ·  take ready" if st["candidate"] and not st["edited_since_take"] else "")
+                            + ("  ·  edited since the take: audition again" if st["edited_since_take"] else "")
+                            + ("  ·  edited, not auditioned" if st["pending"] and not st["candidate"]
+                               and not st["new"] else "")
+                            + (f"  ·  auditions use the unsaved {st['race']} phrase"
+                               if st["race"] in self.ses.race_drafts else ""))
+
+    def show_race(self):
+        """A race row: its phrase in the text field, the meta blank."""
+        st = self.ses.race_state(self.row["race"])
+        self.title.configure(text=f"Race {st['race']}")
+        voices = st["voices"]
+        who = ", ".join(voices[:8]) + (f" and {len(voices) - 8} more" if len(voices) > 8 else "")
+        if st["editable"]:
+            info = (f"Its phrase is composed into every voice of this race, after gender and age and before "
+                    f"the voice's own description: {len(voices)} voices: {who or 'none yet'}.\n"
+                    "Blank for none. It cannot be auditioned by itself: a take needs a gender and an age. "
+                    "What you type here is kept while you audition any voice of this race, which uses it; "
+                    "Accept saves it (as does accepting such a take), Reset drops it. Every clip of the race "
+                    "is then from an older design.")
+        else:
+            info = "Not in the races section, so no phrase: a design's race is unknown."
+        self.info.configure(text=info)
+        self.own.grid_remove()
+        self.loading = True
+        for name, (var, box, state) in self.meta.items():
+            var.set("")
+            box.configure(state="disabled")
+        self.field_label.configure(text="Race phrase")
+        self.text.delete("1.0", "end")
+        self.text.insert("1.0", st["phrase"] or "")
+        self.text.edit_modified(False)
+        self.loading = False
+        self.seed.configure(text="edited, not saved yet" if st["pending"] else "")
         self.update_prompt()
-        self.calibration.configure(text=f"Every clip says: {st['calibration']}")
+        self.calibration.configure(text="")
         self.enable()
 
     # -- actions ------------------------------------------------------
@@ -300,7 +387,27 @@ class Window:
     def text_modified(self, event=None):
         if self.text.edit_modified():
             self.text.edit_modified(False)
-            self.update_prompt()
+            self.edited()
+
+    def meta_modified(self):
+        if not getattr(self, "loading", False):
+            self.edited()
+
+    def edited(self):
+        """A field changed by hand: kept as a draft until saved or reset, so
+        moving to another row does not lose it."""
+        self.update_prompt()
+        if not self.row:
+            return
+        if self.row["kind"] == "race":
+            if self.ses.race_state(self.row["race"])["editable"]:
+                self.ses.edit_race(self.row["race"], self.description())
+        elif self.voice:
+            self.ses.edit_voice(self.voice, self.description(), **self.meta_values())
+            self.seed_line()
+        if self.tree.exists(self.row["key"]):
+            self.tree.set(self.row["key"], "state", self.state_of(self.row))
+        self.enable()
 
     # -- the prompt popout -------------------------------------------
 
@@ -330,7 +437,7 @@ class Window:
         self.update_prompt()
 
     def prompt(self):
-        if self.voice is None:
+        if not self.voice:
             return ""
         return self.ses.compose(self.voice, self.description(), **self.meta_values())
 
@@ -398,8 +505,8 @@ class Window:
     def done(self, message, key=None, take=None):
         self.busy = False
         self.status(message)
-        if key:
-            self.refresh(keep=key)
+        if key:   # the take's row gets its mark; the row being edited stays selected
+            self.refresh(keep=self.row["key"] if self.row else key)
             if self.row and self.row["key"] == key:
                 self.show()
         if take:
@@ -407,13 +514,28 @@ class Window:
         self.enable()
 
     def accept(self):
+        if self.row and self.row["kind"] == "race":
+            return self.accept_race()
         try:
             clip = self.ses.accept(self.voice)
         except (ValueError, OSError) as e:
             return self.status(str(e))
         self.after_change(f"saved {clip.name} and voice_designs.yaml")
 
+    def accept_race(self):
+        race = self.row["race"]
+        try:
+            stale = self.ses.save_race(race, self.description())
+        except (ValueError, OSError) as e:
+            return self.status(str(e))
+        self.after_change(f"saved the {race} phrase to voice_designs.yaml"
+                          + (f"; {len(stale)} clips are now from an older design (make design-voices CHANGED=1)"
+                             if stale else ""))
+
     def reset(self):
+        if self.row and self.row["kind"] == "race":
+            self.ses.reset_race(self.row["race"])
+            return self.after_change(f"{self.row['race']} phrase back to what is saved")
         self.ses.reset(self.voice)
         self.after_change(f"{self.voice} reset to what is saved")
 
@@ -423,7 +545,7 @@ class Window:
         self.refresh(keep=key)
         if self.tree.exists(key):
             self.row = self.ses.row(key)
-            self.voice = self.row["voice"]
+            self.voice = self.row["voice"] or None
             self.show()
         self.status(message)
 
@@ -450,12 +572,20 @@ class Window:
         self.playing = None
 
     def enable(self):
+        if self.row and self.row["kind"] == "race":
+            st = self.ses.race_state(self.row["race"])
+            edited = st["editable"] and (st["pending"] or self.description() != (st["phrase"] or ""))
+            can = {"play_saved": False, "audition": False, "regenerate": False, "play_take": False,
+                   "accept": edited, "reset": edited, "show_prompt": False}
+            for name, b in self.buttons.items():
+                b.state(["!disabled"] if can[name] else ["disabled"])
+            return
         st = self.ses.state(self.voice) if self.voice else None
         can = {
             "play_saved": bool(st and st["clip"]),
             "audition": bool(st) and not self.busy, "regenerate": bool(st) and not self.busy,
             "play_take": bool(st and st["candidate"]),
-            "accept": bool(st and st["candidate"]) and not self.busy,
+            "accept": bool(st and st["candidate"] and not st["edited_since_take"]) and not self.busy,
             "reset": bool(st and st["pending"]) and not self.busy,
             "show_prompt": True,
         }
@@ -470,6 +600,11 @@ class Window:
         pending = [v for v, d in self.ses.drafts.items() if d.get("candidate")]
         if pending:
             print("takes not accepted (still in refs/.candidates/): " + ", ".join(sorted(pending)))
+        typed = [v for v, d in self.ses.drafts.items() if d.get("typed") or not d.get("candidate")]
+        if typed:
+            print("voices edited and not auditioned (lost): " + ", ".join(sorted(typed)))
+        if self.ses.race_drafts:
+            print("race phrases typed and not saved (lost): " + ", ".join(sorted(self.ses.race_drafts)))
         self.root.destroy()
 
     def run(self):

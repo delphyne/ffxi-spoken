@@ -89,14 +89,14 @@ class MossBackendTest(unittest.TestCase):
         self.voices = Path(self.dir.name) / "voices"
         self.refs = self.voices / "moss" / "refs"
         self.refs.mkdir(parents=True)
-        for voice in ("iroha", "hume_m-0"):
+        for voice in ("iroha", "hume_m_adult-0"):
             sh.write_wav(self.refs / f"{voice}.wav", [0.0] * 2400, 24000)
         (self.refs / "index.json").write_text(json.dumps({
             "calibration": "Wait here.",
             "voices": {"iroha": {"sha256": "1111111122223333", "seed": 1733},
-                       "hume_m-0": {"sha256": "aaaaaaaabbbbcccc", "seed": 1}}}))
+                       "hume_m_adult-0": {"sha256": "aaaaaaaabbbbcccc", "seed": 1}}}))
         self.engine = FakeEngine()
-        self.backend = sh.MossBackend(self.voices, {"default": "hume_m-0", "Iroha": "iroha"},
+        self.backend = sh.MossBackend(self.voices, {"default": "hume_m_adult-0", "Iroha": "iroha"},
                                       settings=moss.Settings(), engine=self.engine)
 
     def tearDown(self):
@@ -108,7 +108,7 @@ class MossBackendTest(unittest.TestCase):
 
     def test_voice_for_carries_clip_hash_and_settings(self):
         self.assertEqual(self.backend.voice_for("Iroha"), "moss:iroha:11111111:t1:q32:fp16:cpu32")
-        self.assertEqual(self.backend.voice_for("Nobody"), "moss:hume_m-0:aaaaaaaa:t1:q32:fp16:cpu32")
+        self.assertEqual(self.backend.voice_for("Nobody"), "moss:hume_m_adult-0:aaaaaaaa:t1:q32:fp16:cpu32")
         other = sh.MossBackend(self.voices, {"Iroha": "iroha"}, settings=moss.Settings(temperature=0.7),
                                engine=self.engine)
         self.assertNotEqual(other.voice_for("Iroha"), self.backend.voice_for("Iroha"))

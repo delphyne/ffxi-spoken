@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import casting  # noqa: E402
 import designs  # noqa: E402
 
-GROUPS = {"hume_m", "narrator"}
+GROUPS = {"hume_m_adult", "narrator"}
 RACES = {"hume": "", "galka": "A huge beast-man.", "narrator": "", "mithra": "A cat-woman."}
 
 
@@ -22,7 +22,7 @@ def minimal(**override):
         "cast": {"Iroha": {"gender": "female", "age": "young adult", "race": "hume",
                            "description": "Warm.", "seed": 7, "also": ["Volto Oscuro"]},
                  "Grav'iton": {"gender": "male", "race": "galka", "description": "Cold."}},
-        "pools": {"hume_m": [{"age": "thirties", "description": "one"}, "two"], "narrator": ["storyteller"]},
+        "pools": {"hume_m_adult": [{"age": "thirties", "description": "one"}, "two"], "narrator": ["storyteller"]},
     }
     data.update(override)
     return data
@@ -33,13 +33,13 @@ class DesignsTest(unittest.TestCase):
         d = designs.Designs(minimal(), groups=GROUPS)
         self.assertEqual(d.calibration, "Wait here. Do not look back.")
         self.assertEqual(d.speakers, {"Iroha": "iroha", "Volto Oscuro": "iroha", "Grav'iton": "grav-iton"})
-        self.assertEqual(d.pools, {"hume_m": ["hume_m-0", "hume_m-1"], "narrator": ["narrator-0"]})
+        self.assertEqual(d.pools, {"hume_m_adult": ["hume_m_adult-0", "hume_m_adult-1"], "narrator": ["narrator-0"]})
         self.assertEqual(d.voices["iroha"], {"kind": "cast", "names": ["Iroha", "Volto Oscuro"], "gender": "female",
                                              "age": "young adult", "race": "hume", "description": "Warm.", "seed": 7})
         self.assertEqual((d.voices["grav-iton"]["seed"], d.voices["grav-iton"]["age"]), (1, ""))
-        self.assertEqual(d.voices["hume_m-0"], {"kind": "pool", "group": "hume_m", "gender": "male",
+        self.assertEqual(d.voices["hume_m_adult-0"], {"kind": "pool", "group": "hume_m_adult", "gender": "male",
                                                 "age": "thirties", "race": "hume", "description": "one", "seed": 1})
-        self.assertEqual(d.voices["hume_m-1"]["age"], "", "a bare string is a description with no age")
+        self.assertEqual(d.voices["hume_m_adult-1"]["age"], "adult", "a bare string is a description; the age is the band's")
         self.assertEqual(d.voice_for_speaker("Volto Oscuro"), "iroha")
         self.assertIsNone(d.voice_for_speaker("Nobody"))
 
@@ -47,7 +47,7 @@ class DesignsTest(unittest.TestCase):
         d = designs.Designs(minimal(), groups=GROUPS)
         self.assertEqual(d.compose("iroha"), "Gender: female. Age: young adult. Warm.")
         self.assertEqual(d.compose("grav-iton"), "Gender: male. A huge beast-man. Cold.", "no age, a race phrase")
-        self.assertEqual(d.compose("hume_m-0"), "Gender: male. Age: thirties. one")
+        self.assertEqual(d.compose("hume_m_adult-0"), "Gender: male. Age: thirties. one")
         self.assertEqual(d.compose("iroha", age="", race="galka", description="Gruff."),
                          "Gender: female. A huge beast-man. Gruff.", "a draft overrides the saved design")
         self.assertEqual(d.compose(gender="unknown", age="", race="hume", description="Squeaky."), "Squeaky.")
@@ -73,10 +73,10 @@ class DesignsTest(unittest.TestCase):
             (minimal(cast={"Iroha": dict(iroha, description="Gender: female. Warm.")}), "belongs in the meta"),
             (minimal(cast={"Iroha": dict(iroha), "Lion": {"description": "y", "also": ["Iroha"]}}), "cast twice"),
             (minimal(cast={"Cait Sith": {"description": "x"}, "Cait-Sith": {"description": "y"}}), "already has"),
-            (minimal(pools={"hume_m": ["a"], "narrator": ["b"], "orc": ["c"]}), "not a casting group"),
-            (minimal(pools={"hume_m": []}), "at least one"),
-            (minimal(pools={"hume_m": [{"description": "a", "gender": "female"}], "narrator": ["b"]}), "unknown key"),
-            (minimal(pools={"hume_m": ["a"]}), "no pool for casting group(s) narrator"),
+            (minimal(pools={"hume_m_adult": ["a"], "narrator": ["b"], "orc": ["c"]}), "not a casting group"),
+            (minimal(pools={"hume_m_adult": []}), "at least one"),
+            (minimal(pools={"hume_m_adult": [{"description": "a", "gender": "female"}], "narrator": ["b"]}), "unknown key"),
+            (minimal(pools={"hume_m_adult": ["a"]}), "no pool for casting group(s) narrator"),
         ]
         for data, message in cases:
             with self.subTest(message=message), self.assertRaises(ValueError) as cm:
@@ -88,7 +88,7 @@ class DesignsTest(unittest.TestCase):
             p = Path(d) / "v.yaml"
             p.write_text("calibration: Hello there.\nraces: {galka: Huge., hume: "", narrator: ""}\ncast:\n  Zeid:\n    gender: male\n"
                          "    race: galka\n    description: Deep.\n"
-                         "pools:\n  hume_m: [a]\n  narrator: [b]\n", encoding="utf-8")
+                         "pools:\n  hume_m_adult: [a]\n  narrator: [b]\n", encoding="utf-8")
             loaded = designs.Designs.load(p, groups=GROUPS)
         self.assertEqual(loaded.compose("zeid"), "Gender: male. Huge. Deep.")
 
@@ -98,16 +98,17 @@ class DesignsTest(unittest.TestCase):
         self.assertTrue(d.calibration.endswith("look behind you."))
         # the listening spike's voices keep the seeds their clips were drawn with
         self.assertEqual(d.voices["tenzen"]["seed"], 1862)
-        # a hume's instruction is exactly the string its clip was designed from before the meta split
-        self.assertEqual(d.compose("tenzen"), "Gender: male. Age: middle-aged. A calm, low, dignified samurai's "
-                                              "voice with a slight Japanese accent; unhurried, precise, formal.")
+        # gender, age, the hume phrase as it stands (edited in the review), then the description
+        hume = d.races["hume"] + " " if d.races["hume"] else ""
+        self.assertEqual(d.compose("tenzen"), f"Gender: male. Age: middle-aged. {hume}A calm, low, dignified "
+                                              "samurai's voice with a slight Japanese accent; unhurried, precise, formal.")
         races = {designs.race_gender(g)[0] for g in casting.POOLS}
         self.assertEqual(races - set(d.races), set(), "every group's race has a phrase entry")
 
 
 class EditAndDumpTest(unittest.TestCase):
     def test_race_gender(self):
-        self.assertEqual(designs.race_gender("taru_f"), ("tarutaru", "female"))
+        self.assertEqual(designs.race_gender("taru_f_child"), ("tarutaru", "female"))
         self.assertEqual(designs.race_gender(None), ("unknown", "unknown"))
         self.assertEqual(set(designs.GROUP_INFO), set(casting.POOLS), "every casting group has a race and gender")
 
@@ -118,8 +119,8 @@ class EditAndDumpTest(unittest.TestCase):
         self.assertEqual((v["description"], v["seed"], v["age"], v["gender"]), ("New words.", 9, "thirties", "female"))
         with self.assertRaises(ValueError):
             d.update("iroha", "", 9)
-        d.update("hume_m-0", "Plain.", 2, gender="female", age="forties", race="galka")
-        p = d.voices["hume_m-0"]
+        d.update("hume_m_adult-0", "Plain.", 2, gender="female", age="forties", race="galka")
+        p = d.voices["hume_m_adult-0"]
         self.assertEqual((p["gender"], p["race"], p["age"]), ("male", "hume", "forties"),
                          "a pool voice keeps its group's gender and race")
         voice = d.add_cast("Numi Adaligo", "Sly.", 3, gender="female", age="twenties", race="mithra")
@@ -127,11 +128,17 @@ class EditAndDumpTest(unittest.TestCase):
         self.assertEqual(d.compose(voice), "Gender: female. Age: twenties. A cat-woman. Sly.")
         with self.assertRaises(ValueError):
             d.add_cast("Volto Oscuro", "x")   # already shares Iroha's voice
+        d.update_race("mithra", "  A lithe  cat-woman. ")
+        self.assertEqual(d.compose(voice), "Gender: female. Age: twenties. A lithe cat-woman. Sly.")
+        d.update_race("mithra", "")
+        self.assertEqual(d.compose(voice), "Gender: female. Age: twenties. Sly.")
+        with self.assertRaises(ValueError):
+            d.update_race("moogle", "Small.")
 
     def test_dump_round_trips_and_keeps_the_header(self):
         with tempfile.TemporaryDirectory() as tmp:
             p = Path(tmp) / "v.yaml"
-            p.write_text("# keep me\n\ncalibration: x\ncast: {}\npools: {hume_m: [a], narrator: [b]}\n")
+            p.write_text("# keep me\n\ncalibration: x\ncast: {}\npools: {hume_m_adult: [a], narrator: [b]}\n")
             d = designs.Designs(minimal(cast={"#7 Guard": {"description": "A gate guard.", "race": "hume"},
                                               "Cait Sith": {"description": "Prim.", "also": [f"Cait Sith {n}"
                                                             for n in range(12)]}}), groups=GROUPS)
@@ -160,20 +167,20 @@ class MossCastingTest(unittest.TestCase):
         self.d = designs.Designs(minimal(races={r: "" for r in {designs.race_gender(g)[0] for g in casting.POOLS}},
                                          cast={"Iroha": {"description": "Warm.", "also": ["Volto Oscuro"]},
                                                "Grav'iton": {"description": "Cold."}},
-                                         pools={g: [f"{g} voice"] * (3 if g == "galka" else 1)
+                                         pools={g: [f"{g} voice"] * (3 if g == "galka_m_adult" else 1)
                                                 for g in casting.POOLS}), groups=set(casting.POOLS))
 
     def test_pool_pick_is_stable_and_in_the_group(self):
-        v = casting.voice_for_group("galka", "Gumbah", "moss", designs=self.d)
-        self.assertIn(v, self.d.pools["galka"])
-        self.assertEqual(v, casting.voice_for_group("galka", "Gumbah", "moss", designs=self.d))
+        v = casting.voice_for_group("galka_m_adult", "Gumbah", "moss", designs=self.d)
+        self.assertIn(v, self.d.pools["galka_m_adult"])
+        self.assertEqual(v, casting.voice_for_group("galka_m_adult", "Gumbah", "moss", designs=self.d))
         self.assertIsNone(casting.voice_for_group("orc", "Gumbah", "moss", designs=self.d))
-        self.assertIsNone(casting.voice_for_group("galka", "Gumbah", "festival", designs=self.d))
+        self.assertIsNone(casting.voice_for_group("galka_m_adult", "Gumbah", "festival", designs=self.d))
 
     def test_census_fallback_uses_the_designed_pools(self):
         census = {"Numi Adaligo": {"race": 7}}
         self.assertEqual(casting.census_voice(census, "Numi Adaligo", "moss"),
-                         casting.pick(casting.moss_pools()["mithra"], "Numi Adaligo"))
+                         casting.pick(casting.moss_pools()["mithra_f_adult"], "Numi Adaligo"))
 
     def test_cast_moss_section(self):
         import cast
@@ -182,8 +189,8 @@ class MossCastingTest(unittest.TestCase):
         self.assertEqual(out["Volto Oscuro"], "iroha")       # `also`
         self.assertEqual(out["Grav'iton"], "grav-iton")
         self.assertEqual(out[""], "narrator-0")
-        self.assertEqual(out["default"], "hume_m-0")
-        self.assertIn(out["Gumbah"], self.d.pools["galka"])  # cast but not designed: the group's pool
+        self.assertEqual(out["default"], "hume_m_adult-0")
+        self.assertIn(out["Gumbah"], self.d.pools["galka_m_adult"])  # cast but not designed: the group's pool
         variants = [out[n] for n in ("Shantotto", "D. Shantotto")]
         self.assertEqual(len(set(variants)), 1, "variants of one character share a voice")
 
