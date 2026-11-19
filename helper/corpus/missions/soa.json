@@ -1,0 +1,626 @@
+{
+ "source": "missions/soa",
+ "scripts": 106,
+ "scenes": {
+  "named": 172,
+  "with_lines": 166,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 3316,
+   "chars": 267115
+  },
+  "narration": {
+   "lines": 155,
+   "chars": 20129
+  },
+  "unattributed": {
+   "lines": 1566,
+   "chars": 110301
+  },
+  "system": {
+   "lines": 45,
+   "chars": 2427
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 190,
+   "chars": 12440
+  },
+  "unvoiceable": {
+   "lines": 277,
+   "chars": 196
+  }
+ },
+ "voiced": {
+  "lines": 3471,
+  "chars": 287244
+ },
+ "reasons": {
+  "unattributed": {
+   "no speaker": 1566
+  },
+  "system": {
+   "a labelled readout": 1,
+   "an instruction or prompt": 7,
+   "battle message": 2,
+   "item, key item, or gil changing hands": 1,
+   "text the cleaner left damaged": 13,
+   "told to the player about the player": 21
+  },
+  "menu": {
+   "menu": 190
+  },
+  "unvoiceable": {
+   "empty text": 133,
+   "live-only: 7f80, item": 1,
+   "live-only: item": 89,
+   "live-only: item, number": 2,
+   "live-only: number": 19,
+   "live-only: too many variants": 3,
+   "punctuation only": 18,
+   "stage direction only": 12
+  }
+ },
+ "speakers": {
+  "Arciela": {
+   "lines": 1158,
+   "chars": 73078
+  },
+  "Levil": {
+   "lines": 279,
+   "chars": 28922
+  },
+  "Ingrid": {
+   "lines": 197,
+   "chars": 18123
+  },
+  "Teodor": {
+   "lines": 144,
+   "chars": 13025
+  },
+  "Hildebert": {
+   "lines": 142,
+   "chars": 13057
+  },
+  "Morimar": {
+   "lines": 117,
+   "chars": 7729
+  },
+  "Hades": {
+   "lines": 114,
+   "chars": 6958
+  },
+  "Svenja": {
+   "lines": 93,
+   "chars": 6879
+  },
+  "Chero-Machero": {
+   "lines": 92,
+   "chars": 8020
+  },
+  "Melvien": {
+   "lines": 83,
+   "chars": 7669
+  },
+  "Brenton": {
+   "lines": 67,
+   "chars": 9302
+  },
+  "Lhe Lhangavo": {
+   "lines": 64,
+   "chars": 5173
+  },
+  "Ploh Trishbahk": {
+   "lines": 54,
+   "chars": 4554
+  },
+  "Tiana": {
+   "lines": 52,
+   "chars": 2712
+  },
+  "Vortimere": {
+   "lines": 49,
+   "chars": 4447
+  },
+  "Gratzigg": {
+   "lines": 46,
+   "chars": 3217
+  },
+  "Chalvava": {
+   "lines": 45,
+   "chars": 4321
+  },
+  "Ikhi Askamot": {
+   "lines": 44,
+   "chars": 3725
+  },
+  "Darcia": {
+   "lines": 43,
+   "chars": 4785
+  },
+  "Andreine": {
+   "lines": 42,
+   "chars": 4000
+  },
+  "Amchuchu": {
+   "lines": 38,
+   "chars": 2802
+  },
+  "Margret": {
+   "lines": 38,
+   "chars": 3848
+  },
+  "Pollimio": {
+   "lines": 35,
+   "chars": 3464
+  },
+  "Kipligg": {
+   "lines": 31,
+   "chars": 3451
+  },
+  "HEISHI_B": {
+   "lines": 28,
+   "chars": 2900
+  },
+  "HEISHI_A": {
+   "lines": 19,
+   "chars": 1731
+  },
+  "Oscairn": {
+   "lines": 18,
+   "chars": 1783
+  },
+  "Soni-Muni": {
+   "lines": 17,
+   "chars": 1279
+  },
+  "Elmric": {
+   "lines": 15,
+   "chars": 1434
+  },
+  "Estienneux": {
+   "lines": 15,
+   "chars": 1482
+  },
+  "Foss": {
+   "lines": 15,
+   "chars": 1577
+  },
+  "Nyline": {
+   "lines": 15,
+   "chars": 1377
+  },
+  "Dangueubert": {
+   "lines": 10,
+   "chars": 1131
+  },
+  "Wegellion": {
+   "lines": 10,
+   "chars": 627
+  },
+  "Oshasha": {
+   "lines": 8,
+   "chars": 825
+  },
+  "Rigobertine": {
+   "lines": 8,
+   "chars": 748
+  },
+  "Erminold": {
+   "lines": 7,
+   "chars": 816
+  },
+  "Gottah Maporushanoh": {
+   "lines": 7,
+   "chars": 458
+  },
+  "Anilla": {
+   "lines": 6,
+   "chars": 536
+  },
+  "Bastingart": {
+   "lines": 6,
+   "chars": 813
+  },
+  "Matildie": {
+   "lines": 6,
+   "chars": 556
+  },
+  "Audibert": {
+   "lines": 5,
+   "chars": 306
+  },
+  "Behsa Alehgo": {
+   "lines": 5,
+   "chars": 607
+  },
+  "Brenna": {
+   "lines": 5,
+   "chars": 620
+  },
+  "Muruk-Mojiruk": {
+   "lines": 5,
+   "chars": 477
+  },
+  "Yeggha Dolashi": {
+   "lines": 4,
+   "chars": 268
+  },
+  "Flaviria": {
+   "lines": 3,
+   "chars": 208
+  },
+  "Grennith": {
+   "lines": 3,
+   "chars": 215
+  },
+  "Stout Weir": {
+   "lines": 3,
+   "chars": 362
+  },
+  "Reginald": {
+   "lines": 2,
+   "chars": 132
+  },
+  "Sainene": {
+   "lines": 2,
+   "chars": 343
+  },
+  "Yefafa": {
+   "lines": 2,
+   "chars": 243
+  }
+ },
+ "unattributed": [
+  {
+   "zone": 256,
+   "event": 156,
+   "lines": 1
+  },
+  {
+   "zone": 257,
+   "event": 1500,
+   "lines": 3
+  },
+  {
+   "zone": 257,
+   "event": 1502,
+   "lines": 10
+  },
+  {
+   "zone": 257,
+   "event": 1506,
+   "lines": 6
+  },
+  {
+   "zone": 257,
+   "event": 1507,
+   "lines": 21
+  },
+  {
+   "zone": 257,
+   "event": 1509,
+   "lines": 4
+  },
+  {
+   "zone": 257,
+   "event": 1510,
+   "lines": 5
+  },
+  {
+   "zone": 257,
+   "event": 1511,
+   "lines": 25
+  },
+  {
+   "zone": 257,
+   "event": 1513,
+   "lines": 6
+  },
+  {
+   "zone": 257,
+   "event": 1514,
+   "lines": 70
+  },
+  {
+   "zone": 257,
+   "event": 1515,
+   "lines": 3
+  },
+  {
+   "zone": 257,
+   "event": 1528,
+   "lines": 2
+  },
+  {
+   "zone": 257,
+   "event": 1529,
+   "lines": 1
+  },
+  {
+   "zone": 257,
+   "event": 1532,
+   "lines": 6
+  },
+  {
+   "zone": 257,
+   "event": 1535,
+   "lines": 8
+  },
+  {
+   "zone": 257,
+   "event": 1536,
+   "lines": 7
+  },
+  {
+   "zone": 257,
+   "event": 1537,
+   "lines": 3
+  },
+  {
+   "zone": 257,
+   "event": 1538,
+   "lines": 9
+  },
+  {
+   "zone": 257,
+   "event": 1549,
+   "lines": 28
+  },
+  {
+   "zone": 257,
+   "event": 1550,
+   "lines": 12
+  },
+  {
+   "zone": 257,
+   "event": 1551,
+   "lines": 49
+  },
+  {
+   "zone": 257,
+   "event": 1552,
+   "lines": 1
+  },
+  {
+   "zone": 257,
+   "event": 1555,
+   "lines": 26
+  },
+  {
+   "zone": 258,
+   "event": 0,
+   "lines": 65
+  },
+  {
+   "zone": 258,
+   "event": 343,
+   "lines": 46
+  },
+  {
+   "zone": 258,
+   "event": 352,
+   "lines": 5
+  },
+  {
+   "zone": 258,
+   "event": 353,
+   "lines": 2
+  },
+  {
+   "zone": 258,
+   "event": 356,
+   "lines": 2
+  },
+  {
+   "zone": 258,
+   "event": 367,
+   "lines": 18
+  },
+  {
+   "zone": 258,
+   "event": 368,
+   "lines": 33
+  },
+  {
+   "zone": 258,
+   "event": 369,
+   "lines": 46
+  },
+  {
+   "zone": 258,
+   "event": 374,
+   "lines": 78
+  },
+  {
+   "zone": 258,
+   "event": 375,
+   "lines": 19
+  },
+  {
+   "zone": 261,
+   "event": 3,
+   "lines": 20
+  },
+  {
+   "zone": 261,
+   "event": 29,
+   "lines": 11
+  },
+  {
+   "zone": 261,
+   "event": 30,
+   "lines": 21
+  },
+  {
+   "zone": 262,
+   "event": 517,
+   "lines": 5
+  },
+  {
+   "zone": 263,
+   "event": 1,
+   "lines": 32
+  },
+  {
+   "zone": 263,
+   "event": 2,
+   "lines": 24
+  },
+  {
+   "zone": 263,
+   "event": 3,
+   "lines": 11
+  },
+  {
+   "zone": 263,
+   "event": 4,
+   "lines": 3
+  },
+  {
+   "zone": 267,
+   "event": 29,
+   "lines": 11
+  },
+  {
+   "zone": 267,
+   "event": 30,
+   "lines": 6
+  },
+  {
+   "zone": 267,
+   "event": 31,
+   "lines": 13
+  },
+  {
+   "zone": 267,
+   "event": 33,
+   "lines": 8
+  },
+  {
+   "zone": 267,
+   "event": 58,
+   "lines": 10
+  },
+  {
+   "zone": 270,
+   "event": 29,
+   "lines": 6
+  },
+  {
+   "zone": 270,
+   "event": 30,
+   "lines": 11
+  },
+  {
+   "zone": 270,
+   "event": 34,
+   "lines": 16
+  },
+  {
+   "zone": 270,
+   "event": 36,
+   "lines": 4
+  },
+  {
+   "zone": 273,
+   "event": 7,
+   "lines": 2
+  },
+  {
+   "zone": 273,
+   "event": 8,
+   "lines": 9
+  },
+  {
+   "zone": 273,
+   "event": 9,
+   "lines": 23
+  },
+  {
+   "zone": 277,
+   "event": 1,
+   "lines": 47
+  },
+  {
+   "zone": 277,
+   "event": 2,
+   "lines": 14
+  },
+  {
+   "zone": 277,
+   "event": 3,
+   "lines": 21
+  },
+  {
+   "zone": 277,
+   "event": 4,
+   "lines": 97
+  },
+  {
+   "zone": 281,
+   "event": 3,
+   "lines": 40
+  },
+  {
+   "zone": 281,
+   "event": 4,
+   "lines": 4
+  },
+  {
+   "zone": 281,
+   "event": 10,
+   "lines": 21
+  },
+  {
+   "zone": 281,
+   "event": 11,
+   "lines": 16
+  },
+  {
+   "zone": 282,
+   "event": 1,
+   "lines": 30
+  },
+  {
+   "zone": 282,
+   "event": 2,
+   "lines": 126
+  },
+  {
+   "zone": 282,
+   "event": 3,
+   "lines": 121
+  },
+  {
+   "zone": 282,
+   "event": 4,
+   "lines": 4
+  },
+  {
+   "zone": 282,
+   "event": 5,
+   "lines": 37
+  },
+  {
+   "zone": 282,
+   "event": 6,
+   "lines": 42
+  },
+  {
+   "zone": 282,
+   "event": 7,
+   "lines": 68
+  },
+  {
+   "zone": 284,
+   "event": 4,
+   "lines": 12
+  }
+ ]
+}
