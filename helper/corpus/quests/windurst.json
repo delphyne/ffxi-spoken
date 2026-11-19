@@ -1,0 +1,419 @@
+{
+ "source": "quests/windurst",
+ "scripts": 51,
+ "scenes": {
+  "named": 301,
+  "with_lines": 246,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 864,
+   "chars": 69268
+  },
+  "narration": {
+   "lines": 30,
+   "chars": 1116
+  },
+  "unattributed": {
+   "lines": 0,
+   "chars": 0
+  },
+  "system": {
+   "lines": 29,
+   "chars": 1134
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 86,
+   "chars": 3630
+  },
+  "unvoiceable": {
+   "lines": 133,
+   "chars": 73
+  }
+ },
+ "voiced": {
+  "lines": 894,
+  "chars": 70384
+ },
+ "reasons": {
+  "system": {
+   "emote or a sentence missing its subject": 17,
+   "told to the player about the player": 12
+  },
+  "menu": {
+   "menu": 86
+  },
+  "unvoiceable": {
+   "empty text": 2,
+   "live-only: 7f80, item": 7,
+   "live-only: item": 84,
+   "live-only: item, number": 1,
+   "live-only: number": 27,
+   "punctuation only": 12
+  }
+ },
+ "speakers": {
+  "Ojha Rhawash": {
+   "lines": 133,
+   "chars": 7106
+  },
+  "Kohlo-Lakolo": {
+   "lines": 85,
+   "chars": 6018
+  },
+  "Shantotto": {
+   "lines": 48,
+   "chars": 5229
+  },
+  "Kerutoto": {
+   "lines": 43,
+   "chars": 4097
+  },
+  "Leepe-Hoppe": {
+   "lines": 35,
+   "chars": 3376
+  },
+  "Carbuncle": {
+   "lines": 31,
+   "chars": 2154
+  },
+  "Kuroido-Moido": {
+   "lines": 26,
+   "chars": 3086
+  },
+  "Nanaa Mihgo": {
+   "lines": 25,
+   "chars": 2067
+  },
+  "Kenapa-Keppa": {
+   "lines": 23,
+   "chars": 811
+  },
+  "Ohbiru-Dohbiru": {
+   "lines": 22,
+   "chars": 1835
+  },
+  "Perih Vashai": {
+   "lines": 18,
+   "chars": 1906
+  },
+  "Chipmy-Popmy": {
+   "lines": 15,
+   "chars": 1433
+  },
+  "Shikaree X": {
+   "lines": 15,
+   "chars": 1205
+  },
+  "Apururu": {
+   "lines": 14,
+   "chars": 1568
+  },
+  "Hakkuru-Rinkuru": {
+   "lines": 14,
+   "chars": 1152
+  },
+  "Ahko Mhalijikhari": {
+   "lines": 10,
+   "chars": 820
+  },
+  "Gantineux": {
+   "lines": 10,
+   "chars": 1038
+  },
+  "Ibwam": {
+   "lines": 10,
+   "chars": 1092
+  },
+  "Honoi-Gomoi": {
+   "lines": 9,
+   "chars": 701
+  },
+  "Lumomo": {
+   "lines": 9,
+   "chars": 886
+  },
+  "Thubu Parohren": {
+   "lines": 9,
+   "chars": 930
+  },
+  "Vauderame": {
+   "lines": 9,
+   "chars": 952
+  },
+  "Joker": {
+   "lines": 8,
+   "chars": 525
+  },
+  "Linzaza": {
+   "lines": 8,
+   "chars": 914
+  },
+  "Pichichi": {
+   "lines": 8,
+   "chars": 357
+  },
+  "Semih Lafihna": {
+   "lines": 8,
+   "chars": 456
+  },
+  "Angelica": {
+   "lines": 7,
+   "chars": 739
+  },
+  "Gambilox Wanderling": {
+   "lines": 7,
+   "chars": 346
+  },
+  "Koru-Moru": {
+   "lines": 7,
+   "chars": 728
+  },
+  "Perchond": {
+   "lines": 7,
+   "chars": 889
+  },
+  "Shikaree M": {
+   "lines": 7,
+   "chars": 629
+  },
+  "Eggblix": {
+   "lines": 6,
+   "chars": 368
+  },
+  "Furakku-Norakku": {
+   "lines": 6,
+   "chars": 568
+  },
+  "Hae Jakkya": {
+   "lines": 6,
+   "chars": 650
+  },
+  "Juroro": {
+   "lines": 6,
+   "chars": 394
+  },
+  "Ruslan": {
+   "lines": 6,
+   "chars": 669
+  },
+  "Five of Spades": {
+   "lines": 5,
+   "chars": 291
+  },
+  "Ildy-Goldy": {
+   "lines": 5,
+   "chars": 394
+  },
+  "Jatan-Paratan": {
+   "lines": 5,
+   "chars": 506
+  },
+  "Moreno-Toeno": {
+   "lines": 5,
+   "chars": 308
+  },
+  "Papo-Hopo": {
+   "lines": 5,
+   "chars": 227
+  },
+  "Tosuka-Porika": {
+   "lines": 5,
+   "chars": 549
+  },
+  "Ace of Swords": {
+   "lines": 4,
+   "chars": 133
+  },
+  "Ajido-Marujido": {
+   "lines": 4,
+   "chars": 287
+  },
+  "Cha Lebagta": {
+   "lines": 4,
+   "chars": 381
+  },
+  "Chamama": {
+   "lines": 4,
+   "chars": 300
+  },
+  "Elfriede": {
+   "lines": 4,
+   "chars": 214
+  },
+  "Eperdur": {
+   "lines": 4,
+   "chars": 340
+  },
+  "Hae Jakhya": {
+   "lines": 4,
+   "chars": 204
+  },
+  "Orn": {
+   "lines": 4,
+   "chars": 428
+  },
+  "Roberta": {
+   "lines": 4,
+   "chars": 390
+  },
+  "Saltvix": {
+   "lines": 4,
+   "chars": 154
+  },
+  "Spare One": {
+   "lines": 4,
+   "chars": 136
+  },
+  "Yatniel": {
+   "lines": 4,
+   "chars": 428
+  },
+  "An Polaali": {
+   "lines": 3,
+   "chars": 254
+  },
+  "Bopa Greso": {
+   "lines": 3,
+   "chars": 303
+  },
+  "Fenrir": {
+   "lines": 3,
+   "chars": 159
+  },
+  "Grasswix": {
+   "lines": 3,
+   "chars": 92
+  },
+  "Hagain": {
+   "lines": 3,
+   "chars": 330
+  },
+  "Harnek": {
+   "lines": 3,
+   "chars": 183
+  },
+  "Hiwon-Biwon": {
+   "lines": 3,
+   "chars": 87
+  },
+  "Ipupu": {
+   "lines": 3,
+   "chars": 359
+  },
+  "Kororo": {
+   "lines": 3,
+   "chars": 390
+  },
+  "Kotan-Purutan": {
+   "lines": 3,
+   "chars": 384
+  },
+  "Paku-Nakku": {
+   "lines": 3,
+   "chars": 137
+  },
+  "Pechiru-Mashiru": {
+   "lines": 3,
+   "chars": 351
+  },
+  "Serukoko": {
+   "lines": 3,
+   "chars": 442
+  },
+  "Sniggnix": {
+   "lines": 3,
+   "chars": 92
+  },
+  "Torino-Samarino": {
+   "lines": 3,
+   "chars": 141
+  },
+  "An Shanaa": {
+   "lines": 2,
+   "chars": 227
+  },
+  "Ardea": {
+   "lines": 2,
+   "chars": 90
+  },
+  "Chomoro-Kyotoro": {
+   "lines": 2,
+   "chars": 157
+  },
+  "Gomada-Vulmada": {
+   "lines": 2,
+   "chars": 68
+  },
+  "Hariga-Origa": {
+   "lines": 2,
+   "chars": 241
+  },
+  "Pyo Nzon": {
+   "lines": 2,
+   "chars": 41
+  },
+  "Rukususu": {
+   "lines": 2,
+   "chars": 239
+  },
+  "Sohdede": {
+   "lines": 2,
+   "chars": 162
+  },
+  "Tokaka": {
+   "lines": 2,
+   "chars": 142
+  },
+  "Varun": {
+   "lines": 2,
+   "chars": 181
+  },
+  "Yafa Yaa": {
+   "lines": 2,
+   "chars": 58
+  },
+  "Ace of Wands": {
+   "lines": 1,
+   "chars": 13
+  },
+  "Chepelle": {
+   "lines": 1,
+   "chars": 109
+  },
+  "Moari-Kaaori": {
+   "lines": 1,
+   "chars": 82
+  },
+  "Pauluart": {
+   "lines": 1,
+   "chars": 60
+  },
+  "Shikaree Y": {
+   "lines": 1,
+   "chars": 57
+  },
+  "Sneaking Tiger": {
+   "lines": 1,
+   "chars": 80
+  },
+  "Talking Doll": {
+   "lines": 1,
+   "chars": 53
+  },
+  "Ulzana": {
+   "lines": 1,
+   "chars": 28
+  },
+  "Yoran-Oran": {
+   "lines": 1,
+   "chars": 112
+  }
+ },
+ "unattributed": []
+}
