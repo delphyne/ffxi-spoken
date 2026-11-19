@@ -1,0 +1,486 @@
+{
+ "source": "missions/windurst",
+ "scripts": 24,
+ "scenes": {
+  "named": 174,
+  "with_lines": 155,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 1378,
+   "chars": 115055
+  },
+  "narration": {
+   "lines": 13,
+   "chars": 985
+  },
+  "unattributed": {
+   "lines": 57,
+   "chars": 4268
+  },
+  "system": {
+   "lines": 109,
+   "chars": 6773
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 23,
+   "chars": 1439
+  },
+  "unvoiceable": {
+   "lines": 125,
+   "chars": 67
+  }
+ },
+ "voiced": {
+  "lines": 1391,
+  "chars": 116040
+ },
+ "reasons": {
+  "unattributed": {
+   "no speaker": 57
+  },
+  "system": {
+   "told to the player about the player": 109
+  },
+  "menu": {
+   "menu": 23
+  },
+  "unvoiceable": {
+   "empty text": 3,
+   "live-only: item": 81,
+   "live-only: number": 25,
+   "punctuation only": 16
+  }
+ },
+ "speakers": {
+  "Ajido-Marujido": {
+   "lines": 111,
+   "chars": 10470
+  },
+  "Star Sibyl": {
+   "lines": 77,
+   "chars": 6972
+  },
+  "Semih Lafihna": {
+   "lines": 71,
+   "chars": 5551
+  },
+  "Palometa": {
+   "lines": 69,
+   "chars": 1628
+  },
+  "Apururu": {
+   "lines": 67,
+   "chars": 5884
+  },
+  "Tosuka-Porika": {
+   "lines": 57,
+   "chars": 5850
+  },
+  "Zonpa-Zippa": {
+   "lines": 56,
+   "chars": 6658
+  },
+  "Lion": {
+   "lines": 49,
+   "chars": 3755
+  },
+  "Zeid": {
+   "lines": 44,
+   "chars": 3842
+  },
+  "Schultz": {
+   "lines": 37,
+   "chars": 4737
+  },
+  "Verena": {
+   "lines": 33,
+   "chars": 1771
+  },
+  "Halver": {
+   "lines": 31,
+   "chars": 3934
+  },
+  "Patt-Pott": {
+   "lines": 30,
+   "chars": 2758
+  },
+  "Fickblix": {
+   "lines": 26,
+   "chars": 1012
+  },
+  "Talking Doll": {
+   "lines": 25,
+   "chars": 1907
+  },
+  "Kasaroro": {
+   "lines": 23,
+   "chars": 2331
+  },
+  "Shadow Lord": {
+   "lines": 23,
+   "chars": 1917
+  },
+  "Duke Alloces": {
+   "lines": 22,
+   "chars": 1815
+  },
+  "Raogrimm": {
+   "lines": 20,
+   "chars": 1010
+  },
+  "Moreno-Toeno": {
+   "lines": 18,
+   "chars": 2181
+  },
+  "Rukususu": {
+   "lines": 18,
+   "chars": 1610
+  },
+  "Heimji-Keimji": {
+   "lines": 17,
+   "chars": 1568
+  },
+  "Kam'lanaut": {
+   "lines": 17,
+   "chars": 1165
+  },
+  "Muckvix": {
+   "lines": 17,
+   "chars": 1295
+  },
+  "Dazbog": {
+   "lines": 16,
+   "chars": 585
+  },
+  "Pakh Jatalfih": {
+   "lines": 16,
+   "chars": 1325
+  },
+  "Grohm": {
+   "lines": 15,
+   "chars": 1430
+  },
+  "Francmage": {
+   "lines": 14,
+   "chars": 1229
+  },
+  "Shantotto": {
+   "lines": 14,
+   "chars": 1430
+  },
+  "Eald'narche": {
+   "lines": 13,
+   "chars": 908
+  },
+  "Aldo": {
+   "lines": 12,
+   "chars": 1124
+  },
+  "Joker": {
+   "lines": 12,
+   "chars": 1136
+  },
+  "Ulrich": {
+   "lines": 12,
+   "chars": 524
+  },
+  "Magh Bihu": {
+   "lines": 11,
+   "chars": 462
+  },
+  "Wolfgang": {
+   "lines": 11,
+   "chars": 652
+  },
+  "Carbuncle": {
+   "lines": 10,
+   "chars": 522
+  },
+  "Atori-Tutori": {
+   "lines": 9,
+   "chars": 823
+  },
+  "Fenrir": {
+   "lines": 9,
+   "chars": 854
+  },
+  "Pius": {
+   "lines": 9,
+   "chars": 1070
+  },
+  "Topuru-Kuperu": {
+   "lines": 9,
+   "chars": 671
+  },
+  "Volker": {
+   "lines": 9,
+   "chars": 468
+  },
+  "Eideialc": {
+   "lines": 8,
+   "chars": 616
+  },
+  "Kupipi": {
+   "lines": 7,
+   "chars": 480
+  },
+  "Laila": {
+   "lines": 7,
+   "chars": 613
+  },
+  "Trion": {
+   "lines": 7,
+   "chars": 604
+  },
+  "Yoran-Oran": {
+   "lines": 7,
+   "chars": 887
+  },
+  "Zokima-Rokima": {
+   "lines": 7,
+   "chars": 1013
+  },
+  "Ayame": {
+   "lines": 6,
+   "chars": 570
+  },
+  "Hani": {
+   "lines": 6,
+   "chars": 603
+  },
+  "Mawl'gofaur": {
+   "lines": 6,
+   "chars": 467
+  },
+  "Monberaux": {
+   "lines": 6,
+   "chars": 392
+  },
+  "Rakoh Buuma": {
+   "lines": 6,
+   "chars": 675
+  },
+  "Searcher": {
+   "lines": 6,
+   "chars": 538
+  },
+  "Seeker": {
+   "lines": 6,
+   "chars": 519
+  },
+  "Spotter": {
+   "lines": 6,
+   "chars": 472
+  },
+  "Geebeh": {
+   "lines": 5,
+   "chars": 190
+  },
+  "Grav'iton": {
+   "lines": 5,
+   "chars": 523
+  },
+  "Kerutoto": {
+   "lines": 5,
+   "chars": 393
+  },
+  "Leepe-Hoppe": {
+   "lines": 5,
+   "chars": 606
+  },
+  "Zubaba": {
+   "lines": 5,
+   "chars": 556
+  },
+  "Courisaille": {
+   "lines": 4,
+   "chars": 140
+  },
+  "Iru-Kuiru": {
+   "lines": 4,
+   "chars": 226
+  },
+  "Janshura-Rashura": {
+   "lines": 4,
+   "chars": 522
+  },
+  "Nanaa Mihgo": {
+   "lines": 4,
+   "chars": 300
+  },
+  "Paya-Sabya": {
+   "lines": 4,
+   "chars": 239
+  },
+  "Rabntah": {
+   "lines": 4,
+   "chars": 287
+  },
+  "Rochefogne": {
+   "lines": 4,
+   "chars": 321
+  },
+  "Sedal-Godjal": {
+   "lines": 4,
+   "chars": 349
+  },
+  "Shadow of Darkness": {
+   "lines": 4,
+   "chars": 293
+  },
+  "Ace of Wands": {
+   "lines": 3,
+   "chars": 97
+  },
+  "Hakkuru-Rinkuru": {
+   "lines": 3,
+   "chars": 275
+  },
+  "High Wind": {
+   "lines": 3,
+   "chars": 102
+  },
+  "Karaha-Baruha": {
+   "lines": 3,
+   "chars": 154
+  },
+  "Naji": {
+   "lines": 3,
+   "chars": 182
+  },
+  "Ren": {
+   "lines": 3,
+   "chars": 212
+  },
+  "Romaa Mihgo": {
+   "lines": 3,
+   "chars": 205
+  },
+  "Tih Pikeh": {
+   "lines": 3,
+   "chars": 280
+  },
+  "Vanono": {
+   "lines": 3,
+   "chars": 302
+  },
+  "Warlord Rojgnoj": {
+   "lines": 3,
+   "chars": 190
+  },
+  "Ace of Cups": {
+   "lines": 2,
+   "chars": 102
+  },
+  "Ace of Swords": {
+   "lines": 2,
+   "chars": 208
+  },
+  "Blamor": {
+   "lines": 2,
+   "chars": 134
+  },
+  "Cornelia": {
+   "lines": 2,
+   "chars": 88
+  },
+  "Iron Eater": {
+   "lines": 2,
+   "chars": 187
+  },
+  "Kareh'ayollio": {
+   "lines": 2,
+   "chars": 220
+  },
+  "Mokyokyo": {
+   "lines": 2,
+   "chars": 248
+  },
+  "Pieuje": {
+   "lines": 2,
+   "chars": 200
+  },
+  "Rhy Epocan": {
+   "lines": 2,
+   "chars": 149
+  },
+  "Seed Goblin": {
+   "lines": 2,
+   "chars": 293
+  },
+  "Seed Orc": {
+   "lines": 2,
+   "chars": 146
+  },
+  "Seed Yagudo": {
+   "lines": 2,
+   "chars": 46
+  },
+  "Yagudo Inquisitor": {
+   "lines": 2,
+   "chars": 28
+  },
+  "Babenn": {
+   "lines": 1,
+   "chars": 103
+  },
+  "Heruze-Moruze": {
+   "lines": 1,
+   "chars": 89
+  },
+  "Mandragora Warden": {
+   "lines": 1,
+   "chars": 6
+  },
+  "Maunadolace": {
+   "lines": 1,
+   "chars": 105
+  },
+  "Mih Ketto": {
+   "lines": 1,
+   "chars": 39
+  },
+  "Moyoyo": {
+   "lines": 1,
+   "chars": 51
+  },
+  "Nonterene": {
+   "lines": 1,
+   "chars": 126
+  },
+  "Omran": {
+   "lines": 1,
+   "chars": 123
+  },
+  "Seed Quadav": {
+   "lines": 1,
+   "chars": 38
+  },
+  "Shaz Norem": {
+   "lines": 1,
+   "chars": 35
+  },
+  "Vahn Paineesha": {
+   "lines": 1,
+   "chars": 64
+  }
+ },
+ "unattributed": [
+  {
+   "zone": 206,
+   "event": 32001,
+   "lines": 56
+  },
+  {
+   "zone": 242,
+   "event": 335,
+   "lines": 1
+  }
+ ]
+}
