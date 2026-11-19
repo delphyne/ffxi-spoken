@@ -1,0 +1,1029 @@
+{
+ "source": "quests/ahtUrhgan",
+ "scripts": 52,
+ "scenes": {
+  "named": 308,
+  "with_lines": 260,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 7091,
+   "chars": 442232
+  },
+  "narration": {
+   "lines": 31,
+   "chars": 1389
+  },
+  "unattributed": {
+   "lines": 54,
+   "chars": 3266
+  },
+  "system": {
+   "lines": 42,
+   "chars": 2352
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 124,
+   "chars": 7343
+  },
+  "unvoiceable": {
+   "lines": 445,
+   "chars": 468
+  }
+ },
+ "voiced": {
+  "lines": 7122,
+  "chars": 443621
+ },
+ "reasons": {
+  "unattributed": {
+   "no speaker": 54
+  },
+  "system": {
+   "a labelled readout": 1,
+   "an instruction or prompt": 1,
+   "battle message": 1,
+   "text the cleaner left damaged": 1,
+   "told to the player about the player": 38
+  },
+  "menu": {
+   "menu": 124
+  },
+  "unvoiceable": {
+   "empty text": 43,
+   "live-only: 7f80, item": 11,
+   "live-only: item": 217,
+   "live-only: item, number": 14,
+   "live-only: number": 25,
+   "punctuation only": 134,
+   "stage direction only": 1
+  }
+ },
+ "speakers": {
+  "Naja Salaheem": {
+   "lines": 255,
+   "chars": 16316
+  },
+  "Clavauert": {
+   "lines": 245,
+   "chars": 21432
+  },
+  "Abquhbah": {
+   "lines": 236,
+   "chars": 13517
+  },
+  "Rongelouts": {
+   "lines": 231,
+   "chars": 14210
+  },
+  "Fari-Wari": {
+   "lines": 225,
+   "chars": 17581
+  },
+  "Zazarg": {
+   "lines": 157,
+   "chars": 8519
+  },
+  "Liliroon": {
+   "lines": 152,
+   "chars": 6374
+  },
+  "Salwa-Molwa": {
+   "lines": 147,
+   "chars": 10249
+  },
+  "Raubahn": {
+   "lines": 135,
+   "chars": 10548
+  },
+  "Rughadjeen": {
+   "lines": 131,
+   "chars": 7285
+  },
+  "Qultada": {
+   "lines": 123,
+   "chars": 7923
+  },
+  "Najelith": {
+   "lines": 121,
+   "chars": 5851
+  },
+  "Zweeha": {
+   "lines": 119,
+   "chars": 8288
+  },
+  "Iruki-Waraki": {
+   "lines": 115,
+   "chars": 5979
+  },
+  "Falzum": {
+   "lines": 108,
+   "chars": 3546
+  },
+  "Mishhar": {
+   "lines": 100,
+   "chars": 7100
+  },
+  "Mihli Aliapoh": {
+   "lines": 93,
+   "chars": 6455
+  },
+  "Shamarhaan": {
+   "lines": 88,
+   "chars": 7227
+  },
+  "Faihal": {
+   "lines": 83,
+   "chars": 4325
+  },
+  "Saliyahf": {
+   "lines": 83,
+   "chars": 4632
+  },
+  "Imutira": {
+   "lines": 82,
+   "chars": 4628
+  },
+  "Bernahn": {
+   "lines": 81,
+   "chars": 4563
+  },
+  "Ahgdeen": {
+   "lines": 80,
+   "chars": 4151
+  },
+  "Waoud": {
+   "lines": 79,
+   "chars": 7692
+  },
+  "Wazyih": {
+   "lines": 78,
+   "chars": 4290
+  },
+  "Cacaroon": {
+   "lines": 75,
+   "chars": 4330
+  },
+  "Yadhiwa": {
+   "lines": 75,
+   "chars": 3755
+  },
+  "Kubhe Ijyuhla": {
+   "lines": 73,
+   "chars": 5144
+  },
+  "Shayeeha": {
+   "lines": 72,
+   "chars": 6487
+  },
+  "Tehf Kimasnahya": {
+   "lines": 68,
+   "chars": 4897
+  },
+  "Gadalar": {
+   "lines": 61,
+   "chars": 3906
+  },
+  "Ququroon": {
+   "lines": 61,
+   "chars": 2755
+  },
+  "Qutiba": {
+   "lines": 59,
+   "chars": 4178
+  },
+  "Wasuhd": {
+   "lines": 59,
+   "chars": 3264
+  },
+  "Gessho": {
+   "lines": 57,
+   "chars": 4215
+  },
+  "Galiwao": {
+   "lines": 56,
+   "chars": 3719
+  },
+  "Ghatsad": {
+   "lines": 56,
+   "chars": 3709
+  },
+  "Alcander": {
+   "lines": 54,
+   "chars": 2825
+  },
+  "Hagakoff": {
+   "lines": 54,
+   "chars": 2991
+  },
+  "Topok-Hippok": {
+   "lines": 53,
+   "chars": 3004
+  },
+  "Foudeel": {
+   "lines": 51,
+   "chars": 3566
+  },
+  "Yafahb": {
+   "lines": 51,
+   "chars": 3771
+  },
+  "Biyaada": {
+   "lines": 50,
+   "chars": 3183
+  },
+  "Talhaal": {
+   "lines": 50,
+   "chars": 3876
+  },
+  "Wadayra": {
+   "lines": 49,
+   "chars": 2902
+  },
+  "Yashtra": {
+   "lines": 48,
+   "chars": 2896
+  },
+  "Fochacha": {
+   "lines": 46,
+   "chars": 3196
+  },
+  "Aphmau": {
+   "lines": 45,
+   "chars": 1561
+  },
+  "Yazquhl": {
+   "lines": 45,
+   "chars": 2305
+  },
+  "Ratihb": {
+   "lines": 44,
+   "chars": 2902
+  },
+  "Ulamaal": {
+   "lines": 43,
+   "chars": 3299
+  },
+  "Yasmeel": {
+   "lines": 43,
+   "chars": 2442
+  },
+  "Bashraf": {
+   "lines": 42,
+   "chars": 2153
+  },
+  "Kobdyu": {
+   "lines": 42,
+   "chars": 2497
+  },
+  "Kyokyoroon": {
+   "lines": 42,
+   "chars": 2324
+  },
+  "Deminza": {
+   "lines": 41,
+   "chars": 1761
+  },
+  "Rutta-Watta": {
+   "lines": 41,
+   "chars": 2464
+  },
+  "Shayadar": {
+   "lines": 41,
+   "chars": 4055
+  },
+  "Wahboud": {
+   "lines": 41,
+   "chars": 2703
+  },
+  "Sazog": {
+   "lines": 39,
+   "chars": 2787
+  },
+  "Teepapa": {
+   "lines": 39,
+   "chars": 2740
+  },
+  "Tinga-Matonga": {
+   "lines": 39,
+   "chars": 1925
+  },
+  "Nadee Periyaha": {
+   "lines": 38,
+   "chars": 2154
+  },
+  "Yasfel": {
+   "lines": 38,
+   "chars": 2292
+  },
+  "Basweema": {
+   "lines": 37,
+   "chars": 1767
+  },
+  "Rishfee": {
+   "lines": 37,
+   "chars": 1396
+  },
+  "Joaquin": {
+   "lines": 36,
+   "chars": 1741
+  },
+  "Fhe Maksojha": {
+   "lines": 35,
+   "chars": 2591
+  },
+  "Kakkaroon": {
+   "lines": 34,
+   "chars": 1455
+  },
+  "Ahaadah": {
+   "lines": 33,
+   "chars": 1889
+  },
+  "Elisabeth": {
+   "lines": 33,
+   "chars": 1728
+  },
+  "Milazahn": {
+   "lines": 33,
+   "chars": 2118
+  },
+  "Megomak": {
+   "lines": 32,
+   "chars": 2979
+  },
+  "Razfahd": {
+   "lines": 32,
+   "chars": 2152
+  },
+  "Dkhaaya": {
+   "lines": 29,
+   "chars": 3374
+  },
+  "Ryaaf": {
+   "lines": 29,
+   "chars": 1410
+  },
+  "Isween": {
+   "lines": 27,
+   "chars": 1609
+  },
+  "Aznahf": {
+   "lines": 25,
+   "chars": 1340
+  },
+  "Malzaab": {
+   "lines": 25,
+   "chars": 2807
+  },
+  "Tohka Telposkha": {
+   "lines": 25,
+   "chars": 1339
+  },
+  "Arcuhbah": {
+   "lines": 24,
+   "chars": 1127
+  },
+  "Ekhu Pesshyadha": {
+   "lines": 24,
+   "chars": 1676
+  },
+  "Iron Eater": {
+   "lines": 24,
+   "chars": 1319
+  },
+  "Mutihb": {
+   "lines": 24,
+   "chars": 1343
+  },
+  "Valkeng": {
+   "lines": 24,
+   "chars": 1366
+  },
+  "Zabahf": {
+   "lines": 24,
+   "chars": 1446
+  },
+  "Dashahan": {
+   "lines": 23,
+   "chars": 1686
+  },
+  "Macici": {
+   "lines": 23,
+   "chars": 1616
+  },
+  "Mikilulu": {
+   "lines": 23,
+   "chars": 1146
+  },
+  "Minfram": {
+   "lines": 23,
+   "chars": 1861
+  },
+  "Eohoh": {
+   "lines": 22,
+   "chars": 1312
+  },
+  "Maudadt": {
+   "lines": 22,
+   "chars": 1059
+  },
+  "Maudaal": {
+   "lines": 21,
+   "chars": 1783
+  },
+  "Rapipi": {
+   "lines": 21,
+   "chars": 539
+  },
+  "Kuh Polevhia": {
+   "lines": 20,
+   "chars": 575
+  },
+  "Tsetseroon": {
+   "lines": 20,
+   "chars": 1371
+  },
+  "Balajaha": {
+   "lines": 19,
+   "chars": 684
+  },
+  "Neosaliat": {
+   "lines": 19,
+   "chars": 1131
+  },
+  "Odilon": {
+   "lines": 19,
+   "chars": 629
+  },
+  "Duuruhn": {
+   "lines": 18,
+   "chars": 1121
+  },
+  "Gukool Ja": {
+   "lines": 18,
+   "chars": 795
+  },
+  "Hadahda": {
+   "lines": 18,
+   "chars": 1028
+  },
+  "Karababa": {
+   "lines": 18,
+   "chars": 740
+  },
+  "Koja Salaheem": {
+   "lines": 18,
+   "chars": 1040
+  },
+  "Totoroon": {
+   "lines": 18,
+   "chars": 560
+  },
+  "Leleroon": {
+   "lines": 17,
+   "chars": 1226
+  },
+  "Mhasbaf": {
+   "lines": 17,
+   "chars": 992
+  },
+  "Nashmeira": {
+   "lines": 17,
+   "chars": 1143
+  },
+  "Zurtermor": {
+   "lines": 17,
+   "chars": 1075
+  },
+  "Kushdeel": {
+   "lines": 16,
+   "chars": 1339
+  },
+  "Silver Kettle": {
+   "lines": 16,
+   "chars": 755
+  },
+  "Ahkk Jharcham": {
+   "lines": 15,
+   "chars": 771
+  },
+  "Ashzal": {
+   "lines": 14,
+   "chars": 781
+  },
+  "Azahma": {
+   "lines": 13,
+   "chars": 703
+  },
+  "Karst": {
+   "lines": 13,
+   "chars": 853
+  },
+  "Tateeya": {
+   "lines": 13,
+   "chars": 496
+  },
+  "Gowam": {
+   "lines": 12,
+   "chars": 929
+  },
+  "Khio Lezengha": {
+   "lines": 12,
+   "chars": 897
+  },
+  "Warsowok": {
+   "lines": 12,
+   "chars": 852
+  },
+  "Yabeesha": {
+   "lines": 12,
+   "chars": 614
+  },
+  "Adahva": {
+   "lines": 11,
+   "chars": 576
+  },
+  "Flit": {
+   "lines": 11,
+   "chars": 449
+  },
+  "Golaal Ja": {
+   "lines": 11,
+   "chars": 469
+  },
+  "Lathuya": {
+   "lines": 11,
+   "chars": 1030
+  },
+  "Wiyaom": {
+   "lines": 11,
+   "chars": 690
+  },
+  "General": {
+   "lines": 10,
+   "chars": 645
+  },
+  "Halver": {
+   "lines": 10,
+   "chars": 941
+  },
+  "Harbuhl": {
+   "lines": 10,
+   "chars": 701
+  },
+  "Mafwahb": {
+   "lines": 10,
+   "chars": 540
+  },
+  "Wolfgang": {
+   "lines": 10,
+   "chars": 999
+  },
+  "Hijamahl": {
+   "lines": 9,
+   "chars": 534
+  },
+  "Missahd": {
+   "lines": 9,
+   "chars": 872
+  },
+  "Nahshib": {
+   "lines": 9,
+   "chars": 539
+  },
+  "Nareema": {
+   "lines": 9,
+   "chars": 430
+  },
+  "Ovjang": {
+   "lines": 9,
+   "chars": 199
+  },
+  "Sahgo Dhakkario": {
+   "lines": 9,
+   "chars": 572
+  },
+  "Sisiroon": {
+   "lines": 9,
+   "chars": 216
+  },
+  "Wayaati": {
+   "lines": 9,
+   "chars": 601
+  },
+  "Yamuld": {
+   "lines": 9,
+   "chars": 348
+  },
+  "Zalwan": {
+   "lines": 9,
+   "chars": 294
+  },
+  "Abda-Lurabda": {
+   "lines": 8,
+   "chars": 283
+  },
+  "Daswil": {
+   "lines": 8,
+   "chars": 430
+  },
+  "Gaweesh": {
+   "lines": 8,
+   "chars": 602
+  },
+  "Kupipi": {
+   "lines": 8,
+   "chars": 545
+  },
+  "Mushayra": {
+   "lines": 8,
+   "chars": 512
+  },
+  "Taishu-Yaashu": {
+   "lines": 8,
+   "chars": 581
+  },
+  "Uran-Mafran": {
+   "lines": 8,
+   "chars": 520
+  },
+  "Waudeen": {
+   "lines": 8,
+   "chars": 632
+  },
+  "Dabhuh": {
+   "lines": 7,
+   "chars": 643
+  },
+  "Imeeya": {
+   "lines": 7,
+   "chars": 288
+  },
+  "King of Hearts": {
+   "lines": 7,
+   "chars": 169
+  },
+  "Lucius": {
+   "lines": 7,
+   "chars": 397
+  },
+  "Trion": {
+   "lines": 7,
+   "chars": 403
+  },
+  "Tsutsuroon": {
+   "lines": 7,
+   "chars": 267
+  },
+  "Uki Pupakkuh": {
+   "lines": 7,
+   "chars": 473
+  },
+  "Volker": {
+   "lines": 7,
+   "chars": 485
+  },
+  "Awoken Vampyr Jarl": {
+   "lines": 6,
+   "chars": 255
+  },
+  "Caradoc": {
+   "lines": 6,
+   "chars": 390
+  },
+  "Halshaob": {
+   "lines": 6,
+   "chars": 318
+  },
+  "Lamia No.27": {
+   "lines": 6,
+   "chars": 351
+  },
+  "Luzaf": {
+   "lines": 6,
+   "chars": 329
+  },
+  "Shaeema": {
+   "lines": 6,
+   "chars": 162
+  },
+  "Star Sibyl": {
+   "lines": 6,
+   "chars": 476
+  },
+  "Suldiran": {
+   "lines": 6,
+   "chars": 461
+  },
+  "Jajaroon": {
+   "lines": 5,
+   "chars": 336
+  },
+  "Rafsween": {
+   "lines": 5,
+   "chars": 353
+  },
+  "Vatharad": {
+   "lines": 5,
+   "chars": 266
+  },
+  "Whamaad": {
+   "lines": 5,
+   "chars": 268
+  },
+  "Yazweel": {
+   "lines": 5,
+   "chars": 155
+  },
+  "Achetragond": {
+   "lines": 4,
+   "chars": 214
+  },
+  "Ahtuuzah": {
+   "lines": 4,
+   "chars": 207
+  },
+  "Automaton": {
+   "lines": 4,
+   "chars": 57
+  },
+  "Briallen": {
+   "lines": 4,
+   "chars": 100
+  },
+  "Destin": {
+   "lines": 4,
+   "chars": 346
+  },
+  "Habadahl": {
+   "lines": 4,
+   "chars": 849
+  },
+  "Jijiroon": {
+   "lines": 4,
+   "chars": 273
+  },
+  "Mnejing": {
+   "lines": 4,
+   "chars": 179
+  },
+  "Nizahluf": {
+   "lines": 4,
+   "chars": 156
+  },
+  "Pieuje": {
+   "lines": 4,
+   "chars": 367
+  },
+  "Rhub Wusthamoi": {
+   "lines": 4,
+   "chars": 228
+  },
+  "Shailham": {
+   "lines": 4,
+   "chars": 282
+  },
+  "Shaldeea": {
+   "lines": 4,
+   "chars": 258
+  },
+  "Alexander": {
+   "lines": 3,
+   "chars": 118
+  },
+  "Bukki": {
+   "lines": 3,
+   "chars": 87
+  },
+  "Ibadeen": {
+   "lines": 3,
+   "chars": 171
+  },
+  "Mashubl": {
+   "lines": 3,
+   "chars": 164
+  },
+  "Matifa": {
+   "lines": 3,
+   "chars": 190
+  },
+  "Meyaada": {
+   "lines": 3,
+   "chars": 178
+  },
+  "Munahda": {
+   "lines": 3,
+   "chars": 264
+  },
+  "Nabitham": {
+   "lines": 3,
+   "chars": 281
+  },
+  "Qarimul": {
+   "lines": 3,
+   "chars": 109
+  },
+  "Warjal": {
+   "lines": 3,
+   "chars": 110
+  },
+  "Wawaroon": {
+   "lines": 3,
+   "chars": 100
+  },
+  "Yajahm": {
+   "lines": 3,
+   "chars": 274
+  },
+  "Zaldur": {
+   "lines": 3,
+   "chars": 106
+  },
+  "Amnaf": {
+   "lines": 2,
+   "chars": 27
+  },
+  "Buburoon": {
+   "lines": 2,
+   "chars": 64
+  },
+  "Harjeel": {
+   "lines": 2,
+   "chars": 89
+  },
+  "Jojoroon": {
+   "lines": 2,
+   "chars": 44
+  },
+  "Kaduru-Haiduru": {
+   "lines": 2,
+   "chars": 183
+  },
+  "Kajeel Ja": {
+   "lines": 2,
+   "chars": 76
+  },
+  "Luqrabah": {
+   "lines": 2,
+   "chars": 57
+  },
+  "Mathlouq": {
+   "lines": 2,
+   "chars": 243
+  },
+  "Nadeey": {
+   "lines": 2,
+   "chars": 67
+  },
+  "Tiyaash": {
+   "lines": 2,
+   "chars": 20
+  },
+  "Wathdeeh": {
+   "lines": 2,
+   "chars": 142
+  },
+  "Yazhaal": {
+   "lines": 2,
+   "chars": 125
+  },
+  "Arzizah": {
+   "lines": 1,
+   "chars": 6
+  },
+  "Balakaf": {
+   "lines": 1,
+   "chars": 98
+  },
+  "Dalbab": {
+   "lines": 1,
+   "chars": 21
+  },
+  "Eunheem": {
+   "lines": 1,
+   "chars": 102
+  },
+  "Loloroon": {
+   "lines": 1,
+   "chars": 83
+  },
+  "Nateeyu": {
+   "lines": 1,
+   "chars": 17
+  },
+  "Rodin-Comidin": {
+   "lines": 1,
+   "chars": 82
+  },
+  "Rubahah": {
+   "lines": 1,
+   "chars": 86
+  },
+  "Rudhinaaf": {
+   "lines": 1,
+   "chars": 30
+  },
+  "Sajalda": {
+   "lines": 1,
+   "chars": 4
+  },
+  "Tataroon": {
+   "lines": 1,
+   "chars": 44
+  },
+  "Travialce": {
+   "lines": 1,
+   "chars": 63
+  },
+  "Tsotsoroon": {
+   "lines": 1,
+   "chars": 63
+  },
+  "Wabjahl": {
+   "lines": 1,
+   "chars": 15
+  },
+  "Yuyuroon": {
+   "lines": 1,
+   "chars": 30
+  }
+ },
+ "unattributed": [
+  {
+   "zone": 50,
+   "event": 1,
+   "lines": 2
+  },
+  {
+   "zone": 50,
+   "event": 722,
+   "lines": 6
+  },
+  {
+   "zone": 50,
+   "event": 889,
+   "lines": 1
+  },
+  {
+   "zone": 50,
+   "event": 5071,
+   "lines": 3
+  },
+  {
+   "zone": 50,
+   "event": 5073,
+   "lines": 2
+  },
+  {
+   "zone": 61,
+   "event": 16,
+   "lines": 3
+  },
+  {
+   "zone": 61,
+   "event": 17,
+   "lines": 10
+  },
+  {
+   "zone": 61,
+   "event": 18,
+   "lines": 2
+  },
+  {
+   "zone": 65,
+   "event": 213,
+   "lines": 2
+  },
+  {
+   "zone": 67,
+   "event": 32001,
+   "lines": 1
+  },
+  {
+   "zone": 68,
+   "event": 3,
+   "lines": 16
+  },
+  {
+   "zone": 68,
+   "event": 9,
+   "lines": 4
+  },
+  {
+   "zone": 68,
+   "event": 34,
+   "lines": 1
+  },
+  {
+   "zone": 72,
+   "event": 3,
+   "lines": 1
+  }
+ ]
+}
