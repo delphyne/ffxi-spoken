@@ -1,0 +1,554 @@
+{
+ "source": "quests/jeuno",
+ "scripts": 110,
+ "scenes": {
+  "named": 264,
+  "with_lines": 262,
+  "undecoded": 0
+ },
+ "classes": {
+  "dialogue": {
+   "lines": 2750,
+   "chars": 220493
+  },
+  "narration": {
+   "lines": 39,
+   "chars": 2560
+  },
+  "unattributed": {
+   "lines": 6,
+   "chars": 127
+  },
+  "system": {
+   "lines": 102,
+   "chars": 5384
+  },
+  "boilerplate": {
+   "lines": 0,
+   "chars": 0
+  },
+  "menu": {
+   "lines": 142,
+   "chars": 6546
+  },
+  "unvoiceable": {
+   "lines": 324,
+   "chars": 45
+  }
+ },
+ "voiced": {
+  "lines": 2789,
+  "chars": 223053
+ },
+ "reasons": {
+  "unattributed": {
+   "no speaker": 6
+  },
+  "system": {
+   "a labelled readout": 21,
+   "battle message": 11,
+   "emote or a sentence missing its subject": 18,
+   "item, key item, or gil changing hands": 1,
+   "told to the player about the player": 51
+  },
+  "menu": {
+   "menu": 142
+  },
+  "unvoiceable": {
+   "empty text": 11,
+   "live-only: 7f80, item": 20,
+   "live-only: 7fab, 7fac, item": 1,
+   "live-only: item": 192,
+   "live-only: item, number": 12,
+   "live-only: number": 70,
+   "live-only: too many variants": 4,
+   "punctuation only": 14
+  }
+ },
+ "speakers": {
+  "Laila": {
+   "lines": 176,
+   "chars": 11729
+  },
+  "Nomad Moogle": {
+   "lines": 173,
+   "chars": 17851
+  },
+  "Maat": {
+   "lines": 169,
+   "chars": 15760
+  },
+  "Brutus": {
+   "lines": 157,
+   "chars": 13789
+  },
+  "Zona Shodhun": {
+   "lines": 133,
+   "chars": 7106
+  },
+  "Luto Mewrilah": {
+   "lines": 83,
+   "chars": 3232
+  },
+  "Atori-Tutori": {
+   "lines": 77,
+   "chars": 8413
+  },
+  "Kurou-Morou": {
+   "lines": 74,
+   "chars": 5787
+  },
+  "Chululu": {
+   "lines": 68,
+   "chars": 6067
+  },
+  "Kuah Dakonsa": {
+   "lines": 68,
+   "chars": 9479
+  },
+  "Akta": {
+   "lines": 67,
+   "chars": 5060
+  },
+  "Red Ghost": {
+   "lines": 67,
+   "chars": 6698
+  },
+  "Bheem": {
+   "lines": 65,
+   "chars": 4803
+  },
+  "Faursel": {
+   "lines": 61,
+   "chars": 6236
+  },
+  "Galmut": {
+   "lines": 50,
+   "chars": 2981
+  },
+  "Dietmund": {
+   "lines": 47,
+   "chars": 2840
+  },
+  "Ilumida": {
+   "lines": 45,
+   "chars": 3518
+  },
+  "Rhea Myuliah": {
+   "lines": 45,
+   "chars": 3821
+  },
+  "Valeriano": {
+   "lines": 45,
+   "chars": 3221
+  },
+  "Esha'ntarl": {
+   "lines": 42,
+   "chars": 3827
+  },
+  "Baudin": {
+   "lines": 38,
+   "chars": 1981
+  },
+  "Bluffnix": {
+   "lines": 38,
+   "chars": 4306
+  },
+  "Omer": {
+   "lines": 38,
+   "chars": 2462
+  },
+  "Prishe": {
+   "lines": 37,
+   "chars": 2405
+  },
+  "Lewenhart": {
+   "lines": 32,
+   "chars": 2921
+  },
+  "Chalvatot": {
+   "lines": 31,
+   "chars": 2668
+  },
+  "Narihira": {
+   "lines": 31,
+   "chars": 2015
+  },
+  "Mertaire": {
+   "lines": 30,
+   "chars": 2262
+  },
+  "Odasel": {
+   "lines": 30,
+   "chars": 2189
+  },
+  "Hantileon": {
+   "lines": 29,
+   "chars": 2247
+  },
+  "Degenhard": {
+   "lines": 28,
+   "chars": 1314
+  },
+  "Wobke": {
+   "lines": 27,
+   "chars": 2275
+  },
+  "Albrecht": {
+   "lines": 26,
+   "chars": 1424
+  },
+  "Aldo": {
+   "lines": 25,
+   "chars": 1828
+  },
+  "Guslam": {
+   "lines": 24,
+   "chars": 2398
+  },
+  "Osker": {
+   "lines": 24,
+   "chars": 1693
+  },
+  "Taillegeas": {
+   "lines": 24,
+   "chars": 2502
+  },
+  "Nevela": {
+   "lines": 23,
+   "chars": 1480
+  },
+  "Annika": {
+   "lines": 22,
+   "chars": 2041
+  },
+  "Zauko": {
+   "lines": 22,
+   "chars": 1872
+  },
+  "Ulzana": {
+   "lines": 21,
+   "chars": 1556
+  },
+  "Imasuke": {
+   "lines": 20,
+   "chars": 1509
+  },
+  "Shrouded Piper": {
+   "lines": 17,
+   "chars": 1607
+  },
+  "Ulmia": {
+   "lines": 17,
+   "chars": 1115
+  },
+  "Alista": {
+   "lines": 16,
+   "chars": 700
+  },
+  "Gilgamesh": {
+   "lines": 15,
+   "chars": 1678
+  },
+  "Fairaure": {
+   "lines": 14,
+   "chars": 978
+  },
+  "Pulonono": {
+   "lines": 14,
+   "chars": 736
+  },
+  "Zopago": {
+   "lines": 14,
+   "chars": 834
+  },
+  "Chamama": {
+   "lines": 13,
+   "chars": 1012
+  },
+  "Zalsuhm": {
+   "lines": 13,
+   "chars": 1421
+  },
+  "Ajithaam": {
+   "lines": 11,
+   "chars": 995
+  },
+  "Bki Tbujhja": {
+   "lines": 11,
+   "chars": 1066
+  },
+  "Magian Moogle": {
+   "lines": 11,
+   "chars": 1036
+  },
+  "Parike-Poranke": {
+   "lines": 11,
+   "chars": 796
+  },
+  "Chocobo": {
+   "lines": 10,
+   "chars": 250
+  },
+  "Audia": {
+   "lines": 9,
+   "chars": 390
+  },
+  "Derrick": {
+   "lines": 9,
+   "chars": 765
+  },
+  "Monberaux": {
+   "lines": 9,
+   "chars": 350
+  },
+  "Neraf-Najiruf": {
+   "lines": 9,
+   "chars": 881
+  },
+  "Runga-Kopunga": {
+   "lines": 9,
+   "chars": 909
+  },
+  "Wolfgang": {
+   "lines": 9,
+   "chars": 420
+  },
+  "Bahamut": {
+   "lines": 8,
+   "chars": 739
+  },
+  "Lion": {
+   "lines": 8,
+   "chars": 444
+  },
+  "Valderotaux": {
+   "lines": 8,
+   "chars": 574
+  },
+  "Ghebi Damomohe": {
+   "lines": 7,
+   "chars": 447
+  },
+  "Harith": {
+   "lines": 7,
+   "chars": 992
+  },
+  "Mashira": {
+   "lines": 7,
+   "chars": 521
+  },
+  "Wyatt": {
+   "lines": 7,
+   "chars": 709
+  },
+  "Collet": {
+   "lines": 6,
+   "chars": 208
+  },
+  "Guttrix": {
+   "lines": 6,
+   "chars": 359
+  },
+  "Hani": {
+   "lines": 6,
+   "chars": 603
+  },
+  "Radeivepart": {
+   "lines": 6,
+   "chars": 552
+  },
+  "Seeker": {
+   "lines": 6,
+   "chars": 519
+  },
+  "Balpah": {
+   "lines": 5,
+   "chars": 441
+  },
+  "Deadly Minnow": {
+   "lines": 5,
+   "chars": 432
+  },
+  "Domingart": {
+   "lines": 5,
+   "chars": 197
+  },
+  "Mailloquetat": {
+   "lines": 5,
+   "chars": 249
+  },
+  "Yin Pocanakhu": {
+   "lines": 5,
+   "chars": 449
+  },
+  "Ayame": {
+   "lines": 4,
+   "chars": 393
+  },
+  "Harmodios": {
+   "lines": 4,
+   "chars": 289
+  },
+  "Matoaka": {
+   "lines": 4,
+   "chars": 343
+  },
+  "Mildaurion": {
+   "lines": 4,
+   "chars": 158
+  },
+  "Adolie": {
+   "lines": 3,
+   "chars": 313
+  },
+  "Buntz": {
+   "lines": 3,
+   "chars": 216
+  },
+  "Morefie": {
+   "lines": 3,
+   "chars": 311
+  },
+  "Ren": {
+   "lines": 3,
+   "chars": 212
+  },
+  "Adelflete": {
+   "lines": 2,
+   "chars": 118
+  },
+  "Borghertz": {
+   "lines": 2,
+   "chars": 57
+  },
+  "Daggao": {
+   "lines": 2,
+   "chars": 111
+  },
+  "Garnev": {
+   "lines": 2,
+   "chars": 151
+  },
+  "Jaha Amariyo": {
+   "lines": 2,
+   "chars": 137
+  },
+  "Karl": {
+   "lines": 2,
+   "chars": 157
+  },
+  "Rouliette": {
+   "lines": 2,
+   "chars": 235
+  },
+  "Shalott": {
+   "lines": 2,
+   "chars": 39
+  },
+  "Tenzen": {
+   "lines": 2,
+   "chars": 118
+  },
+  "Verena": {
+   "lines": 2,
+   "chars": 104
+  },
+  "Zeid": {
+   "lines": 2,
+   "chars": 73
+  },
+  "Cherukiki": {
+   "lines": 1,
+   "chars": 28
+  },
+  "Comitiolus": {
+   "lines": 1,
+   "chars": 101
+  },
+  "Dahjal": {
+   "lines": 1,
+   "chars": 59
+  },
+  "Eald'narche": {
+   "lines": 1,
+   "chars": 37
+  },
+  "Jabbar": {
+   "lines": 1,
+   "chars": 67
+  },
+  "Jabbos": {
+   "lines": 1,
+   "chars": 62
+  },
+  "Kam'lanaut": {
+   "lines": 1,
+   "chars": 38
+  },
+  "Kukki-Chebukki": {
+   "lines": 1,
+   "chars": 15
+  },
+  "Louverance": {
+   "lines": 1,
+   "chars": 91
+  },
+  "Makki-Chebukki": {
+   "lines": 1,
+   "chars": 21
+  },
+  "Mokop-Sankop": {
+   "lines": 1,
+   "chars": 62
+  },
+  "Nag'molada": {
+   "lines": 1,
+   "chars": 38
+  },
+  "Najjar": {
+   "lines": 1,
+   "chars": 42
+  },
+  "Olgald": {
+   "lines": 1,
+   "chars": 39
+  },
+  "Sattal-Mansal": {
+   "lines": 1,
+   "chars": 24
+  },
+  "Selh'teus": {
+   "lines": 1,
+   "chars": 115
+  },
+  "Shadow Lord": {
+   "lines": 1,
+   "chars": 7
+  },
+  "Sharzalion": {
+   "lines": 1,
+   "chars": 10
+  },
+  "Shikaree Z": {
+   "lines": 1,
+   "chars": 95
+  },
+  "Silver Owl": {
+   "lines": 1,
+   "chars": 67
+  }
+ },
+ "unattributed": [
+  {
+   "zone": 34,
+   "event": 4,
+   "lines": 1
+  },
+  {
+   "zone": 36,
+   "event": 4,
+   "lines": 5
+  }
+ ]
+}
