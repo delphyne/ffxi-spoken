@@ -50,6 +50,7 @@ The Lua harness stubs `luau`, `config`, `chat.chars`, and `windower` (including 
 
 ## Conventions
 
+- Commit and push straight to `master`. Do not create a branch or open a pull request unless asked to.
 - `data/` is gitignored and shared with the helper: queue, status, and settings all live there.
 - Run the Python tests under both interpreters when touching the helper: `make check` uses the system python3, and `.venv/bin/python -I -m unittest discover -s helper -p 'test_*.py'` covers the venv; for the moss backend, `.venv-moss/bin/python` too. Its tests use a fake engine and never need torch.
 - Do not add anything to the addon that blocks the game thread (no synchronous HTTP, no sleeping in handlers). Anything slow belongs in the helper.
