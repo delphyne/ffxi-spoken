@@ -132,7 +132,7 @@ cast:
     seed: 953240600
     also: [Cait Sith Prime, Cait Sith Aon, Cait Sith Dha, Cait Sith Tri,
            Cait Sith Ceithir, Cait Sith Coig, Cait Sith Sia, Cait Sith Seachd,
-           Cait Sith Ochd, Cait Sith Naoi, Cait Sith Deich]
+           Cait Sith Ochd, Cait Sith Naoi, Cait Sith Deich, Regal Feline]
   Prishe:
     gender: female
     age: child
@@ -365,17 +365,26 @@ cast:
     gender: male
     age: forties
     race: hume
+    accent: Russian
+    persona: Leader of a dance troupe
+    emotion: Flamboyant and Dramatic
     description: >-
-      A flamboyant, nasal, theatrical dance master's voice; fast, excitable,
-      dramatic.
+      Excitable and with a strong lisp.
+    line: >-
+      sha1:cc9349064c92
     seed: 22291533
   Portia:
     gender: female
     age: young adult
     race: hume
+    accent: American
+    persona: A dancer
+    emotion: "soft and sweet, hopeful"
     description: >-
       A sweet, airy, dreamy young dancer's voice; soft, light, slightly
-      breathless.
+      breathless, very flirtatious.
+    line: >-
+      sha1:5d1306098148
     seed: 532686845
   Esha'ntarl:
     gender: female
@@ -470,8 +479,13 @@ cast:
     gender: female
     age: young adult
     race: hume
+    persona: A mischievous demon
+    emotion: sarcastic
     description: >-
-      A tiny, impish, chattering voice; high, fast, sly, giggling.
+      A tiny, impish, chattering voice; high, fast, sly, giggling, always trying
+      to hide some evil intent.
+    line: >-
+      sha1:4e35aca04e82
     seed: 1122769278
   Ghatsad:
     gender: male

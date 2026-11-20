@@ -2,6 +2,7 @@
 composes, editing and writing back, and how the MOSS engine casts from it
 (cast.py's moss section and the census fallback)."""
 
+import json
 import sys
 import tempfile
 import unittest
@@ -240,8 +241,8 @@ class MossCastingTest(unittest.TestCase):
 
     def test_a_move_puts_a_speaker_in_another_group_and_shifts_nobody(self):
         import cast
-        plain = cast.build(self.d, moves={})
-        moved = cast.build(self.d, moves={"Gumbah": "small", "Green Thumb Moogle": "small", "Moogle": "small"})
+        plain = cast.build(self.d, moves={}, pins={})
+        moved = cast.build(self.d, moves={"Gumbah": "small", "Green Thumb Moogle": "small", "Moogle": "small"}, pins={})
         self.assertEqual(moved["moss"]["Gumbah"], "small-0")
         self.assertIn(moved["kokoro"]["Gumbah"], casting.POOLS["small"][0])
         self.assertEqual(moved["moss"]["Green Thumb Moogle"], "small-0", "someone no list has can be placed too")
@@ -265,10 +266,37 @@ class MossCastingTest(unittest.TestCase):
                 cast.load_moves(path)
         self.assertLessEqual(set(cast.load_moves().values()), set(casting.POOLS) | {cast.SILENT}, "the committed moves all load")
 
+    def test_a_pin_names_the_pool_voice(self):
+        import cast
+        plain = cast.build(self.d, moves={}, pins={})
+        other = next(v for v in self.d.pools["galka_m_adult"] if v != plain["moss"]["Gumbah"])
+        index = self.d.pools["galka_m_adult"].index(other)
+        pinned = cast.build(self.d, moves={}, pins={"Gumbah": ("galka_m_adult", index), "Nobody Listed": ("small", 0),
+                                                    "Iroha": ("hume_f_young", 1), "Cid": ("small", 0)})
+        self.assertEqual(pinned["moss"]["Gumbah"], other)
+        self.assertEqual(pinned["moss"]["Nobody Listed"], "small-0", "a speaker only the census has is taken on")
+        self.assertEqual(pinned["kokoro"]["Nobody Listed"], casting.pick(casting.POOLS["small"][0], "Nobody Listed"))
+        self.assertEqual(pinned["moss"]["Iroha"], "iroha", "a voice of one's own is never pinned")
+        self.assertEqual(pinned["moss"]["Cid"], plain["moss"]["Cid"], "a pin for another group is stale")
+        moved = cast.build(self.d, moves={"Gumbah": "small"}, pins={"Gumbah": ("galka_m_adult", index)})
+        self.assertEqual(moved["moss"]["Gumbah"], "small-0", "and so is one from before a move")
+        rest = lambda out: {e: {n: v for n, v in out[e].items() if n not in ("Gumbah", "Nobody Listed")} for e in out}  # noqa: E731
+        self.assertEqual(rest(pinned), rest(plain), "nobody else changes voice")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "cast_scenes.json"
+            self.assertEqual(cast.load_pins(path), {})
+            cast.write_pins({"Gumbah": ("galka_m_adult", 1)}, path)
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8")), {"Gumbah": "galka_m_adult-1"})
+            self.assertEqual(cast.load_pins(path), {"Gumbah": ("galka_m_adult", 1)})
+            path.write_text('{"Gumbah": "nosuch-1"}', encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "not a pool voice"):
+                cast.load_pins(path)
+        cast.load_pins()   # the committed pins load
+
     def test_a_silent_speaker_has_no_voice(self):
         import cast
-        plain = cast.build(self.d, moves={})
-        quiet = cast.build(self.d, moves={"Gumbah": "silent", "DIRECTOR2": "silent"})
+        plain = cast.build(self.d, moves={}, pins={})
+        quiet = cast.build(self.d, moves={"Gumbah": "silent", "DIRECTOR2": "silent"}, pins={})
         for engine in quiet:
             self.assertNotIn("Gumbah", quiet[engine])
             self.assertNotIn("DIRECTOR2", quiet[engine])
@@ -280,7 +308,7 @@ class MossCastingTest(unittest.TestCase):
 
     def test_cast_moss_section(self):
         import cast
-        out = cast.build(self.d, moves={})["moss"]
+        out = cast.build(self.d, moves={}, pins={})["moss"]
         self.assertEqual(out["Iroha"], "iroha")              # designed
         self.assertEqual(out["Volto Oscuro"], "iroha")       # `also`
         self.assertEqual(out["Grav'iton"], "grav-iton")

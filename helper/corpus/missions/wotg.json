@@ -8,8 +8,8 @@
  },
  "classes": {
   "dialogue": {
-   "lines": 3441,
-   "chars": 259496
+   "lines": 3434,
+   "chars": 259142
   },
   "narration": {
    "lines": 12,
@@ -36,13 +36,13 @@
    "chars": 462
   },
   "silent": {
-   "lines": 0,
-   "chars": 0
+   "lines": 7,
+   "chars": 354
   }
  },
  "voiced": {
-  "lines": 3453,
-  "chars": 260037
+  "lines": 3446,
+  "chars": 259683
  },
  "reasons": {
   "unattributed": {
@@ -61,6 +61,11 @@
    "live-only: item": 41,
    "live-only: number": 14,
    "punctuation only": 84
+  },
+  "silent": {
+   "silent speaker: 1": 2,
+   "silent speaker: 2": 3,
+   "silent speaker: 4": 2
   }
  },
  "speakers": {
@@ -404,10 +409,6 @@
    "lines": 4,
    "chars": 397
   },
-  "2": {
-   "lines": 3,
-   "chars": 130
-  },
   "Andagge": {
    "lines": 3,
    "chars": 238
@@ -431,14 +432,6 @@
   "Machionage": {
    "lines": 3,
    "chars": 294
-  },
-  "1": {
-   "lines": 2,
-   "chars": 156
-  },
-  "4": {
-   "lines": 2,
-   "chars": 68
   },
   "Atomos": {
    "lines": 2,

@@ -87,7 +87,7 @@ class SessionTest(unittest.TestCase):
         d = designs.Designs.load(self.yaml, groups=set(casting.POOLS))
         import cast
         self.voices_json = root / "voices.json"
-        self.voices_json.write_text(json.dumps(cast.build(d, moves={})), encoding="utf-8")
+        self.voices_json.write_text(json.dumps(cast.build(d, moves={}, pins={})), encoding="utf-8")
         census = root / "census.json"
         census.write_text(json.dumps({"Numi Adaligo": {"race": 7}, "Tonasav": {"race": 1}}))
         stories = root / "stories.json"
@@ -108,7 +108,8 @@ class SessionTest(unittest.TestCase):
         self.ses = vr.Session(self.yaml, self.refs, self.voices_json, census, stories,
                               engine_factory=lambda: self.engine, rng=random.Random(4),
                               worker_factory=lambda: self.worker.start(), lexicon=lexicon, lines=lines,
-                              moves=self.moves, groups_file=root / "casting_groups.json")
+                              moves=self.moves, groups_file=root / "casting_groups.json",
+                              pins=root / "cast_scenes.json")
         self.groups_file = root / "casting_groups.json"
         self.built_in = set(casting.POOLS)
 

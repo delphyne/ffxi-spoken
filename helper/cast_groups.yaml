@@ -15,6 +15,9 @@
 # until someone works out who is speaking; the review window lists them
 # under the status "silent". Run make corpus and make voice-stories after.
 
+"1": silent
+"2": silent
+"4": silent
 "Abeaule": elvaan_m_adult
 "Abioleget": elvaan_m_adult
 "Ace of Cups": automaton

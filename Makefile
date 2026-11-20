@@ -67,6 +67,9 @@
 #                    storyline, or a partial name; and hear a voice say one of its speaker's lines through
 #                    MOSS (needs .venv-moss) (tools/voice_review.py)
 #   make voice-stories   rebuild helper/voice_stories.json: each speaker's lines per storyline, and a few to hear
+#   make cast-scenes [DRY=1]
+#                    keep two speakers of one scene off the same pool voice, and report the scenes
+#                    a pool is too small for (helper/cast_scenes.json; needs make corpus first)
 #   make corpus [SOURCE=missions/rov]
 #                    extract what a source says (a mission folder, a quest region, a companion; all of
 #                    them without SOURCE), each line classed: the text into data/corpus/, the counts
@@ -144,7 +147,7 @@ NATIVE_CFLAGS := -O2 -Wall -Wextra -D_WIN32_WINNT=0x0600 -I$(DEPS)/include -I$(D
 # the Wine prefix two levels above drive_c/Windower4, for running the test exe
 WINEPREFIX := $(abspath $(WINDOWER)/../..)
 
-.PHONY: install uninstall where test lint check helper say venv venv-cuda venv-qwen spike-qwen elevenlabs-key elevenlabs-check elevenlabs-describe voice-prompts design-voices audit-voices listen-voices review-voices voice-stories corpus audit-corpus venv-moss spike-moss voices census nouns review-lexicon pack release deps native native-test
+.PHONY: install uninstall where test lint check helper say venv venv-cuda venv-qwen spike-qwen elevenlabs-key elevenlabs-check elevenlabs-describe voice-prompts design-voices audit-voices listen-voices review-voices voice-stories cast-scenes corpus audit-corpus venv-moss spike-moss voices census nouns review-lexicon pack release deps native native-test
 
 # Each recipe below is one shell command, so an exit inside it ends the target.
 
@@ -317,6 +320,12 @@ review-voices:
 # Writes helper/voice_stories.json and data/word_stories.json (for review-lexicon).
 voice-stories data/word_stories.json:
 	$(SYS_PY) -I tools/voice_stories.py --lsb "$(LSB)"
+
+# Reads the extracted corpus (make corpus) and moves pooled speakers who share
+# a scene onto different voices of their pool: helper/cast_scenes.json, then
+# helper/voices.json. DRY=1 only reports.
+cast-scenes:
+	$(SYS_PY) -I tools/cast_scenes.py $(if $(DRY),--dry-run)
 
 # The same needs. Without SOURCE every source is extracted and the exclude
 # rules that matched nothing are named.

@@ -170,7 +170,8 @@ class Session:
                  stories=REPO / "helper" / "voice_stories.json", engine_factory=None, rng=None,
                  worker_factory=None, lexicon=REPO / "helper" / "lexicon.yaml",
                  lines=REPO / "data" / "voice_lines.json", quality=designs_module.DEFAULT_QUALITY,
-                 moves=REPO / "helper" / "cast_groups.yaml", groups_file=casting.EXTRA):
+                 moves=REPO / "helper" / "cast_groups.yaml", groups_file=casting.EXTRA,
+                 pins=REPO / "helper" / "cast_scenes.json"):
         self.groups_file = Path(groups_file)
         self.designs_path, self.refs = Path(designs_path), Path(refs)
         self.quality = quality
@@ -181,7 +182,7 @@ class Session:
         # speaker -> a few lines they say, to hear a voice say: the game's text, so kept in data/
         self.lines = load_json(lines, {})
         self.lines_path = Path(lines) if not Path(lines).exists() else None   # set when the file is not there
-        self.moves_path = Path(moves)
+        self.moves_path, self.pins_path = Path(moves), Path(pins)
         self.listed_groups = cast_groups()
         self.engine_factory = engine_factory or (lambda: dv.Qwen())
         self.worker_factory = worker_factory or MossWorker
@@ -641,7 +642,7 @@ class Session:
         dv.write_index(self.refs, index, fresh.calibration)
         if draft.get("new"):
             import cast
-            self.voices_json.write_text(json.dumps(cast.build(fresh, moves=cast.load_moves(self.moves_path)), indent=2, ensure_ascii=False) + "\n",
+            self.voices_json.write_text(json.dumps(cast.build(fresh, moves=cast.load_moves(self.moves_path), pins=cast.load_pins(self.pins_path)), indent=2, ensure_ascii=False) + "\n",
                                         encoding="utf-8")
         del self.drafts[voice]
         self.reload()
@@ -666,7 +667,7 @@ class Session:
         else:
             moves[name] = group
         cast.write_moves(moves, self.moves_path)
-        self.voices_json.write_text(json.dumps(cast.build(self.load(), moves=moves), indent=2, ensure_ascii=False)
+        self.voices_json.write_text(json.dumps(cast.build(self.load(), moves=moves, pins=cast.load_pins(self.pins_path)), indent=2, ensure_ascii=False)
                                     + "\n", encoding="utf-8")
         self.reload()
         return self.voice_of(name)
@@ -708,7 +709,7 @@ class Session:
         fresh.dump(self.designs_path)
         if draft.get("new"):
             import cast
-            self.voices_json.write_text(json.dumps(cast.build(fresh, moves=cast.load_moves(self.moves_path)), indent=2, ensure_ascii=False) + "\n",
+            self.voices_json.write_text(json.dumps(cast.build(fresh, moves=cast.load_moves(self.moves_path), pins=cast.load_pins(self.pins_path)), indent=2, ensure_ascii=False) + "\n",
                                         encoding="utf-8")
         del self.drafts[voice]
         self.reload()

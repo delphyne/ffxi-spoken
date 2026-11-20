@@ -22,6 +22,9 @@ The NPC list is Balloon's portrait set. Fix a miscast by moving the name to
 another group here and re-running, or with a line in cast_groups.yaml
 (speaker: group), which wins over this list and the census and is what the
 voice review's Move writes; hand edits to voices.json are lost.
+cast_scenes.json (tools/cast_scenes.py, make cast-scenes) then names the
+pool voice of a speaker who would otherwise share one with someone in the
+same scene.
 
     python3 helper/cast.py            # rewrite helper/voices.json
     python3 helper/cast.py --check    # exit 1 if voices.json is stale
@@ -33,7 +36,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from casting import POOLS, spread  # noqa: E402
+from casting import POOLS, pick, spread  # noqa: E402
 from designs import load_default as load_designs  # noqa: E402
 
 # Each entry is one character; a list is one character under several names.
@@ -169,23 +172,55 @@ def write_moves(moves, path=MOVES):
     tmp.replace(path)
 
 
+PINS = Path(__file__).resolve().parent / "cast_scenes.json"
+VOICES = Path(__file__).resolve().parent / "voices.json"
+
+
+def load_pins(path=PINS):
+    """cast_scenes.json: speaker -> (group, index), the pool voice
+    tools/cast_scenes.py gave a speaker so that nobody in their scenes
+    shares it. Missing is no pins."""
+    path = Path(path)
+    if not path.exists():
+        return {}
+    pins = {}
+    for name, voice in json.loads(path.read_text(encoding="utf-8")).items():
+        group, _, index = voice.rpartition("-")
+        if group not in POOLS or not index.isdigit():
+            raise ValueError(f"{path.name}: {name!r} is on {voice!r}, which is not a pool voice")
+        pins[name] = (group, int(index))
+    return pins
+
+
+def write_pins(pins, path=PINS):
+    data = {name: f"{group}-{index}" for name, (group, index) in sorted(pins.items())}
+    Path(path).write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
 def moss_defaults(d):
     """The unnamed speaker is narration; anyone uncast and unknown to the
     census gets the first ordinary voice."""
     return {"default": d.pools["hume_m_adult"][0], "": d.pools["narrator"][0]}
 
 
-def build(designs=None, moves=None):
+def build(designs=None, moves=None, pins=None):
     """voices.json: per engine, speaker -> voice. MOSS voices come from
     voice_designs.yaml: a character with a design gets their own voice, the
     rest of the cast their group's designed pool, spread the same way.
     `moves` (cast_groups.yaml unless given) puts a speaker in another
     group: they keep their turn in the listed group, so nobody after them
-    shifts, and join the end of the new one."""
+    shifts, and join the end of the new one. `pins` (cast_scenes.json
+    unless given) then puts a pooled speaker on a named voice of their
+    group's MOSS pool; a pin for another group than the speaker is in now
+    is stale and ignored, and a speaker only the census knows is taken on
+    its word for the group."""
     if designs is None:
         designs = load_designs(groups=set(POOLS))
     if moves is None:
         moves = load_moves()
+    if pins is None:
+        pins = load_pins()
+    placed = {}   # speaker -> the group they are cast in
     out = {engine: dict(defaults) for engine, defaults in DEFAULTS.items()}
     out["moss"] = moss_defaults(designs)
     seen = set()
@@ -206,6 +241,7 @@ def build(designs=None, moves=None):
                 seen.add(name)
                 if moves.get(name, group) != group:
                     continue   # placed below, in the group they were moved to
+                placed[name] = group
                 out["kokoro"][name] = voice
                 out["piper"][name] = piper_voice
                 out["moss"][name] = designs.voice_for_speaker(name) or moss
@@ -216,10 +252,20 @@ def build(designs=None, moves=None):
         kokoro_pool, piper_voice = POOLS[group]
         listed, pooled = turns.get(group, (0, 0))
         moss = designs.voice_for_speaker(name)
+        placed[name] = group
         out["kokoro"][name] = spread(kokoro_pool, listed)
         out["piper"][name] = piper_voice
         out["moss"][name] = moss or spread(designs.pools[group], pooled)
         turns[group] = (listed + 1, pooled + (0 if moss else 1))
+    for name, (group, index) in sorted(pins.items()):
+        pool = designs.pools.get(group, ())
+        if (designs.voice_for_speaker(name) or index >= len(pool) or placed.get(name, group) != group
+                or moves.get(name, group) != group):
+            continue
+        if name not in placed:   # the census's: the same voices casting.py would pick, written down
+            out["kokoro"][name] = pick(POOLS[group][0], name)
+            out["piper"][name] = POOLS[group][1]
+        out["moss"][name] = pool[index]
     # designed characters outside the hand cast (minor NPCs given a voice of their own)
     for name, voice in designs.speakers.items():
         out["moss"].setdefault(name, voice)
@@ -233,7 +279,7 @@ def render():
 
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
-    path = Path(__file__).resolve().parent / "voices.json"
+    path = VOICES
     text = render()
     if "--check" in argv:
         if path.read_text(encoding="utf-8") != text:
