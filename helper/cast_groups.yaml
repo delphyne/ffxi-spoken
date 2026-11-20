@@ -8,5 +8,308 @@
 # helper/casting.py's POOLS: hume_m_adult, taru_f_child, small, beast, ...
 # A moved speaker joins the end of the new group, and keeps their turn in
 # the old one, so nobody else changes voice.
+#
+# `silent` in place of a group gives the speaker no voice at all: what they
+# say is classed silent by tools/corpus.py, never rendered, and holds no
+# pack back. It is for a name that is not a character (a scene's DIRECTOR)
+# until someone works out who is speaking; the review window lists them
+# under the status "silent". Run make corpus and make voice-stories after.
 
-{}
+"Abeaule": elvaan_m_adult
+"Abioleget": elvaan_m_adult
+"Ace of Cups": automaton
+"Ace of Swords": automaton
+"Ace of Wands": automaton
+"Adahva": hume_f_adult
+"Aengus": monstrosity
+"Agapito": hume_m_adult
+"Ahkk Jharcham": mithra_f_child
+"Ailbeche": elvaan_m_child
+"Akta": hume_m_elder
+"Alfesar": elvaan_m_adult
+"Alista": hume_f_child
+"Angelica": hume_f_adult
+"Anteurephiaux": elvaan_m_child
+"Aquillina": hume_f_adult
+"Arawn": hume_m_child
+"Audia": elvaan_f_adult
+"Automaton": automaton
+"Awoken Vampyr Jarl": dark_kindred
+"Bakool Ja": mamool_ja
+"Balakaf": hume_m_elder
+"Balasiel": elvaan_m_elder
+"Baldric": hume_m_adult
+"Baudin": elvaan_m_child
+"Bellue": hume_f_elder
+"Benita": hume_f_adult
+"Bistillot": hume_f_child
+"Blamor": hume_m_adult
+"Blandine": hume_f_elder
+"Blatherix": goblin
+"Bluffnix": goblin
+"Brakobrik": goblin
+"Breeding Monster": silent
+"Breeding Monster00": silent
+"Breeding Monster01": silent
+"Breeding Monster02": silent
+"Breeding Monster03": silent
+"Briallen": hume_f_child
+"Brutus": hume_m_adult
+"Buburoon": qiqirn
+"Buchzvotch": orc
+"Buffalostalker Dodzbraz": orc
+"Bukki": demon
+"Bumblix": goblin
+"Buntz": galka_m_child
+"Cacaroon": qiqirn
+"Cha Lebagta": mithra_f_adult
+"Charlaimagnat": elvaan_m_adult
+"Chef Nonberry": tonberry
+"Chelvadurai": hume_m_adult
+"Chomoro-Kyotoro": taru_m_child
+"Collet": hume_f_child
+"Daa Bola the Seer": yagudo
+"Dawdlix": silent
+"Demon Befouler": dark_kindred
+"Demon Suppressor": dark_kindred
+"Derrick": hume_m_adult
+"Detzo": galka_m_child
+"Dewalt": hume_m_adult
+"DIRECTOR2": silent
+"Dixon": elvaan_m_adult
+"Domingart": hume_m_child
+"Drangord": galka_m_adult
+"Driftlix": goblin
+"Eggblix": goblin
+"Elisabeth": automaton
+"Elysia": hume_f_adult
+"Emrys": hume_m_child
+"Enu": hume_f_child
+"Eperdur": elvaan_m_elder
+"Ephemeral Moogle": moogle
+"Equette": elvaan_f_elder
+"Etteh Sulaej": mithra_f_adult
+"Eusmard": elvaan_m_adult
+"Felippe": elvaan_m_adult
+"Felmsy": hume_m_adult
+"Fingerfilcher Dradzad": orc
+"Five of Spades": automaton
+"Flap": demon
+"Fodderchief Vokdek": orc
+"Fondactiont": elvaan_m_adult
+"Fontoumant": elvaan_m_elder
+"Gambilox Wanderling": goblin
+"Gantineux": elvaan_m_elder
+"Ge'Fhu Yagudoeye": yagudo
+"General": hume_m_adult
+"Gerbaum": galka_m_adult
+"Gimb": galka_m_adult
+"Goblin Enforcer": goblin
+"Goblin Intimidator": goblin
+"Golaal Ja": mamool_ja
+"Gomada-Vulmada": taru_m_child
+"Gorakbok": orc
+"Goraow": galka_m_adult
+"Grasswix": goblin
+"Green Thumb Moogle": moogle
+"Grimr": hume_m_adult
+"Gudav": galka_m_adult
+"Guilloud": elvaan_m_elder
+"Gukool Ja": mamool_ja
+"Gurfurlur": troll
+"Gutrender Trooper": orc
+"Guttrix": goblin
+"Gwill": galka_m_child
+"Hadahda": hume_m_child
+"Hae Jakkya": mithra_f_adult
+"Hagain": hume_m_adult
+"Hariga-Origa": taru_m_adult
+"Hauramus": elvaan_m_adult
+"Henchman Moogle": moogle
+"Horand": hume_m_adult
+"Horatius": hume_m_adult
+"Hungry Wolf": galka_m_adult
+"Imasuke": hume_m_elder
+"Isacio": elvaan_m_elder
+"Jabbar": hume_m_adult
+"Jaha Amariyo": mithra_f_child
+"Jajaroon": qiqirn
+"Jatan-Paratan": taru_m_adult
+"Jeremias": hume_m_adult
+"Jijiroon": qiqirn
+"Jimaida": galka_m_adult
+"Jojoroon": qiqirn
+"Jonette": hume_f_adult
+"Josef": hume_m_adult
+"Kaede": hume_f_child
+"Kajeel Ja": mamool_ja
+"Kakkaroon": qiqirn
+"Kareh'ayollio": hume_m_adult
+"Karl": hume_m_adult
+"Kingslayer Doggvdegg": orc
+"Koblakiq": goblin
+"Kohlo-Lakolo": taru_m_adult
+"Krudsmud": orc
+"Kuh Polevhia": mithra_f_adult
+"Kupiruru": moogle
+"Kupivolo": moogle
+"Kurando": hume_m_adult
+"Kuu Mohzolhi": mithra_f_child
+"Kyokyoroon": qiqirn
+"Lamia No.27": lamia
+"Leadavox": goblin
+"Leleroon": qiqirn
+"Liliroon": qiqirn
+"Lokpix": goblin
+"Loloroon": qiqirn
+"Lourima": elvaan_m_adult
+"Maccus": monstrosity
+"Magian Moogle": moogle
+"Malene": hume_f_elder
+"Mandragora Warden": silent
+"Marquis Amon": dark_kindred
+"Mashira": hume_m_adult
+"Masked Goblin": goblin
+"Matifa": hume_f_child
+"Matoaka": hume_f_adult
+"Maugie": elvaan_f_elder
+"Melek": hume_f_adult
+"Mhasbaf": elvaan_m_child
+"Mhebi Juhbily": mithra_f_adult
+"Miageau": elvaan_m_adult
+"Miene": elvaan_f_child
+"Mighty Fist": galka_m_adult
+"Mitsunari": hume_m_adult
+"Moari-Kaaori": taru_m_adult
+"Monsieur Kupont": moogle
+"Mourices": elvaan_m_adult
+"Muchavatte": elvaan_m_elder
+"Mushayra": hume_f_adult
+"Mydon": hume_m_adult
+"Narihira": hume_m_elder
+"Nateeyu": hume_f_child
+"Nevela": elvaan_f_child
+"Noam": hume_f_child
+"Nouveil": hume_m_adult
+"Novice Moogle": moogle
+"NPC01": silent
+"NPC02": silent
+"NPC03": silent
+"NPC04": silent
+"NPC05": silent
+"Odeya": hume_f_adult
+"Odin Prime": deity_m
+"Ojha Rhawash": mithra_f_teen
+"Oleg": hume_m_adult
+"Omer": hume_m_adult
+"Orcish Bloodletter": orc
+"Orcish Captive": orc
+"Orcish Fodder": orc
+"Osker": hume_m_child
+"Pagdako": galka_m_child
+"Pagisalis": elvaan_m_adult
+"Paku-Nakku": taru_m_child
+"Paouala": elvaan_f_elder
+"Papo-Hopo": taru_m_child
+"Pavvke": galka_m_adult
+"Pawnpix": goblin
+"Phara": hume_f_elder
+"Pichichi": taru_f_child
+"Porter Moogle": moogle
+"Powhatan": hume_m_adult
+"Pudith": hume_f_adult
+"Pyo Nzon": mithra_f_child
+"Qiji": hume_m_elder
+"Quasilumin": lumorian
+"Ququroon": qiqirn
+"Quu Bokye": yagudo
+"Radeivepart": elvaan_m_elder
+"Raimbroy": elvaan_m_elder
+"Rakke": demon
+"Rakoh Buuma": mithra_f_adult
+"Rakorok": goblin
+"Ramblix": goblin
+"Ramona": hume_f_elder
+"Ranperre": elvaan_m_elder
+"Rapipi": taru_m_child
+"Rasmus": hume_m_adult
+"Ratol Ja": mamool_ja
+"Riche": tonberry
+"Riftborer Verokgok": orc
+"Rikke": demon
+"Rivetpounder Mekglok": orc
+"Roberta": hume_f_adult
+"Rokke": demon
+"Romilda": hume_f_elder
+"Ronan": hume_m_elder
+"Rosel": elvaan_m_elder
+"Rouva": elvaan_f_elder
+"Rudolfo": hume_m_adult
+"Ruillont": elvaan_m_adult
+"Salimah": hume_f_adult
+"Saltvix": goblin
+"Scraggy Gigas": gigas
+"Searcher": demon
+"Seed Goblin": goblin
+"Seed Orc": orc
+"Seed Quadav": quadav
+"Seed Yagudo": yagudo
+"Seeker": demon
+"Serukoko": taru_f_adult
+"Shalott": hume_f_child
+"Shemmie": elvaan_m_child
+"Silvertongue Gnashrosh": orc
+"Sisiroon": qiqirn
+"Sneaking Tiger": galka_m_adult
+"Sniggnix": goblin
+"Sohdede": taru_f_adult
+"Spare One": automaton
+"Spotter": demon
+"Stufstix": goblin
+"Suibhne": monstrosity
+"Swikastoq": goblin
+"Swipostik": goblin
+"Taillegeas": elvaan_m_adult
+"Take": hume_f_adult
+"Tami": hume_f_adult
+"Tarnotik": goblin
+"Tataroon": qiqirn
+"Taumila": elvaan_f_elder
+"Tedimout": elvaan_m_child
+"Tete": hume_f_elder
+"Teyrnon": monstrosity
+"The Great Kupellion": moogle
+"Totoroon": qiqirn
+"Tsetseroon": qiqirn
+"Tsotsoroon": qiqirn
+"Tsutsuroon": qiqirn
+"Tucker": hume_m_adult
+"Two of Cups": automaton
+"Ulzana": hume_m_adult
+"Ungainly Gigas": gigas
+"Unlucky Rat": galka_m_adult
+"Uu Zhoumo": yagudo
+"Valah Molkot": mithra_f_child
+"Valderotaux": elvaan_m_elder
+"Valgeir": hume_m_adult
+"Vaseradoul": elvaan_f_adult
+"Vera": hume_f_adult
+"Virnage": elvaan_m_elder
+"Voshekglok": orc
+"Wadayra": hume_f_adult
+"Warsowok": goblin
+"Washu": hume_f_adult
+"Werner": hume_m_adult
+"Wobke": hume_f_elder
+"Yafa Yaa": mithra_f_child
+"Yagudo Inquisitor": yagudo
+"Yatniel": hume_m_adult
+"Yaya": hume_f_adult
+"Yazan": hume_m_adult
+"Yeestog": silent
+"Yuyuroon": qiqirn
+"Zeelozok": goblin
+"Zelman": hume_m_adult
+"Zexu": hume_m_adult
+"Zona Shodhun": mithra_f_child
+"Zurtermor": troll

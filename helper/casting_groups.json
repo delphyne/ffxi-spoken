@@ -1,0 +1,66 @@
+{
+ "moogle": {
+  "race": "moogle",
+  "sex": "unknown"
+ },
+ "qiqirn": {
+  "race": "qiqirn",
+  "sex": "unknown"
+ },
+ "goblin": {
+  "race": "goblin",
+  "sex": "unknown"
+ },
+ "monstrosity": {
+  "race": "monstrosity",
+  "sex": "unknown"
+ },
+ "orc": {
+  "race": "orc",
+  "sex": "unknown"
+ },
+ "dark_kindred": {
+  "race": "dark kindred",
+  "sex": "unknown"
+ },
+ "automaton": {
+  "race": "automaton",
+  "sex": "unknown"
+ },
+ "mamool_ja": {
+  "race": "mamool ja",
+  "sex": "unknown"
+ },
+ "demon": {
+  "race": "demon",
+  "sex": "unknown"
+ },
+ "troll": {
+  "race": "troll",
+  "sex": "unknown"
+ },
+ "yagudo": {
+  "race": "yagudo",
+  "sex": "unknown"
+ },
+ "lamia": {
+  "race": "lamia",
+  "sex": "unknown"
+ },
+ "tonberry": {
+  "race": "tonberry",
+  "sex": "unknown"
+ },
+ "lumorian": {
+  "race": "lumorian",
+  "sex": "unknown"
+ },
+ "quadav": {
+  "race": "quadav",
+  "sex": "unknown"
+ },
+ "gigas": {
+  "race": "gigas",
+  "sex": "unknown"
+ }
+}

@@ -9,9 +9,19 @@ Kokoro voices and one Piper voice; the hand cast is spread round-robin over
 a pool in cast.py's order (so a name added at the end moves nobody), and a
 name the census casts is drawn by a stable hash. The MOSS engine's pools are
 the designed voices in voice_designs.yaml (designs.py), two per group for
-the playable races; only that engine needs PyYAML."""
+the playable races; only that engine needs PyYAML.
+
+casting_groups.json adds groups to the special ones: a race the game has
+that the list below does not (a moogle, a yagudo), one bucket for each sex
+it is given. The voice review's "New race" writes it; it is JSON so that
+this module stays standard library, and is read when the module loads."""
 
 import hashlib
+import json
+import re
+from pathlib import Path
+
+EXTRA = Path(__file__).resolve().parent / "casting_groups.json"
 
 # race -> the sexes it has; the key is the race's short name used in group ids
 RACES = {"hume": "mf", "elvaan": "mf", "taru": "mf", "mithra": "f", "galka": "m"}
@@ -89,6 +99,75 @@ def group_label(group):
 
 POOLS = {g: _BASE[f"{split_group(g)[0]}_{split_group(g)[1]}"] for g in band_groups()}
 POOLS.update({g: (kokoro, piper) for g, (_, _, kokoro, piper) in SPECIAL.items()})
+
+# an added group's Kokoro pool and Piper voice, by sex: the MOSS and
+# ElevenLabs voices are what matter, these only keep the other engines whole
+_ADDED = {"male": (["am_onyx"], "en_GB-alan-medium"), "female": (["af_kore"], "en_US-amy-medium"),
+          "unknown": (["am_puck"], "en_US-lessac-medium")}
+_SUFFIX = {"male": "_m", "female": "_f", "unknown": ""}
+BUILT_IN = frozenset(POOLS)
+
+
+def added_group_id(race, sex):
+    """The group id a new race and sex get: "moogle", "yagudo_m"."""
+    race = " ".join(str(race).lower().split())
+    if not re.fullmatch(r"[a-z][a-z' -]*", race):
+        raise ValueError(f"a race name is letters, spaces, hyphens, and apostrophes, not {race!r}")
+    if sex not in _SUFFIX:
+        raise ValueError(f"sex is one of {', '.join(_SUFFIX)}, not {sex!r}")
+    return re.sub(r"[^a-z]+", "_", race).strip("_") + _SUFFIX[sex], race
+
+
+def add_group(race, sex):
+    """A new special group for `race` and `sex`, in SPECIAL and POOLS;
+    returns its id. The race's name may be one a group already has (a
+    second sex for it), the group may not exist."""
+    group, race = added_group_id(race, sex)
+    if group in POOLS or split_group(group):
+        raise ValueError(f"there is already a casting group {group!r}")
+    if group == "silent":
+        raise ValueError("silent is what a speaker with no voice is marked, so it cannot be a race")
+    if race in RACES or race in RACE_NAMES.values():
+        raise ValueError(f"{race} is already a race, with a group for each sex and age")
+    kokoro, piper = _ADDED[sex]
+    SPECIAL[group] = (race, sex, list(kokoro), piper)
+    POOLS[group] = (list(kokoro), piper)
+    return group
+
+
+def load_added(path=EXTRA):
+    """group -> {"race", "sex"} from casting_groups.json; {} without it."""
+    path = Path(path)
+    if not path.exists():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"{path.name}: expected group: {{race, sex}}")
+    return data
+
+
+def write_added(path=EXTRA):
+    """Every group that is not built in, as casting_groups.json."""
+    data = {g: {"race": SPECIAL[g][0], "sex": SPECIAL[g][1]} for g in POOLS if g not in BUILT_IN}
+    path = Path(path)
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    tmp.replace(path)
+
+
+def read_added(path=EXTRA):
+    """Take the groups a file adds into SPECIAL and POOLS; the ones already
+    there are left alone. Stops on a file whose ids do not match its
+    races, which only a hand edit can cause."""
+    for group, entry in load_added(path).items():
+        if group in POOLS:
+            continue
+        if added_group_id(entry["race"], entry["sex"])[0] != group:
+            raise ValueError(f"{Path(path).name}: {group!r} is not the id of race {entry['race']!r}, sex {entry['sex']!r}")
+        add_group(entry["race"], entry["sex"])
+
+
+read_added()
 
 # The client's race byte for NPCs that wear player models (LandSandBoat's
 # `look.race`): the census knows a race, not an age, so it casts as an adult.

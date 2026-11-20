@@ -7,8 +7,8 @@
  },
  "classes": {
   "dialogue": {
-   "lines": 1038,
-   "chars": 86515
+   "lines": 1006,
+   "chars": 84191
   },
   "narration": {
    "lines": 86,
@@ -33,11 +33,15 @@
   "unvoiceable": {
    "lines": 439,
    "chars": 49
+  },
+  "silent": {
+   "lines": 32,
+   "chars": 2324
   }
  },
  "voiced": {
-  "lines": 1124,
-  "chars": 95809
+  "lines": 1092,
+  "chars": 93485
  },
  "reasons": {
   "unattributed": {
@@ -66,6 +70,15 @@
    "live-only: too many variants": 2,
    "punctuation only": 2,
    "stage direction only": 3
+  },
+  "silent": {
+   "silent speaker: Breeding Monster": 1,
+   "silent speaker: Breeding Monster00": 1,
+   "silent speaker: Breeding Monster01": 1,
+   "silent speaker: Breeding Monster02": 1,
+   "silent speaker: Breeding Monster03": 1,
+   "silent speaker: DIRECTOR2": 14,
+   "silent speaker: Yeestog": 13
   }
  },
  "speakers": {
@@ -109,37 +122,9 @@
    "lines": 21,
    "chars": 2339
   },
-  "DIRECTOR2": {
-   "lines": 14,
-   "chars": 962
-  },
-  "Yeestog": {
-   "lines": 13,
-   "chars": 1127
-  },
   "Ramblix": {
    "lines": 6,
    "chars": 633
-  },
-  "Breeding Monster": {
-   "lines": 1,
-   "chars": 47
-  },
-  "Breeding Monster00": {
-   "lines": 1,
-   "chars": 47
-  },
-  "Breeding Monster01": {
-   "lines": 1,
-   "chars": 47
-  },
-  "Breeding Monster02": {
-   "lines": 1,
-   "chars": 47
-  },
-  "Breeding Monster03": {
-   "lines": 1,
-   "chars": 47
   }
  },
  "unattributed": [

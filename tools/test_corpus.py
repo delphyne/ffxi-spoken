@@ -63,6 +63,33 @@ class Classes(unittest.TestCase):
         self.assertEqual(counts["unattributed"], [{"zone": 1, "event": 10, "lines": 1}])
 
 
+class Silent(unittest.TestCase):
+    def test_a_silent_speaker_is_never_voiced_and_blocks_nothing(self):
+        quiet = corpus.Exclude(silent={"DIRECTOR2", "???"})
+        self.assertEqual(corpus.classify(row("DIRECTOR2", ["Hop to it!"]), "Hop to it!", quiet),
+                         ("silent", "silent speaker: DIRECTOR2"))
+        self.assertEqual(corpus.classify(row("???", ["Who goes there?"]), "Who goes there?", quiet)[0], "silent",
+                         "a name that would be unattributed can be silenced too")
+        self.assertEqual(corpus.classify(row("Cid", ["Hop to it!"]), "Hop to it!", quiet)[0], "dialogue")
+        self.assertEqual(corpus.classify(row("DIRECTOR2", ["Hop to it!"]), "Hop to it!", quiet, who="Mumor")[0],
+                         "dialogue", "cast_as.yaml naming who speaks wins")
+        lines, counts = corpus.extract([row("DIRECTOR2", ["Hop to it!"]), row("Cid", ["Aye."], text_id=6)], quiet)
+        self.assertEqual([(r["class"], r["speaker"]) for r in lines], [("silent", "DIRECTOR2"), ("dialogue", "Cid")])
+        self.assertEqual((counts["voiced"]["lines"], counts["classes"]["silent"]["lines"], list(counts["speakers"])),
+                         (1, 1, ["Cid"]))
+        self.assertEqual(counts["reasons"]["silent"], {"silent speaker: DIRECTOR2": 1})
+        self.assertNotIn("silent", corpus.VOICED)
+
+    def test_the_silent_come_from_the_moves_file(self):
+        import tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as tmp:
+            moves = Path(tmp) / "cast_groups.yaml"
+            moves.write_text('"DIRECTOR2": silent\n"Gumbah": small\n', encoding="utf-8")
+            self.assertEqual(corpus.Exclude.load(Path(tmp) / "none.yaml", moves=moves).silent, {"DIRECTOR2"})
+        self.assertEqual(corpus.Exclude.load(Path(tmp) / "none.yaml").silent, frozenset(), "none unless a file is named")
+
+
 class Extract(unittest.TestCase):
     def test_lines_are_unique_and_counts_hold_no_text(self):
         rows = [row("Iroha", ["Master.", "Mistress."]), row("Iroha", ["Master."], event=11),

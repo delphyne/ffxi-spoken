@@ -87,7 +87,7 @@ class SessionTest(unittest.TestCase):
         d = designs.Designs.load(self.yaml, groups=set(casting.POOLS))
         import cast
         self.voices_json = root / "voices.json"
-        self.voices_json.write_text(json.dumps(cast.build(d)), encoding="utf-8")
+        self.voices_json.write_text(json.dumps(cast.build(d, moves={})), encoding="utf-8")
         census = root / "census.json"
         census.write_text(json.dumps({"Numi Adaligo": {"race": 7}, "Tonasav": {"race": 1}}))
         stories = root / "stories.json"
@@ -108,9 +108,14 @@ class SessionTest(unittest.TestCase):
         self.ses = vr.Session(self.yaml, self.refs, self.voices_json, census, stories,
                               engine_factory=lambda: self.engine, rng=random.Random(4),
                               worker_factory=lambda: self.worker.start(), lexicon=lexicon, lines=lines,
-                              moves=self.moves)
+                              moves=self.moves, groups_file=root / "casting_groups.json")
+        self.groups_file = root / "casting_groups.json"
+        self.built_in = set(casting.POOLS)
 
     def tearDown(self):
+        for group in set(casting.POOLS) - self.built_in:   # a race a test added
+            del casting.POOLS[group], casting.SPECIAL[group]
+        designs.refresh_groups()
         self.dir.cleanup()
 
     def labels(self, **kw):
@@ -336,13 +341,72 @@ class SessionTest(unittest.TestCase):
         self.ses.move("Prishe", "elvaan_f_teen")
         self.assertEqual(self.ses.row("speaker:Prishe")["via"], "cast.py")
         self.assertNotIn("Prishe", self.moves.read_text(encoding="utf-8"))
-        for name, group, message in (("Tonasav", "orc", "not a casting group"), (None, "small", "select a speaker"),
+        for name, group, message in (("Tonasav", "nosuch", "not a casting group"), (None, "small", "select a speaker"),
                                      ("Iroha", "small", "voice of their own")):
             with self.assertRaisesRegex(ValueError, message):
                 self.ses.move(name, group)
         labels = [label for _, label in self.ses.options()["group"]]
         self.assertEqual(len(labels), len(set(labels)), "every group reads differently in the picker")
-        self.assertEqual([g for g, _ in self.ses.options()["group"]], list(casting.POOLS))
+        self.assertEqual([g for g, _ in self.ses.options()["group"]], list(casting.POOLS) + ["silent"])
+
+    def test_race_unknown_lists_the_speakers_nothing_places(self):
+        self.assertEqual(self.labels(status="uncast"), [])
+        self.ses.speaker_stories.update({"Gukool Ja": {"cop": 9}, "Zona Shodhun": {"rov": 4}})
+        self.ses.reload()
+        unplaced = [r for r in self.ses.rows if r["via"] == "default"]
+        self.assertTrue(unplaced, "the fixture has a speaker on the default voice")
+        self.assertEqual(self.labels(status="uncast"), [r["label"] for r in unplaced])
+        self.assertEqual({(r["status"], r["needs"]) for r in unplaced}, {("uncast", "a casting group")})
+        self.assertEqual(self.ses.uncast(), len(unplaced))
+        before = self.ses.progress()
+        first = unplaced[0]
+        self.ses.move(first["name"], first["group"])   # even to the default's own group: now it is on record
+        self.assertEqual(self.ses.row(first["key"])["via"], "moved")
+        self.assertNotIn(first["label"], self.labels(status="uncast"))
+        self.assertEqual((self.ses.uncast(), self.ses.progress()), (len(unplaced) - 1, before), "prompts are counted apart")
+
+    def test_a_new_race_is_a_group_with_a_pool_to_move_speakers_to(self):
+        group = self.ses.add_race("Testling")
+        self.assertEqual((group, casting.group_label(group), designs.race_gender(group)),
+                         ("testling", "testling", ("testling", "unknown")))
+        self.assertEqual(json.loads(self.groups_file.read_text())["testling"], {"race": "testling", "sex": "unknown"})
+        saved = designs.Designs.load(self.yaml, groups=set(casting.POOLS))
+        self.assertEqual(saved.pools["testling"], ["testling-0"])
+        self.assertIn("testling", saved.voices["testling-0"]["description"])
+        self.assertIn(("testling", "testling (testling)"), self.ses.options()["group"])
+        self.assertIn("testling", self.ses.options()["meta_race"], "an own voice can be that race too")
+        self.assertEqual(self.ses.move("Tonasav", "testling"), "testling-0")
+        row = self.ses.row("speaker:Tonasav")
+        self.assertEqual((row["race"], row["group"], row["via"]), ("testling", "testling", "moved"))
+        self.assertIn("race:testling", {r["key"] for r in self.ses.rows})
+        self.assertEqual(self.ses.add_race("testbeast", "male"), "testbeast_m")
+        self.assertEqual(self.ses.add_race("Testbeast", "female"), "testbeast_f", "a second gender is a second group")
+        for race, gender, message in (("testling", "unknown", "already a casting group"), ("hume", "male", "already"),
+                                      ("", "male", "race name"), ("orc2", "male", "race name"),
+                                      ("orc", "both", "sex is one of")):
+            with self.assertRaisesRegex(ValueError, message):
+                self.ses.add_race(race, gender)
+        # another session, another process: the file is what carries the groups
+        del casting.POOLS["testbeast_f"], casting.SPECIAL["testbeast_f"]
+        casting.read_added(self.groups_file)
+        self.assertEqual(casting.group_info("testbeast_f"), ("testbeast", "female", None))
+
+    def test_a_speaker_can_be_silenced_and_found_again(self):
+        self.assertIn(("silent", "silent (never voiced)"), self.ses.options()["group"])
+        self.ses.move("Tonasav", "silent")
+        self.assertIn('"Tonasav": silent', self.moves.read_text(encoding="utf-8"))
+        self.assertNotIn("Tonasav", json.loads(self.voices_json.read_text())["moss"])
+        row = self.ses.row("speaker:Tonasav")
+        self.assertEqual((row["status"], row["via"], row["group"]), ("silent", "silent", "silent"))
+        self.assertIn("never voiced", row["how"])
+        self.assertEqual((self.labels(status="silent"), self.labels(status="uncast")), (["Tonasav"], []))
+        del self.ses.speaker_stories["Tonasav"]   # the story counts drop the silent once they are regenerated
+        self.ses.reload()
+        self.assertEqual(self.labels(status="silent"), ["Tonasav"], "still listed, to be resolved later")
+        self.assertEqual(self.ses.move("Tonasav", "small"), "small-0")
+        self.assertEqual(self.labels(status="silent"), [])
+        with self.assertRaisesRegex(ValueError, "voice of their own"):
+            self.ses.move("Iroha", "silent")
 
     def test_status_is_the_burn_down_of_own_voices(self):
         self.assertEqual(self.ses.progress(), (2, 0), "Iroha and Ekokoko; Volto Oscuro shares and is not counted")
@@ -396,7 +460,7 @@ class SessionTest(unittest.TestCase):
 
     def test_an_unknown_race_is_refused(self):
         with self.assertRaises(ValueError):
-            self.ses.audition("iroha", "Warm.", race="moogle")
+            self.ses.audition("iroha", "Warm.", race="nosuch")
 
     def test_regenerate_draws_a_new_seed_and_accept_saves_it(self):
         self.ses.regenerate("iroha", "Warm.")
@@ -770,6 +834,19 @@ class GuiTest(unittest.TestCase):
         self.assertEqual((w.tree.set("speaker:Tonasav", "via"), w.move_var.get()), ("moved", "creature (small)"))
         w.move()
         self.assertIn("already in small", w.status_line.cget("text"))
+        # a race the groups do not have: created from the window, then moved to
+        self.assertFalse(w.new_race("hume", "male"))
+        self.assertIn("already a race", w.status_line.cget("text"))
+        self.assertTrue(w.new_race("Testling", "unknown"))
+        self.assertEqual(w.move_var.get(), "testling (testling)", "left picked, so Move is the next press")
+        self.assertIn("testling", w.meta["race"][1].cget("values"))
+        w.move()
+        w.root.update()
+        self.assertIn("moved Tonasav to testling: now on testling-0", w.status_line.cget("text"))
+        self.assertEqual(w.tree.parent("speaker:Tonasav"), "voice:testling-0")
+        w.ask_race()
+        w.root.update()
+        w.race_window.destroy()
         w.tree.selection_set("speaker:Iroha")
         w.root.update()
         self.assertIn("Prompt: ready.", w.info.cget("text"))

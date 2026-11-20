@@ -73,6 +73,15 @@ POOL_KEYS = {"age", "description", "seed"}
 DEFAULT_QUALITY = "high"
 
 
+def refresh_groups():
+    """Take in the groups casting.py has gained since this module loaded
+    (a race added in the voice review)."""
+    global RACES
+    GROUP_INFO.clear()
+    GROUP_INFO.update({g: casting.group_info(g)[:2] for g in casting.POOLS})
+    RACES = tuple(dict.fromkeys(race for race, _ in GROUP_INFO.values()))
+
+
 def race_gender(group):
     return GROUP_INFO.get(group, ("unknown", "unknown"))
 
@@ -283,6 +292,18 @@ class Designs:
         self._add(voice, f"new voice for {name!r}", kind="cast", names=[name],
                   description=description, seed=seed, **meta)
         self.speakers[name] = voice
+        return voice
+
+    def add_pool(self, group, description, age=""):
+        """A pool of one voice for a casting group that has none yet;
+        returns the voice's name."""
+        if group in self.pools:
+            raise ValueError(f"pool {group!r} is already there")
+        race, gender = race_gender(group)
+        voice = pool_voice(group, 0)
+        self._add(voice, f"pool {group!r} voice 0", kind="pool", group=group, gender=gender,
+                  age=age or band_age(group), race=race, description=description, seed=1)
+        self.pools[group] = [voice]
         return voice
 
     def dump(self, path):

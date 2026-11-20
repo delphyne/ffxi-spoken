@@ -8,8 +8,8 @@
  },
  "classes": {
   "dialogue": {
-   "lines": 5835,
-   "chars": 466996
+   "lines": 5828,
+   "chars": 466186
   },
   "narration": {
    "lines": 40,
@@ -34,11 +34,15 @@
   "unvoiceable": {
    "lines": 301,
    "chars": 461
+  },
+  "silent": {
+   "lines": 7,
+   "chars": 810
   }
  },
  "voiced": {
-  "lines": 5875,
-  "chars": 469203
+  "lines": 5868,
+  "chars": 468393
  },
  "reasons": {
   "unattributed": {
@@ -60,6 +64,9 @@
    "live-only: number": 3,
    "punctuation only": 110,
    "stage direction only": 2
+  },
+  "silent": {
+   "silent speaker: Dawdlix": 7
   }
  },
  "speakers": {
@@ -514,10 +521,6 @@
   "Shadow Lord": {
    "lines": 8,
    "chars": 670
-  },
-  "Dawdlix": {
-   "lines": 7,
-   "chars": 810
   },
   "Gerwulf": {
    "lines": 7,

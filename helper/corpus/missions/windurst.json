@@ -8,8 +8,8 @@
  },
  "classes": {
   "dialogue": {
-   "lines": 1378,
-   "chars": 115055
+   "lines": 1377,
+   "chars": 115049
   },
   "narration": {
    "lines": 13,
@@ -34,11 +34,15 @@
   "unvoiceable": {
    "lines": 125,
    "chars": 67
+  },
+  "silent": {
+   "lines": 1,
+   "chars": 6
   }
  },
  "voiced": {
-  "lines": 1391,
-  "chars": 116040
+  "lines": 1390,
+  "chars": 116034
  },
  "reasons": {
   "unattributed": {
@@ -55,6 +59,9 @@
    "live-only: item": 81,
    "live-only: number": 25,
    "punctuation only": 16
+  },
+  "silent": {
+   "silent speaker: Mandragora Warden": 1
   }
  },
  "speakers": {
@@ -433,10 +440,6 @@
   "Heruze-Moruze": {
    "lines": 1,
    "chars": 89
-  },
-  "Mandragora Warden": {
-   "lines": 1,
-   "chars": 6
   },
   "Maunadolace": {
    "lines": 1,

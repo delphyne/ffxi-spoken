@@ -198,7 +198,8 @@ class Window:
         self.move_box = ttk.Combobox(actions, textvariable=self.move_var, state="readonly", width=30,
                                      values=[label for _, label in self.groups])
         self.move_button = ttk.Button(actions, text="Move", command=self.move)
-        self.move_widgets = (self.move_label, self.move_box, self.move_button)
+        self.race_button = ttk.Button(actions, text="New race…", command=self.ask_race)
+        self.move_widgets = (self.move_label, self.move_box, self.move_button, self.race_button)
         for col, widget in enumerate(self.move_widgets):
             widget.grid(row=1, column=col, sticky="w", padx=(0, px(6)), pady=(px(4), 0))
             widget.grid_remove()
@@ -327,7 +328,7 @@ class Window:
                 insert(r["key"])
         insert("")
         todo, ready = self.ses.progress()
-        self.count.configure(text=f"{len(rows)} of {len(self.ses.rows)}  ·  prompts: {todo} to do, {ready} ready")
+        self.count.configure(text=f"{len(rows)} of {len(self.ses.rows)}  ·  prompts: {todo} to do, {ready} ready  ·  race unknown: {self.ses.uncast()}")
         if keep and self.tree.exists(keep):
             self.tree.selection_set(keep)
             self.tree.see(keep)
@@ -388,14 +389,16 @@ class Window:
         else:
             self.title.configure(text=f"Own voice {self.voice}" + (" (new, not accepted yet)" if st["new"] else ""))
             info = r["how"] if r["name"] is not None else ""
-            if r.get("status"):
+            if r.get("status") in ("todo", "ready"):
                 info += ("\nPrompt: " + (f"to do, missing {r['needs']}. " if r["status"] == "todo" else "ready. ")
                          + self.ses.STATUS_RULE)
         self.info.configure(text=info + (f"\nLines: {stories}" if stories else ""))
         if r["name"] is not None and st["kind"] == "pool":
             self.own.configure(text=f"Give {r['label']} a voice of their own")
             self.own.grid()
-            self.move_var.set(next((label for g, label in self.groups if g == r["group"]), ""))
+            if getattr(self, "picker_for", None) != r["key"]:   # a group picked for this row stays picked
+                self.picker_for = r["key"]
+                self.move_var.set(next((label for g, label in self.groups if g == r["group"]), ""))
             for widget in self.move_widgets:
                 widget.grid()
         else:
@@ -562,17 +565,75 @@ class Window:
 
     def move(self):
         """Put the selected speaker in the picked casting group."""
-        group = next((g for g, label in self.groups if label == self.move_var.get()), None)
-        if not self.row or self.row["name"] is None or group is None:
-            return
+        picked = self.move_var.get()
+        group = next((g for g, label in self.groups if label == picked), None)
+        print(f"voice review: Move pressed: row {self.row and self.row['key']!r}, picked {picked!r}, group {group!r}",
+              file=sys.stderr, flush=True)
+        if not self.row or self.row["name"] is None:
+            return self.status("select a speaker to move first")
+        if group is None:
+            return self.status(f"pick a group to move {self.row['label']} to ({picked!r} is not one)")
         label = self.row["label"]
-        if group == self.row["group"]:
-            return self.status(f"{label} is already in {group}")
+        if group == self.row["group"] and self.row["status"] != "uncast":   # an unplaced speaker only looks placed
+            return self.status(f"{label} is already in {group}: pick another group in the list beside Move")
         try:
             voice = self.ses.move(self.row["name"], group)
         except (ValueError, OSError) as e:
             return self.status(str(e))
+        self.picker_for = None   # the picker follows the speaker to where they are now
+        if group == "silent":
+            return self.after_change(f"{label} is silent now: never voiced, left out of packs (helper/cast_groups.yaml); "
+                                     "make corpus and make voice-stories take it into the counts")
         self.after_change(f"moved {label} to {group}: now on {voice} (helper/cast_groups.yaml, voices.json)")
+
+    def ask_race(self):
+        """A small window asking the new race's name and gender."""
+        tk, ttk, px = self.tk, self.ttk, self.px
+        top = tk.Toplevel(self.root)
+        top.title("New race")
+        top.transient(self.root)
+        name, gender = tk.StringVar(), tk.StringVar(value="unknown")
+        ttk.Label(top, text="Race (moogle, yagudo, …)").grid(row=0, column=0, sticky="w", padx=px(8), pady=(px(8), 0))
+        entry = ttk.Entry(top, textvariable=name, width=28)
+        entry.grid(row=0, column=1, padx=px(8), pady=(px(8), 0))
+        ttk.Label(top, text="Gender").grid(row=1, column=0, sticky="w", padx=px(8), pady=px(6))
+        ttk.Combobox(top, textvariable=gender, state="readonly", width=12,
+                     values=["unknown", "male", "female"]).grid(row=1, column=1, sticky="w", padx=px(8), pady=px(6))
+        note = ttk.Label(top, text="One group per gender: add the race again for another.", wraplength=px(320))
+        note.grid(row=2, column=0, columnspan=2, sticky="w", padx=px(8))
+
+        def create(*_):
+            if self.new_race(name.get(), gender.get()):
+                top.destroy()
+            else:
+                note.configure(text=self.status_line.cget("text"))
+
+        ttk.Button(top, text="Create", command=create).grid(row=3, column=1, sticky="e", padx=px(8), pady=px(8))
+        entry.bind("<Return>", create)
+        entry.focus_set()
+        self.race_window = top
+
+    def new_race(self, race, gender):
+        """Create the race's group and leave it picked in the Move box."""
+        key = self.row["key"] if self.row else None
+        try:
+            group = self.ses.add_race(race, gender)
+        except (ValueError, OSError) as e:
+            self.status(str(e))
+            return False
+        self.groups = self.ses.options()["group"]
+        self.move_box.configure(values=[label for _, label in self.groups])
+        self.meta["race"][1].configure(values=self.ses.options()["meta_race"])
+        self.fill_filters()
+        self.refresh(keep=key)
+        if key:
+            self.row = self.ses.row(key)
+            self.show()
+        label = next(label for g, label in self.groups if g == group)
+        self.move_var.set(label)
+        self.status(f"new race: {label} is a casting group now (helper/casting_groups.json, a pool in "
+                    "voice_designs.yaml); Move puts the selected speaker in it")
+        return True
 
     def audition(self):
         description, meta = self.description(), self.meta_values()

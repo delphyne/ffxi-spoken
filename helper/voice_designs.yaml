@@ -335,6 +335,7 @@ cast:
       A brash, loud, bossy mercenary's voice with a purring drawl; fast,
       sarcastic, money-minded.
     seed: 1830755724
+    also: [Koja Salaheem]
   Pieuje:
     gender: male
     age: young adult
@@ -1594,3 +1595,35 @@ pools:
   narrator:
     - age: mature
       description: "A warm, rich, storyteller's voice with a British accent; measured, clear, quietly dramatic."
+  moogle:
+    - description: "A stock voice for moogle speakers: say here what to pick."
+  qiqirn:
+    - description: "A stock voice for qiqirn speakers: say here what to pick."
+  goblin:
+    - description: "A stock voice for goblin speakers: say here what to pick."
+  monstrosity:
+    - description: "A stock voice for monstrosity speakers: say here what to pick."
+  orc:
+    - description: "A stock voice for orc speakers: say here what to pick."
+  dark_kindred:
+    - description: "A stock voice for dark kindred speakers: say here what to pick."
+  automaton:
+    - description: "A stock voice for automaton speakers: say here what to pick."
+  mamool_ja:
+    - description: "A stock voice for mamool ja speakers: say here what to pick."
+  demon:
+    - description: "A stock voice for demon speakers: say here what to pick."
+  troll:
+    - description: "A stock voice for troll speakers: say here what to pick."
+  yagudo:
+    - description: "A stock voice for yagudo speakers: say here what to pick."
+  lamia:
+    - description: "A stock voice for lamia speakers: say here what to pick."
+  tonberry:
+    - description: "A stock voice for tonberry speakers: say here what to pick."
+  lumorian:
+    - description: "A stock voice for lumorian speakers: say here what to pick."
+  quadav:
+    - description: "A stock voice for quadav speakers: say here what to pick."
+  gigas:
+    - description: "A stock voice for gigas speakers: say here what to pick."

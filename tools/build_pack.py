@@ -516,7 +516,7 @@ def main(argv=None):
         rows += extraction.rows_of(client, args.lsb, source, args.companions)[0]
     cast_as = cast_as_table(args.cast_as)
     lines, skipped, blocked = corpus(rows, narration=not args.no_narration, cast_as=cast_as,
-                                     exclude=extraction.Exclude.load(args.exclude))
+                                     exclude=extraction.Exclude.load(args.exclude, moves=extraction.MOVES))
 
     for warning in cast_as_warnings(cast_as, args.voice_map, args.census):
         print(f"warning: {warning}", file=sys.stderr)

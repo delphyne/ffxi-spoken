@@ -106,14 +106,14 @@ class DesignsTest(unittest.TestCase):
             (minimal(cast={"Iroha": dict(iroha, description="")}), "no description"),
             (minimal(cast={"Iroha": dict(iroha, seed="7")}), "whole number"),
             (minimal(cast={"Iroha": dict(iroha, seeds=7)}), "unknown key"),
-            (minimal(cast={"Iroha": dict(iroha, race="moogle")}), "not a casting group's"),
+            (minimal(cast={"Iroha": dict(iroha, race="nosuch")}), "not a casting group's"),
             (minimal(cast={"Iroha": dict(iroha, description="Gender: female. Warm.")}), "belongs in the meta"),
             (minimal(cast={"Iroha": dict(iroha, description="Native Japan. Female.")}), "belongs in the meta"),
             (minimal(cast={"Iroha": dict(iroha, description="Persona: a samurai.")}), "belongs in the meta"),
             (minimal(pools={"hume_m_adult": [{"description": "a", "accent": "French"}], "narrator": ["b"]}), "unknown key"),
             (minimal(cast={"Iroha": dict(iroha), "Lion": {"description": "y", "also": ["Iroha"]}}), "cast twice"),
             (minimal(cast={"Cait Sith": {"description": "x"}, "Cait-Sith": {"description": "y"}}), "already has"),
-            (minimal(pools={"hume_m_adult": ["a"], "narrator": ["b"], "orc": ["c"]}), "not a casting group"),
+            (minimal(pools={"hume_m_adult": ["a"], "narrator": ["b"], "nosuch": ["c"]}), "not a casting group"),
             (minimal(pools={"hume_m_adult": []}), "at least one"),
             (minimal(pools={"hume_m_adult": [{"description": "a", "gender": "female"}], "narrator": ["b"]}), "unknown key"),
             (minimal(pools={"hume_m_adult": ["a"]}), "no pool for casting group(s) narrator"),
@@ -230,7 +230,7 @@ class MossCastingTest(unittest.TestCase):
         v = casting.voice_for_group("galka_m_adult", "Gumbah", "moss", designs=self.d)
         self.assertIn(v, self.d.pools["galka_m_adult"])
         self.assertEqual(v, casting.voice_for_group("galka_m_adult", "Gumbah", "moss", designs=self.d))
-        self.assertIsNone(casting.voice_for_group("orc", "Gumbah", "moss", designs=self.d))
+        self.assertIsNone(casting.voice_for_group("nosuch", "Gumbah", "moss", designs=self.d))
         self.assertIsNone(casting.voice_for_group("galka_m_adult", "Gumbah", "festival", designs=self.d))
 
     def test_census_fallback_uses_the_designed_pools(self):
@@ -260,14 +260,27 @@ class MossCastingTest(unittest.TestCase):
             self.assertEqual(cast.load_moves(path), {"D'Arc": "beast", "Green Thumb Moogle": "small", "Zeta": "small"})
             cast.write_moves({}, path)
             self.assertEqual(path.read_text(encoding="utf-8"), "# kept\n# too\n\n{}\n")
-            path.write_text("Zeta: orc\n", encoding="utf-8")
+            path.write_text("Zeta: nosuch\n", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "not a casting group"):
                 cast.load_moves(path)
-        self.assertEqual(cast.load_moves(), {}, "the committed file starts with no moves")
+        self.assertLessEqual(set(cast.load_moves().values()), set(casting.POOLS) | {cast.SILENT}, "the committed moves all load")
+
+    def test_a_silent_speaker_has_no_voice(self):
+        import cast
+        plain = cast.build(self.d, moves={})
+        quiet = cast.build(self.d, moves={"Gumbah": "silent", "DIRECTOR2": "silent"})
+        for engine in quiet:
+            self.assertNotIn("Gumbah", quiet[engine])
+            self.assertNotIn("DIRECTOR2", quiet[engine])
+            self.assertEqual(quiet[engine], {n: v for n, v in plain[engine].items() if n != "Gumbah"},
+                             "and nobody else changes voice")
+        self.assertEqual(cast.silent({"Gumbah": "silent", "Moogle": "small"}), {"Gumbah"})
+        with self.assertRaisesRegex(ValueError, "cannot be a race"):
+            casting.add_group("silent", "unknown")
 
     def test_cast_moss_section(self):
         import cast
-        out = cast.build(self.d)["moss"]
+        out = cast.build(self.d, moves={})["moss"]
         self.assertEqual(out["Iroha"], "iroha")              # designed
         self.assertEqual(out["Volto Oscuro"], "iroha")       # `also`
         self.assertEqual(out["Grav'iton"], "grav-iton")

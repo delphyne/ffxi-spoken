@@ -576,21 +576,6 @@
   "Brandolf": {
    "wotg": 34
   },
-  "Breeding Monster": {
-   "mog-garden": 1
-  },
-  "Breeding Monster00": {
-   "mog-garden": 1
-  },
-  "Breeding Monster01": {
-   "mog-garden": 1
-  },
-  "Breeding Monster02": {
-   "mog-garden": 1
-  },
-  "Breeding Monster03": {
-   "mog-garden": 1
-  },
   "Brenna": {
    "soa": 5
   },
@@ -867,9 +852,6 @@
    "q-wotg": 104,
    "sandoria": 7
   },
-  "DIRECTOR2": {
-   "mog-garden": 13
-  },
   "Daa Bola the Seer": {
    "q-other": 4
   },
@@ -927,9 +909,6 @@
   },
   "Davyad": {
    "bastok": 5
-  },
-  "Dawdlix": {
-   "q-wotg": 7
   },
   "Dazbog": {
    "bastok": 16,
@@ -2420,9 +2399,6 @@
   "Malzaab": {
    "q-toau": 25
   },
-  "Mandragora Warden": {
-   "windurst": 1
-  },
   "Marcus": {
    "q-wotg": 3
   },
@@ -2703,21 +2679,6 @@
   },
   "Mydon": {
    "bastok": 1
-  },
-  "NPC01": {
-   "acp": 10
-  },
-  "NPC02": {
-   "acp": 8
-  },
-  "NPC03": {
-   "acp": 5
-  },
-  "NPC04": {
-   "acp": 3
-  },
-  "NPC05": {
-   "acp": 1
   },
   "Nabitham": {
    "q-toau": 3
@@ -4358,9 +4319,6 @@
   },
   "Yazweel": {
    "q-toau": 5
-  },
-  "Yeestog": {
-   "mog-garden": 10
   },
   "Yefafa": {
    "soa": 2

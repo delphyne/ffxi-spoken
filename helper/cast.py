@@ -127,6 +127,7 @@ DEFAULTS = {"kokoro": {"default": "am_adam", "": "bm_fable"},
 
 
 MOVES = Path(__file__).resolve().parent / "cast_groups.yaml"
+SILENT = "silent"   # in place of a group: the speaker is never voiced (tools/corpus.py classes their lines so)
 MOVES_HEADER = "# Casting moves: speaker: group (helper/cast.py, make review-voices).\n\n"
 
 
@@ -142,9 +143,15 @@ def load_moves(path=MOVES):
         raise ValueError(f"{path.name}: expected speaker: group lines")
     moves = {str(name): str(group) for name, group in data.items()}
     for name, group in moves.items():
-        if group not in POOLS:
+        if group not in POOLS and group != SILENT:
             raise ValueError(f"{path.name}: {name!r} is moved to {group!r}, which is not a casting group")
     return moves
+
+
+def silent(moves=None, path=MOVES):
+    """The speakers cast_groups.yaml marks silent."""
+    moves = load_moves(path) if moves is None else moves
+    return frozenset(name for name, group in moves.items() if group == SILENT)
 
 
 def write_moves(moves, path=MOVES):
@@ -204,8 +211,8 @@ def build(designs=None, moves=None):
                 out["moss"][name] = designs.voice_for_speaker(name) or moss
         turns[group] = (len(characters), pooled)
     for name, group in sorted(moves.items()):
-        if name in out["kokoro"]:
-            continue   # moved to the group the list already has them in
+        if name in out["kokoro"] or group == SILENT:
+            continue   # moved to the group the list already has them in, or given no voice at all
         kokoro_pool, piper_voice = POOLS[group]
         listed, pooled = turns.get(group, (0, 0))
         moss = designs.voice_for_speaker(name)

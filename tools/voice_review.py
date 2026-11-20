@@ -83,7 +83,11 @@ KINDS = ("all", "race", "pool voice", "own voice", "on a pool voice")
 PROMPT_PARTS = ("accent", "persona", "emotion", "description", "line")
 STATUS_RULE = ("A prompt is ready when it has an accent, a persona, an emotion, a description, and a line to be "
                "designed saying; until then it is to do. Nothing else is judged.")
-STATUSES = (("all", "all prompts"), ("todo", "to do"), ("ready", "ready"))
+STATUSES = (("all", "all prompts"), ("todo", "to do"), ("ready", "ready"), ("uncast", "race unknown"),
+            ("silent", "silent"))
+SILENT = "silent"   # cast.SILENT: in place of a group in cast_groups.yaml, a speaker who is never voiced
+SILENT_LABEL = "silent (never voiced)"
+UNCAST = "uncast"   # a speaker neither cast.py, cast_groups.yaml, nor the census places: on the default voice
 
 
 def cast_groups():
@@ -100,7 +104,8 @@ def cast_groups():
 def group_choices():
     """(group, label) for every casting group, in casting.py's order:
     what a speaker can be moved to."""
-    return [(g, casting.group_label(g) + ("" if casting.split_group(g) else f" ({g})")) for g in casting.POOLS]
+    return ([(g, casting.group_label(g) + ("" if casting.split_group(g) else f" ({g})")) for g in casting.POOLS]
+            + [(SILENT, SILENT_LABEL)])
 
 
 def load_json(path, default):
@@ -165,7 +170,8 @@ class Session:
                  stories=REPO / "helper" / "voice_stories.json", engine_factory=None, rng=None,
                  worker_factory=None, lexicon=REPO / "helper" / "lexicon.yaml",
                  lines=REPO / "data" / "voice_lines.json", quality=designs_module.DEFAULT_QUALITY,
-                 moves=REPO / "helper" / "cast_groups.yaml"):
+                 moves=REPO / "helper" / "cast_groups.yaml", groups_file=casting.EXTRA):
+        self.groups_file = Path(groups_file)
         self.designs_path, self.refs = Path(designs_path), Path(refs)
         self.quality = quality
         self.voices_json = Path(voices_json)
@@ -246,6 +252,9 @@ class Session:
                 return "own (new)", f"{label} is getting a voice of their own, {voice}; not accepted yet."
             return "own", f"{label} has a voice of their own, {voice}, in the cast section."
         census = (self.census.get(name) or {}).get("race")
+        if self.moves.get(name) == SILENT:
+            return SILENT, (f"{label} is silent: what they say is never voiced and is left out of every pack "
+                            "(cast_groups.yaml). Move them to a group to give them a voice.")
         if name in self.moves:
             source, why = "moved", f"cast_groups.yaml moves {label} to group {group}"
         elif name in self.cast_groups:
@@ -256,7 +265,7 @@ class Session:
             source, why = "voices.json", f"voices.json puts {label} in group {group}"
         else:
             return "default", (f"{label} is in neither cast.py nor the census, so they get the default voice, "
-                               f"{voice}. Add them to cast.py, or give them a voice of their own.")
+                               f"{voice}. Move them to the group they belong in, or give them a voice of their own.")
         pool = self.designs.pools.get(group) or []
         n = pool.index(voice) + 1 if voice in pool else 0
         return source, f"{why}; that puts them on voice {n} of {len(pool)} in that pool, {voice}."
@@ -265,7 +274,8 @@ class Session:
         """Every row of the tree: races, their pool voices and the speakers
         on each, and own voices under their race. `parent` is the row
         above; a row's `lines` and `stories` include its children's."""
-        names = set(self.speaker_stories) | set(self.designs.speakers) | (set(self.voice_map) - {"default"})
+        names = (set(self.speaker_stories) | set(self.designs.speakers) | (set(self.voice_map) - {"default"})
+                 | {n for n, g in self.moves.items() if g == SILENT})   # the silent have no lines counted, and stay listed
         rows, users = [], {}
         for name in names:
             voice = self.voice_of(name)
@@ -275,6 +285,10 @@ class Session:
             own = self.designs.voices.get(voice, {}).get("kind") == "cast"
             via, how = self.cast_via(name, voice, group)
             status, needs = self.prompt_status(voice) if own and via != "shares" else ("", "")
+            if via == "default":
+                status, needs = UNCAST, "a casting group"
+            elif via == SILENT:
+                status, needs = SILENT, "a speaker, to be voiced"
             rows.append({"key": f"speaker:{name}", "label": name or NARRATION, "name": name, "voice": voice,
                          "status": status, "needs": needs,
                          "kind": "own voice" if own else "on a pool voice", "group": group, "race": race,
@@ -314,6 +328,10 @@ class Session:
         """(to do, ready): the own voices, each counted once."""
         states = [r["status"] for r in self.rows if r["status"]]
         return states.count("todo"), states.count("ready")
+
+    def uncast(self):
+        """How many speakers nothing places: the "race unknown" list."""
+        return sum(r["status"] == UNCAST for r in self.rows)
 
     @staticmethod
     def _sum(rows):
@@ -355,7 +373,9 @@ class Session:
 
     def filter(self, query="", race="all", gender="all", story="all", kind="all", status="all"):
         """The rows that match. `status` is the burn-down: only own voices
-        have one, so "todo" and "ready" list characters and nothing else."""
+        have a prompt, so "todo" and "ready" list characters and nothing
+        else; "uncast" lists the speakers whose race nothing knows, who
+        are all on the default voice until they are moved to a group."""
         q = query.strip().lower()
         out = []
         for r in self.rows:
@@ -635,7 +655,7 @@ class Session:
         their race is a field of their design."""
         if name is None:
             raise ValueError("select a speaker to move, not a pool voice or a race")
-        if group not in casting.POOLS:
+        if group not in casting.POOLS and group != SILENT:
             raise ValueError(f"{group!r} is not a casting group")
         if self.designs.voice_for_speaker(name):
             raise ValueError(f"{name or NARRATION} has a voice of their own; change its race instead")
@@ -650,6 +670,22 @@ class Session:
                                     + "\n", encoding="utf-8")
         self.reload()
         return self.voice_of(name)
+
+    def add_race(self, race, gender="unknown"):
+        """A race the casting groups do not have yet (a moogle, a yagudo):
+        a new group for it and that gender, in casting_groups.json, and
+        a pool of one voice for it in the YAML, its description a note on
+        what to pick. Returns the group, which speakers can then be moved
+        to and own voices can have as their race."""
+        d = self.load()   # checked against the groups as they are, before there is one more
+        group = casting.add_group(race, gender)
+        designs_module.refresh_groups()
+        name = casting.group_label(group)
+        d.add_pool(group, f"A stock voice for {name} speakers: say here what to pick.")
+        d.dump(self.designs_path)
+        casting.write_added(self.groups_file)
+        self.reload()
+        return group
 
     def save(self, voice):
         """Write the fields as they stand to the YAML with no take: for

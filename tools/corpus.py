@@ -21,6 +21,7 @@ and each is a pack's worth of lines. A line gets one class:
     dialogue      a named character says it                     voiced
     narration     story prose with no speaker                   voiced, by the narrator
     unattributed  said, but the decoder cannot name by whom     blocks its pack
+    silent        a speaker cast_groups.yaml marks silent        never voiced, blocks nothing
     system        the game talking: items, key items, prompts   never voiced
     boilerplate   stock NPC speech: shops, guards, greetings    never voiced
     menu          a choice the player is offered                never voiced
@@ -61,7 +62,8 @@ TEXT_OUT = REPO / "data" / "corpus"
 COUNT_OUT = REPO / "helper" / "corpus"
 MISC = "misc"                      # quest scripts filed under no region
 VOICED = ("dialogue", "narration")
-CLASSES = (*VOICED, "unattributed", "system", "boilerplate", "menu", "unvoiceable")
+CLASSES = (*VOICED, "unattributed", "system", "boilerplate", "menu", "unvoiceable", "silent")
+MOVES = REPO / "helper" / "cast_groups.yaml"   # its `silent` speakers are never voiced
 EXCLUDED = ("system", "boilerplate")   # the classes a rule may give
 NAMELESS = ("", "???")             # shown names that say nothing about who speaks
 
@@ -177,16 +179,23 @@ class Rule:
 
 
 class Exclude:
-    def __init__(self, rules=()):
+    def __init__(self, rules=(), silent=()):
         self.rules = list(rules)
+        self.silent = frozenset(silent)   # speakers marked silent: what they say is never voiced
 
     @classmethod
-    def load(cls, path=EXCLUDE):
+    def load(cls, path=EXCLUDE, moves=None):
+        """The rules, and the silent speakers of `moves` (cast_groups.yaml)
+        when it is given."""
+        silent = ()
+        if moves is not None:
+            import cast
+            silent = cast.silent(path=moves)
         path = Path(path)
         if not path.exists():
-            return cls()
+            return cls(silent=silent)
         data = load_yaml(path) or []
-        return cls(Rule(entry, f"{path.name} rule {n}") for n, entry in enumerate(data, 1))
+        return cls((Rule(entry, f"{path.name} rule {n}") for n, entry in enumerate(data, 1)), silent=silent)
 
     def rule_for(self, row, text):
         """The first rule that drops this line, counted, or None."""
@@ -232,6 +241,8 @@ def classify(row, text, exclude, who=None):
         return rule.cls, rule.reason
     if row["kind"] == "narration":
         return "narration", "narration"
+    if exclude and row["speaker"] in exclude.silent and not who:
+        return "silent", f"silent speaker: {row['speaker']}"
     if unnamed(row["speaker"]) and not who:
         return "unattributed", "no speaker" if row["speaker"] in NAMELESS else "unnamed entity"
     return "dialogue", "dialogue"
@@ -388,7 +399,7 @@ def cmd_extract(args, client):
     names = sources(args.lsb, args.companions) if args.all else args.source
     if not names:
         raise SystemExit("extract needs a source, or --all")
-    exclude = Exclude.load(args.exclude)
+    exclude = Exclude.load(args.exclude, moves=MOVES)
     cast = cast_table(args.cast_as)
     for source in names:
         lines, counts = run(client, args.lsb, source, exclude, cast, args.companions)
@@ -402,7 +413,7 @@ def cmd_extract(args, client):
 
 def cmd_audit(args, client):
     import random
-    exclude = Exclude.load(args.exclude)
+    exclude = Exclude.load(args.exclude, moves=MOVES)
     lines, counts = run(client, args.lsb, args.source[0], exclude, cast_table(args.cast_as), args.companions)
     print(summary(counts))
     for cls in EXCLUDED + ("unvoiceable",):

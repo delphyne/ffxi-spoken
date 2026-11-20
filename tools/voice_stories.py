@@ -174,7 +174,7 @@ def main(argv=None):
     args = ap.parse_args(argv)
     client = xidat.Client(args.client)
     cache = {}
-    exclude, cast = corpus.Exclude.load(args.exclude), corpus.cast_table(args.cast_as)
+    exclude, cast = corpus.Exclude.load(args.exclude, moves=corpus.MOVES), corpus.cast_table(args.cast_as)
     known = set(corpus.sources(args.lsb, args.companions))
     for missing in sorted(known - {source_of(code) for code in STORIES}):
         print(f"warning: {missing} is a source with no storyline code here (STORIES, SOURCES)", file=sys.stderr)

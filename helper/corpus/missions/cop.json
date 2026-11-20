@@ -34,6 +34,10 @@
   "unvoiceable": {
    "lines": 146,
    "chars": 213
+  },
+  "silent": {
+   "lines": 0,
+   "chars": 0
   }
  },
  "voiced": {
